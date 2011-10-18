@@ -217,8 +217,19 @@ class QuantumManager(manager.FlatManager):
                 # attached the vif and raising the exception here
                 # prevents deletion of the VM.  In that case we should
                 # probably just log, continue, and move on.
-                raise Exception(_("No network for for virtual interface %s") %
-                                vif['uuid'])
+#                raise Exception(_("No network for for virtual interface %s") %
+#                                vif['uuid'])
+                info = {
+                    'gateway': "",
+                    'dhcp_server': "",
+                    'broadcast': "",
+                    'mac': vif['address'],
+                    'vif_uuid': vif['uuid'],
+                    'dns': [],
+                    'ips': []}
+                network_info.append(({}, info))
+                return network_info
+
             (v4_subnet, v6_subnet) = self.ipam.get_subnets_by_net_id(context,
                                         ipam_tenant_id, net_id)
             v4_ips = self.ipam.get_v4_ips_by_interface(context,
