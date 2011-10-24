@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -18,12 +20,13 @@
 """
 Unit Tests for remote procedure calls shared between all implementations
 """
-
+import uuid
+from nose.plugins.attrib import attr
 from nova import context
 from nova import log as logging
 from nova.rpc.common import RemoteError
 from nova import test
-
+from carrot import messaging
 
 LOG = logging.getLogger('nova.tests.rpc')
 
@@ -150,6 +153,52 @@ class _BaseRpcTestCase(test.TestCase):
                                               "value": value}})
         conn.close()
         self.assertEqual(value, result)
+
+    @attr(kind='small')
+    def test_connection_cancel_consumer_thread(self):
+        self._rpc_consumer_thread = 10
+        result = self.rpc.Connection().cancel_consumer_thread()
+        self.assertEqual(None, result)
+
+    @attr(kind='small')
+    def test_msg_reply_raise_type_error(self):
+        class fake_reply():
+            pass
+
+        dummy = fake_reply()
+
+        def _fake_send(message):
+                raise TypeError
+
+        self.stubs.Set(self.rpc.DirectPublisher, 'send', _fake_send)
+        msg_id = 'test'
+        self.assertRaises(TypeError, self.rpc.msg_reply, msg_id, dummy, None)
+
+    @attr(kind='small')
+    def test_call_multicall_is_empty(self):
+        def fake_multicall(context, topic, msg):
+            return []
+
+        self.stubs.Set(self.rpc, 'multicall', fake_multicall)
+        value = 10
+        result = self.rpc.call(self.context,
+                               'test', {"method": "echo",
+                               "args": {"value": value}})
+        self.assertEqual(None, result)
+
+    @attr(kind='small')
+    def test_cast_succeed(self):
+        value = 42
+        result = self.rpc.cast(self.context, 'test', {"method": "echo",
+                                                 "args": {"value": value}})
+        self.assertEqual(None, result)
+
+    @attr(kind='small')
+    def test_fanout_cast_succeed(self):
+        value = 20
+        result = self.rpc.fanout_cast(self.context, 'test', {"method": "echo",
+                                                 "args": {"value": value}})
+        self.assertEqual(None, result)
 
 
 class TestReceiver(object):
