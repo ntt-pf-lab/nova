@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -15,7 +17,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+"""
+Tests For nova.quota
+"""
 
+import mox
 from nova import compute
 from nova import context
 from nova import db
@@ -24,6 +30,7 @@ from nova import quota
 from nova import test
 from nova import volume
 from nova.compute import instance_types
+from nose.plugins.attrib import attr
 
 
 FLAGS = flags.FLAGS
@@ -81,6 +88,57 @@ class QuotaTestCase(test.TestCase):
             'm1.xlarge':
                 dict(memory_mb=16384, vcpus=8, local_gb=160, flavorid=5)}
         return instance_types[name]
+
+    @attr(kind='small')
+    def test_get_project_quotas(self):
+        """
+        Test for nova.quota.get_project_quotas.
+        """
+        self.mox.StubOutWithMock(db, 'quota_get_all_by_project')
+        db.quota_get_all_by_project(mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn({'project_id': 'fake'})
+        self.mox.ReplayAll()
+        
+        rval = quota.get_project_quotas(self.context, 'fake')
+        self.assertEqual(len(rval), 9)
+        self.assertEqual(rval['instances'], 2)
+        self.assertEqual(rval['cores'], 4)
+        self.assertEqual(rval['ram'], 50 * 1024)
+        self.assertEqual(rval['volumes'], 2)
+        self.assertEqual(rval['gigabytes'], 20)
+        self.assertEqual(rval['floating_ips'], 1)
+        self.assertEqual(rval['metadata_items'], 128)
+        self.assertEqual(rval['injected_files'], 5)
+        self.assertEqual(rval['injected_file_content_bytes'], 10 * 1024)
+
+    @attr(kind='small')
+    def test_get_project_quotas_database_key_in_quota(self):
+        """
+        Test for nova.quota.get_project_quotas.
+        """
+        self.mox.StubOutWithMock(db, 'quota_get_all_by_project')
+        db.quota_get_all_by_project(mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn({'project_id': 'fake', 'cores': 8})
+        self.mox.ReplayAll()
+        
+        rval = quota.get_project_quotas(self.context, 'fake')
+        self.assertEqual(len(rval), 9)
+        self.assertEqual(rval['cores'], 8)
+
+    @attr(kind='small')
+    def test_get_project_quotas_configuration_key_in_defaults_keys(self):
+        """
+        Test for nova.quota.get_project_quotas.
+        """
+        self.flags(quota_instances=-1)
+        self.mox.StubOutWithMock(db, 'quota_get_all_by_project')
+        db.quota_get_all_by_project(mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn({'project_id': 'fake'})
+        self.mox.ReplayAll()
+        
+        rval = quota.get_project_quotas(self.context, 'fake')
+        self.assertEqual(len(rval), 9)
+        self.assertEqual(rval['instances'], None)
 
     def test_quota_overrides(self):
         """Make sure overriding a projects quotas works"""
@@ -174,6 +232,11 @@ class QuotaTestCase(test.TestCase):
         self.assertEqual(volumes, 100)
         volumes = quota.allowed_volumes(self.context, 101, 1)
         self.assertEqual(volumes, 101)
+
+    @attr(kind='small')
+    def test_allowed_volumes_parameter_size_is_zero(self):
+        volumes = quota.allowed_volumes(self.context, 100, 0)
+        self.assertEqual(volumes, 2)
 
     def test_unlimited_floating_ips(self):
         self.flags(quota_floating_ips=10)
