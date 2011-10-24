@@ -44,7 +44,7 @@ from nova.notifier import test_notifier
 from nova.scheduler import api as scheduler_api
 from nova import volume
 from nova import block_device
-from nova.tests import fake_network
+#from nova.tests import fake_network
 
 LOG = logging.getLogger('nova.tests.compute')
 FLAGS = flags.FLAGS
@@ -191,6 +191,7 @@ class ComputeTestCase(test.TestCase):
         self.assert_(instance_ref['launched_at'] < terminate)
         self.assert_(instance_ref['deleted_at'] > terminate)
 
+    @attr(kind='small')
     def test_stop(self):
         """Ensure instance can be stopped"""
         instance_id = self._create_instance()
@@ -206,6 +207,7 @@ class ComputeTestCase(test.TestCase):
         
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
     def test_start(self):
         """Ensure instance can be started"""
         instance_id = self._create_instance()
@@ -223,6 +225,7 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
     def test_pause(self):
         """Ensure instance can be paused"""
         instance_id = self._create_instance()
@@ -243,6 +246,7 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
     def test_suspend(self):
         """ensure instance can be suspended"""
         instance_id = self._create_instance()
@@ -263,57 +267,29 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(self.context, instance_id)
 
-
-    def test_soft_reboot(self):
-        """Ensure instance can be soft rebooted"""
+    @attr(kind='small')
+    def test_reboot(self):
+        """Ensure instance can be rebooted"""
         self.instance_id = None
         self.network_info = None
-        self.reboot_type = None
-        def stub_driver_reboot(instance_ref, network_info, reboot_type):
+        def stub_driver_reboot(instance_ref, network_info):
             self.instance_id = instance_ref['id']
             self.network_info = network_info
-            self.reboot_type = reboot_type
 
         self.stubs.Set(self.compute.driver,'reboot', stub_driver_reboot)
         instance_id = self._create_instance()
-        reboot_type = "SOFT"
         self.compute.run_instance(self.context, instance_id)
 
         self.assertEquals(None, self.instance_id)
         self.assertEquals(None, self.network_info)
-        self.assertEquals(None, self.reboot_type)
-        self.compute.reboot_instance(self.context, instance_id, reboot_type)
+        self.compute.reboot_instance(self.context, instance_id)
         self.assertEquals(instance_id, self.instance_id)
         self.assertEquals([], self.network_info)
-        self.assertEquals(reboot_type, self.reboot_type)
 
         self.compute.terminate_instance(self.context, instance_id)
 
-    def test_hard_reboot(self):
-        """Ensure instance can be hard rebooted"""
-        self.instance_id = None
-        self.network_info = None
-        self.reboot_type = None
-        def stub_driver_reboot(instance_ref, network_info, reboot_type):
-            self.instance_id = instance_ref['id']
-            self.network_info = network_info
-            self.reboot_type = reboot_type
 
-        self.stubs.Set(self.compute.driver,'reboot', stub_driver_reboot)
-        instance_id = self._create_instance()
-        reboot_type = "HARD"
-        self.compute.run_instance(self.context, instance_id)
-
-        self.assertEquals(None, self.instance_id)
-        self.assertEquals(None, self.network_info)
-        self.assertEquals(None, self.reboot_type)
-        self.compute.reboot_instance(self.context, instance_id, reboot_type)
-        self.assertEquals(instance_id, self.instance_id)
-        self.assertEquals([], self.network_info)
-        self.assertEquals(reboot_type, self.reboot_type)
-
-        self.compute.terminate_instance(self.context, instance_id)
-
+    @attr(kind='small')
     def test_set_admin_password(self):
         """Ensure instance can have its admin password set"""
         self.new_pass = None
@@ -332,6 +308,7 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
     def test_inject_file(self):
         """Ensure we can write a file to an instance"""
         self.instance_id = None
@@ -359,6 +336,7 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
     def test_agent_update(self):
         """Ensure instance can have its agent updated"""
         self.instance_id = None
@@ -588,7 +566,7 @@ class ComputeTestCase(test.TestCase):
             pass
 
         self.stubs.Set(self.compute.driver, 'finish_migration', fake)
-        self.stubs.Set(self.compute.driver, 'finish_revert_migration', fake)
+        self.stubs.Set(self.compute.driver, 'revert_migration', fake)
         self.stubs.Set(self.compute.network_api, 'get_instance_nw_info', fake)
 
         self.compute.run_instance(self.context, instance_id)
@@ -636,13 +614,14 @@ class ComputeTestCase(test.TestCase):
         type = instance_types.get_instance_type_by_flavor_id(1)
         self.assertEqual(type['name'], 'm1.tiny')
 
+    @attr(kind='small')
     def test_resize_same_source_fails(self):
         """Ensure instance fails to migrate when source and destination are
         the same host"""
         instance_id = self._create_instance()
         self.compute.run_instance(self.context, instance_id)
         inst_ref = db.instance_get(self.context, instance_id)
-        self.assertRaises(exception.Error, self.compute.prep_resize,
+        self.assertRaises(exception.MigrationError, self.compute.prep_resize,
                 self.context, inst_ref['uuid'], 1)
         self.compute.terminate_instance(self.context, instance_id)
 
@@ -659,6 +638,7 @@ class ComputeTestCase(test.TestCase):
 
         dbmock = self.mox.CreateMock(db)
         dbmock.instance_get(c, i_id).AndReturn(instance_ref)
+        dbmock.instance_get_fixed_addresses(c, i_id).AndReturn(None)
 
         self.compute.db = dbmock
         self.mox.ReplayAll()
@@ -668,9 +648,6 @@ class ComputeTestCase(test.TestCase):
 
     def test_pre_live_migration_instance_has_volume(self):
         """Confirm setup_compute_volume is called when volume is mounted."""
-        def fake_nw_info(*args, **kwargs):
-            return [(0, {'ips':['dummy']})]
-
         i_ref = self._get_dummy_instance()
         c = context.get_admin_context()
 
@@ -680,13 +657,13 @@ class ComputeTestCase(test.TestCase):
         drivermock = self.mox.CreateMock(self.compute_driver)
 
         dbmock.instance_get(c, i_ref['id']).AndReturn(i_ref)
+        dbmock.instance_get_fixed_addresses(c, i_ref['id']).AndReturn('dummy')
         for i in range(len(i_ref['volumes'])):
             vid = i_ref['volumes'][i]['id']
             volmock.setup_compute_volume(c, vid).InAnyOrder('g1')
-        drivermock.plug_vifs(i_ref, fake_nw_info())
-        drivermock.ensure_filtering_rules_for_instance(i_ref, fake_nw_info())
+        drivermock.plug_vifs(i_ref, [])
+        drivermock.ensure_filtering_rules_for_instance(i_ref, [])
 
-        self.stubs.Set(self.compute, '_get_instance_nw_info', fake_nw_info)
         self.compute.db = dbmock
         self.compute.volume_manager = volmock
         self.compute.driver = drivermock
@@ -697,9 +674,6 @@ class ComputeTestCase(test.TestCase):
 
     def test_pre_live_migration_instance_has_no_volume(self):
         """Confirm log meg when instance doesn't mount any volumes."""
-        def fake_nw_info(*args, **kwargs):
-            return [(0, {'ips':['dummy']})]
-
         i_ref = self._get_dummy_instance()
         i_ref['volumes'] = []
         c = context.get_admin_context()
@@ -709,12 +683,12 @@ class ComputeTestCase(test.TestCase):
         drivermock = self.mox.CreateMock(self.compute_driver)
 
         dbmock.instance_get(c, i_ref['id']).AndReturn(i_ref)
+        dbmock.instance_get_fixed_addresses(c, i_ref['id']).AndReturn('dummy')
         self.mox.StubOutWithMock(compute_manager.LOG, 'info')
         compute_manager.LOG.info(_("%s has no volume."), i_ref['hostname'])
-        drivermock.plug_vifs(i_ref, fake_nw_info())
-        drivermock.ensure_filtering_rules_for_instance(i_ref, fake_nw_info())
+        drivermock.plug_vifs(i_ref, [])
+        drivermock.ensure_filtering_rules_for_instance(i_ref, [])
 
-        self.stubs.Set(self.compute, '_get_instance_nw_info', fake_nw_info)
         self.compute.db = dbmock
         self.compute.driver = drivermock
 
@@ -728,8 +702,6 @@ class ComputeTestCase(test.TestCase):
         It retries and raise exception when timeout exceeded.
 
         """
-        def fake_nw_info(*args, **kwargs):
-            return [(0, {'ips':['dummy']})]
 
         i_ref = self._get_dummy_instance()
         c = context.get_admin_context()
@@ -741,13 +713,13 @@ class ComputeTestCase(test.TestCase):
         drivermock = self.mox.CreateMock(self.compute_driver)
 
         dbmock.instance_get(c, i_ref['id']).AndReturn(i_ref)
+        dbmock.instance_get_fixed_addresses(c, i_ref['id']).AndReturn('dummy')
         for i in range(len(i_ref['volumes'])):
             volmock.setup_compute_volume(c, i_ref['volumes'][i]['id'])
         for i in range(FLAGS.live_migration_retry_count):
-            drivermock.plug_vifs(i_ref, fake_nw_info()).\
+            drivermock.plug_vifs(i_ref, []).\
                 AndRaise(exception.ProcessExecutionError())
 
-        self.stubs.Set(self.compute, '_get_instance_nw_info', fake_nw_info)
         self.compute.db = dbmock
         self.compute.network_manager = netmock
         self.compute.volume_manager = volmock
@@ -1402,7 +1374,9 @@ class ComputeTestCase(test.TestCase):
     def test_set_admin_password_when_instance_not_runnning(self):
         """Ensure raise exception when instance is not runnning."""
         instance_id = self._create_instance()
-        self.assertRaises(exception.Error, self.compute.set_admin_password, self.context, instance_id)
+        self.assertRaises(exception.InstanceNotRunning, 
+                          self.compute.set_admin_password, 
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_set_admin_password_when_driver_not_implement(self):
@@ -1682,13 +1656,13 @@ class ComputeTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_confirm_resize(self):
-        """ Ensure call driver.confirm_migration"""
+        """ Ensure call driver.destroy"""
         self.stub_flag = False
-        def stub_driver_confirm_migration(migration, instance, network_info):
+        def stub_driver_destroy(instance_ref, network_info):
             self.stub_flag = True
 
-        self.stubs.Set(self.compute.driver,'confirm_migration', 
-                       stub_driver_confirm_migration)
+        self.stubs.Set(self.compute.driver,'destroy', 
+                       stub_driver_destroy)
 
         c = context.get_admin_context()
         instance_id = self._create_instance()
@@ -2051,7 +2025,7 @@ class ComputeTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_periodic_tasks_return_error_list(self):
-        """Ensure error list included 5 errors"""
+        """Ensure error list included 3 errors"""
         def stub_return_exception(*args, **kwargs):
             raise TypeError
         
@@ -2064,21 +2038,12 @@ class ComputeTestCase(test.TestCase):
         self.stubs.Set(compute_manager.ComputeManager,
                 '_sync_power_states', stub_return_exception)
 
-        self.stubs.Set(self.compute.driver,
-                'poll_unconfirmed_resizes', stub_return_exception)
-
-        self.stubs.Set(compute_manager.ComputeManager,
-                '_reclaim_queued_deletes', stub_return_exception)
-
-        resize_confirm_window = FLAGS.resize_confirm_window
-        FLAGS.resize_confirm_window = 1
         rescue_timeout = FLAGS.rescue_timeout
         FLAGS.rescue_timeout = 1
         error_list = self.compute.periodic_tasks(context.get_admin_context())
         self.assertTrue(error_list)
-        self.assertEquals(5, len(error_list))
+        self.assertEquals(3, len(error_list))
         FLAGS.rescue_timeout = rescue_timeout
-        FLAGS.resize_confirm_window = resize_confirm_window
 
     @attr(kind='small')
     def test_periodic_tasks_when_power_state_not_running(self):
@@ -2100,28 +2065,6 @@ class ComputeTestCase(test.TestCase):
         self.assertFalse(error_list)
 
         self.compute.terminate_instance(c, instance_id)
-
-    @attr(kind='small')
-    def test_periodic_tasks_vm_state_is_soft_delete(self):
-        """ Ensure instance is deleted"""
-        c = context.get_admin_context()
-        deleted_at = datetime.datetime.utcnow() - datetime.timedelta(seconds=10)
-        instance_id = self._create_instance({ 'deleted_at': deleted_at,
-                                              'terminated_at': utils.utcnow()})
-        self.compute.run_instance(c, instance_id)
-        instance = db.instance_get(c, instance_id)
-        db.instance_update(c, instance['id'], {'vm_state': vm_states.SOFT_DELETE})
-
-        # pre-condition(1 instance is running)
-        instances = db.instance_get_all(context.get_admin_context())
-        self.assertEqual(len(instances), 1)
-
-        error_list = self.compute.periodic_tasks(c)
-
-        # post-condition(running instance is nothing)
-        instances = db.instance_get_all(context.get_admin_context())
-        self.assertEqual(len(instances), 0)
-        self.assertFalse(error_list)
 
     @attr(kind='small')
     def test_run_instance_setup_volumes(self):
@@ -2448,58 +2391,6 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
-    def test_power_off_instance(self):
-        """Ensure instance is power off"""
-        def stub_driver_power_off(instance):
-            pass
-
-        def stub_get_power_state(context, instance):
-            return power_state.SHUTDOWN
-
-        self.stubs.Set(self.compute.driver,'power_off', stub_driver_power_off)
-
-        instance_id = self._create_instance()
-        self.compute.run_instance(self.context, instance_id)
-        instance = db.instance_get(self.context, instance_id)
-        self.assertEquals(power_state.RUNNING, instance['power_state'])
-
-        self.stubs.Set(self.compute,'_get_power_state', stub_get_power_state)
-        self.compute.power_off_instance(self.context, instance_id)
-    
-        instance = db.instance_get(self.context, instance_id)
-        self.assertEquals(power_state.SHUTDOWN, instance['power_state'])
-        
-        self.compute.terminate_instance(self.context, instance_id)
-
-    @attr(kind='small')
-    def test_power_on_instance(self):
-        """Ensure instance is power on"""
-        def stub_driver_power_on(instance):
-            pass
-
-        def stub_get_power_state(context, instance):
-            return power_state.RUNNING
-
-        self.stubs.Set(self.compute.driver,'power_on', stub_driver_power_on)
-
-        c = context.get_admin_context()
-        instance_id = self._create_instance()
-#        self.compute.run_instance(c, instance_id)
-
-        instance = db.instance_get(c, instance_id)
-        db.instance_update(c, instance['id'], {'power_state': power_state.SHUTDOWN})
-        instance = db.instance_get(c, instance_id)
-        self.assertEquals(power_state.SHUTDOWN, instance['power_state'])
-
-        self.stubs.Set(self.compute,'_get_power_state', stub_get_power_state)
-        self.compute.power_on_instance(c, instance_id)
-    
-        instance = db.instance_get(c, instance_id)
-        self.assertEquals(power_state.RUNNING, instance['power_state'])
-        
-        self.compute.terminate_instance(c, instance_id)
-
-    @attr(kind='small')
     def test_rollback_live_migration_block_migration_true(self):
         """ Ensure call rpc.cast when block_migration is true"""
         self.instance_id = None
@@ -2696,6 +2587,9 @@ class ComputeTestCase(test.TestCase):
     def test_pre_live_migration_retry_count_zero(self):
         """ Ensure not call driver.plug_vifs when live_migration_retry_count is zero"""
         self.stub_flag = False
+        def stub_instance_get_fixed_addresses(context, instance_id):
+            return 'fake'
+
         def stub_get_instance_nw_info(context, instance_ref):
             nw_info = [[1,{'ips': '10.1.2.3'}],
                        [2,{'ips': '192.1.2.3'}]]
@@ -2708,6 +2602,8 @@ class ComputeTestCase(test.TestCase):
         def stub_driver_ensure_filtering_rules_for_instance(instance_ref, network_info):
             pass
 
+        self.stubs.Set(self.compute.db,'instance_get_fixed_addresses',
+                       stub_instance_get_fixed_addresses)
         self.stubs.Set(self.compute,'_get_instance_nw_info',
                        stub_get_instance_nw_info)
         self.stubs.Set(self.compute.driver,'plug_vifs',
@@ -2733,6 +2629,10 @@ class ComputeTestCase(test.TestCase):
         """ Ensure call driver.pre_block_migration when block_migration is true"""
         self.instance_id = None
         self.disk_info = []
+
+        def stub_instance_get_fixed_addresses(context, instance_id):
+            return 'fake'
+
         def stub_get_instance_nw_info(context, instance_ref):
             nw_info = [[1,{'ips': '10.1.2.3'}],
                        [2,{'ips': '192.1.2.3'}]]
@@ -2748,6 +2648,8 @@ class ComputeTestCase(test.TestCase):
             self.instance_id = instance_ref['id']
             self.disk_info = disk
 
+        self.stubs.Set(self.compute.db,'instance_get_fixed_addresses',
+                       stub_instance_get_fixed_addresses)
         self.stubs.Set(self.compute,'_get_instance_nw_info',
                        stub_get_instance_nw_info)
         self.stubs.Set(self.compute.driver,'plug_vifs',

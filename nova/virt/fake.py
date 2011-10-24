@@ -258,3 +258,18 @@ class FakeConnection(driver.ComputeDriver):
     def set_host_enabled(self, host, enabled):
         """Sets the specified host's ability to accept new instances."""
         pass
+
+    def get_instance_disk_info(self, ctxt, instance_ref):
+        """This method is supported only by libvirt."""
+        pass
+
+    def post_live_migration_at_destination(self, ctxt,
+                                           instance_ref,
+                                           network_info,
+                                           block_migration):
+        """This method is supported only by libvirt."""
+        pass
+
+    def pre_block_migration(self, ctxt, instance_ref, disk_info_json):
+        """This method is supported only by libvirt."""
+        pass
