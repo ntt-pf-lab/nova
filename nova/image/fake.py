@@ -24,7 +24,6 @@ import random
 from nova import exception
 from nova import flags
 from nova import log as logging
-from nova.image import service
 
 
 LOG = logging.getLogger('nova.image.fake')
@@ -33,7 +32,7 @@ LOG = logging.getLogger('nova.image.fake')
 FLAGS = flags.FLAGS
 
 
-class _FakeImageService(service.BaseImageService):
+class _FakeImageService(object):
     """Mock (fake) image service for unit testing."""
 
     def __init__(self):
@@ -193,6 +192,17 @@ class _FakeImageService(service.BaseImageService):
     def delete_all(self):
         """Clears out all images."""
         self.images.clear()
+
+    def get(self, context, image_id, data):
+        """Calls out to Glance for metadata and data and writes data."""
+        image = self.images.get(str(image_id))
+        if image:
+            data.write('fake chunk')
+            return copy.deepcopy(image)
+        LOG.warn('Unable to find image id %s.  Have images: %s',
+                 image_id, self.images)
+        raise exception.ImageNotFound(image_id=image_id)
+
 
 _fakeImageService = _FakeImageService()
 
