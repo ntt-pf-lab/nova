@@ -3423,7 +3423,6 @@ class CommonNetworkTestCase(test.TestCase):
                                 self.fake_create_fixed_ips)
         args = [None, 'foo', cidr, None, 1, 256, 'fd00::/48', None, None,
                 None]
-        result = manager.create_networks(*args)
         self.assertTrue(manager.create_networks(*args))
 
     def test_create_networks_cidr_already_used(self):
