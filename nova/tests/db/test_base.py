@@ -23,6 +23,7 @@ from nova import flags
 
 FLAGS = flags.FLAGS
 
+
 class BaseTestCase(test.TestCase):
     def test_init(self):
         import_str = 'nova.db.migration'
@@ -33,5 +34,3 @@ class BaseTestCase(test.TestCase):
         import_str = FLAGS.db_driver
         db_base = db.base.Base(db_driver=None)
         self.assertEqual(sys.modules[import_str], db_base.db)
-
-    
