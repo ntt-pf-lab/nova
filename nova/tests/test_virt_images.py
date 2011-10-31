@@ -29,8 +29,10 @@ from nova import flags
 
 FLAGS = flags.FLAGS
 
-# nova.image.glance.get_glance_client() include bug(#198)
+
 def _fake_get_glance_client(context, image_href):
+    """nova.image.glance.get_glance_client() include bug(#198)"""
+
     image_href = image_href or 0
     if str(image_href).isdigit():
         glance_host, glance_port = glance.pick_glance_api_server()
@@ -56,18 +58,17 @@ class VirtImagesTestCase(test.TestCase):
         self.context = context.RequestContext(self.user_id, self.project_id)
 
         # nova.image.glance.get_glance_client include bug(#198)
-        self.stubs.Set(glance, 'get_glance_client', 
+        self.stubs.Set(glance, 'get_glance_client',
                        _fake_get_glance_client)
-
 
     @attr(kind='small')
     def test_fetch(self):
-        """ Ensure return metadata and writes data 
-            when image_href is href""" 
+        """ Ensure return metadata and writes data
+            when image_href is href"""
 
         def stub_get(self, context, image_id, data):
             data.write('test chunk')
-            return {'id': '1', 
+            return {'id': '1',
                     'name': 'fakeimage1'}
 
         self.stubs.Set(glance.GlanceImageService, 'get', stub_get)
@@ -79,8 +80,8 @@ class VirtImagesTestCase(test.TestCase):
         image_href = 'http://fakeserver:9292/images/1'
         path = '/tmp/virt_images.part'
         self.assertFalse(os.path.exists(path))
-                
-        metadata = virt_images.fetch(self.context, image_href, path, 
+
+        metadata = virt_images.fetch(self.context, image_href, path,
                                    self.user_id, self.project_id)
 
         self.assertEqual(image1, metadata)
@@ -91,10 +92,10 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_parameter_image_href_is_id(self):
-        """ Ensure return metadata and writes data 
-            when image_href is id""" 
+        """ Ensure return metadata and writes data
+            when image_href is id"""
 
-        # metadata(nova.image.fake.FakeImageService)        
+        # metadata(nova.image.fake.FakeImageService)
         timestamp = datetime.datetime(2011, 01, 01, 01, 02, 03)
         image1 = {'id': '123456',
                  'name': 'fakeimage123456',
@@ -113,7 +114,7 @@ class VirtImagesTestCase(test.TestCase):
         path = '/tmp/virt_images.part'
         self.assertFalse(os.path.exists(path))
 
-        metadata = virt_images.fetch(self.context, image_href, path, 
+        metadata = virt_images.fetch(self.context, image_href, path,
                                    self.user_id, self.project_id)
 
         self.assertEqual(image1, metadata)
@@ -124,29 +125,29 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_parameter_image_href_invalid(self):
-        """ Ensure exception.InvalidImageRef 
-            when href is invalid strings""" 
+        """ Ensure exception.InvalidImageRef
+            when href is invalid strings"""
 
         image_href = 'httpfakeserver9292images1'
         path = '/tmp/virt_images.part'
 
-        self.assertRaises(exception.InvalidImageRef, 
-                          virt_images.fetch, 
-                          self.context, image_href, path, 
+        self.assertRaises(exception.InvalidImageRef,
+                          virt_images.fetch,
+                          self.context, image_href, path,
                           self.user_id, self.project_id)
 
     @attr(kind='small')
     def test_fetch_parameter_image_href_empty(self):
-        """ Ensure exception.ImageNotFound 
-            when href is empty(or none)""" 
+        """ Ensure exception.ImageNotFound
+            when href is empty(or none)"""
 
         image_href = ''
         path = '/tmp/virt_images.part'
         self.assertFalse(os.path.exists(path))
-        
-        self.assertRaises(exception.ImageNotFound, 
-                          virt_images.fetch, 
-                          self.context, image_href, path, 
+
+        self.assertRaises(exception.ImageNotFound,
+                          virt_images.fetch,
+                          self.context, image_href, path,
                           self.user_id, self.project_id)
 
         self.assert_(os.path.exists(path))
@@ -154,21 +155,21 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_parameter_path_empty(self):
-        """ Ensure IOError when path is empty""" 
+        """ Ensure IOError when path is empty"""
 
         image_href = 123456
         path = ''
 
         # No such file or directory
-        self.assertRaises(IOError, 
-                          virt_images.fetch, 
-                          self.context, image_href, path, 
+        self.assertRaises(IOError,
+                          virt_images.fetch,
+                          self.context, image_href, path,
                           self.user_id, self.project_id)
 
     @attr(kind='small')
     def test_fetch_to_raw(self):
-        """ Ensure return metadata and rename data 
-            when file format is raw""" 
+        """ Ensure return metadata and rename data
+            when file format is raw"""
 
         def stub_utils_execute(*cmd, **kwargs):
             return 'file format:raw', 0
@@ -196,7 +197,7 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         # file format=raw
-        metadata = virt_images.fetch_to_raw(self.context, image_href, path, 
+        metadata = virt_images.fetch_to_raw(self.context, image_href, path,
                                    self.user_id, self.project_id)
 
         # Ensure return value
@@ -209,8 +210,8 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_to_raw_configuration_not_include_fileformat_in_qemu_info(self):
-        """ Ensure exception.ImageUnacceptable 
-            when not include file_format in qemu_image_info""" 
+        """ Ensure exception.ImageUnacceptable
+            when not include file_format in qemu_image_info"""
 
         def stub_utils_execute(*cmd, **kwargs):
             return 'format:raw', 0
@@ -224,9 +225,9 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         # Ensure raise exception.ImageUnacceptable
-        self.assertRaises(exception.ImageUnacceptable, 
-                          virt_images.fetch_to_raw, 
-                          self.context, image_href, path, 
+        self.assertRaises(exception.ImageUnacceptable,
+                          virt_images.fetch_to_raw,
+                          self.context, image_href, path,
                           self.user_id, self.project_id)
 
         # Ensure file
@@ -235,8 +236,8 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_to_raw_configuration_trim_space(self):
-        """ Ensure return metadata and rename data 
-            when file format is raw""" 
+        """ Ensure return metadata and rename data
+            when file format is raw"""
 
         def stub_utils_execute(*cmd, **kwargs):
             # return value:space + raw => ' raw'
@@ -264,7 +265,7 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         # file format=raw
-        metadata = virt_images.fetch_to_raw(self.context, image_href, path, 
+        metadata = virt_images.fetch_to_raw(self.context, image_href, path,
                                    self.user_id, self.project_id)
 
         # Ensure return value
@@ -277,10 +278,11 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_to_raw_configuration_fileformat_qcow(self):
-        """ Ensure return metadata, convert to raw and rename data 
-            when file format is not raw(qcow)""" 
+        """ Ensure return metadata, convert to raw and rename data
+            when file format is not raw(qcow)"""
 
         self.convert_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[4] == 'info' and cmd[5] == '/tmp/virt_images.part':
                 return 'file format:qcow', 0
@@ -314,7 +316,7 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         # file format=qcow
-        metadata = virt_images.fetch_to_raw(self.context, image_href, path, 
+        metadata = virt_images.fetch_to_raw(self.context, image_href, path,
                                             self.user_id, self.project_id)
 
         # Ensure return value
@@ -331,8 +333,8 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_to_raw_configuration_backing_file(self):
-        """ Ensure exception.ImageUnacceptable 
-            when include backing file in qemu_image_info""" 
+        """ Ensure exception.ImageUnacceptable
+            when include backing file in qemu_image_info"""
 
         def stub_utils_execute(*cmd, **kwargs):
             return ('file format:backing file\n'
@@ -346,9 +348,9 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         # file format=qcow
-        self.assertRaises(exception.ImageUnacceptable, 
-                          virt_images.fetch_to_raw, self.context, 
-                          image_href, path, 
+        self.assertRaises(exception.ImageUnacceptable,
+                          virt_images.fetch_to_raw, self.context,
+                          image_href, path,
                           self.user_id, self.project_id)
 
         # Ensure file
@@ -356,10 +358,11 @@ class VirtImagesTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fetch_to_raw_configuration_convert_fail(self):
-        """ Ensure exception.ImageUnacceptable 
-            when file convert failed""" 
+        """ Ensure exception.ImageUnacceptable
+            when file convert failed"""
 
         self.convert_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[4] == 'info':
                 return 'file format:qcow', 0
@@ -377,9 +380,9 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         # file format=qcow
-        self.assertRaises(exception.ImageUnacceptable, 
-                          virt_images.fetch_to_raw, self.context, 
-                          image_href, path, 
+        self.assertRaises(exception.ImageUnacceptable,
+                          virt_images.fetch_to_raw, self.context,
+                          image_href, path,
                           self.user_id, self.project_id)
 
         # Ensure exec convert command
@@ -407,8 +410,8 @@ class VirtImagesTestCase(test.TestCase):
         self.assertFalse(os.path.exists("%s.part" % path))
 
         self.assertRaises(exception.ProcessExecutionError,
-                          virt_images.fetch_to_raw, self.context, 
-                          image_href, path, 
+                          virt_images.fetch_to_raw, self.context,
+                          image_href, path,
                           self.user_id, self.project_id)
 
         # Ensure file
