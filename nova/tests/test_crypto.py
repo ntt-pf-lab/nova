@@ -60,7 +60,7 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.ca_folder. """
         self.flags(use_project_ca=False)
         project_id = 'fake'
-        
+
         ref = self.crypto.ca_folder(project_id)
         ca_folder = flags.FLAGS.ca_path
         self.assertEqual(ca_folder, ref)
@@ -70,7 +70,7 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.ca_folder. """
         self.flags(use_project_ca=True)
         project_id = 'fake'
-        
+
         ref = self.crypto.ca_folder(project_id)
         ca_folder = os.path.join(flags.FLAGS.ca_path, 'projects', project_id)
         self.assertEqual(ca_folder, ref)
@@ -80,7 +80,7 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.ca_path. """
         self.flags(use_project_ca=False)
         project_id = 'fake'
-        
+
         ref = self.crypto.ca_path(project_id)
         ca_path = os.path.join(flags.FLAGS.ca_path, FLAGS.ca_file)
         self.assertEqual(ca_path, ref)
@@ -90,7 +90,7 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.key_path. """
         self.flags(use_project_ca=False)
         project_id = 'fake'
-        
+
         ref = self.crypto.key_path(project_id)
         key_path = os.path.join(flags.FLAGS.ca_path, FLAGS.key_file)
         self.assertEqual(key_path, ref)
@@ -108,10 +108,10 @@ class CryptoTestCase(test.TestCase):
         if ca_path_exist:
             ca_str = self._read_file(ca_path)
         self._create_file(ca_path, 'cacert')
-        
+
         ref = self.crypto.fetch_ca(project_id, chain)
         self.assertEqual('cacert_project' + 'cacert', ref)
-        
+
         os.remove(project_ca_path)
         if ca_path_exist:
             self._create_file(ca_path, ca_str)
@@ -126,10 +126,10 @@ class CryptoTestCase(test.TestCase):
         chain = False
         project_ca_path = self.crypto.ca_path(project_id)
         self._create_file(project_ca_path, 'cacert_project')
-        
+
         ref = self.crypto.fetch_ca(project_id, chain)
         self.assertEqual('cacert_project', ref)
-        
+
         os.remove(project_ca_path)
 
     @attr(kind='small')
@@ -142,10 +142,10 @@ class CryptoTestCase(test.TestCase):
         if ca_path_exist:
             ca_str = self._read_file(ca_path)
         self._create_file(ca_path, 'cacert')
-        
+
         ref = self.crypto.fetch_ca(project_id)
         self.assertEqual('cacert', ref)
-        
+
         if ca_path_exist:
             self._create_file(ca_path, ca_str)
         else:
@@ -161,10 +161,10 @@ class CryptoTestCase(test.TestCase):
         if ca_path_exist:
             ca_str = self._read_file(ca_path)
         self._create_file(ca_path, 'cacert')
-        
+
         ref = self.crypto.fetch_ca(project_id)
         self.assertEqual('cacert', ref)
-        
+
         if ca_path_exist:
             self._create_file(ca_path, ca_str)
         else:
@@ -181,24 +181,25 @@ class CryptoTestCase(test.TestCase):
                       mox.IgnoreArg(),
                       mox.IgnoreArg()).AndReturn((out, None))
         self.mox.ReplayAll()
-        
+
         ref = self.crypto.generate_fingerprint('./.ssh/id_rsa')
         self.assertEqual('AAAAAAAAAA', ref)
 
     @attr(kind='small')
     def test_generate_fingerprint_exception_utils_execute(self):
         """
-        ProcessExecutionError is raised 
-        
+        ProcessExecutionError is raised
+
         """
         self.mox.StubOutWithMock(utils, 'execute')
         utils.execute(mox.IgnoreArg(),
                       mox.IgnoreArg(),
                       mox.IgnoreArg(),
                       mox.IgnoreArg(),
-                      mox.IgnoreArg()).AndRaise(exception.ProcessExecutionError)
+                      mox.IgnoreArg()).\
+                AndRaise(exception.ProcessExecutionError)
         self.mox.ReplayAll()
-        
+
         self.assertRaises(exception.ProcessExecutionError,
                           self.crypto.generate_fingerprint,
                           './.ssh/id_rsa')
@@ -210,8 +211,9 @@ class CryptoTestCase(test.TestCase):
         self.mox.StubOutWithMock(utils, 'execute')
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
-        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
         self._create_file(os.path.join(temp_dir, 'temp'), 'AAAAAAAAAA')
         self._create_file(os.path.join(temp_dir, 'temp.pub'), 'BBBBBBBBBB')
         out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
@@ -221,14 +223,15 @@ class CryptoTestCase(test.TestCase):
                       mox.IgnoreArg(),
                       mox.IgnoreArg()).AndReturn((out, None))
         self.mox.ReplayAll()
-        
+
         ref = self.crypto.generate_key_pair()
         self.assertEqual(('AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'), ref)
 
     @attr(kind='small')
     def test_generate_key_pair_parameter_bits_is_less_than_minimum(self):
         """
-        ProcessExecutionError is raised when bits is less than the minimum size for RSA keys
+        ProcessExecutionError is raised
+        when bits is less than the minimum size for RSA keys
         """
         bits = 767
         self.assertRaises(exception.ProcessExecutionError,
@@ -238,7 +241,7 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_generate_key_pair_exception_utils_execute(self):
         """
-        ProcessExecutionError is raised 
+        ProcessExecutionError is raised
         """
         self.mox.StubOutWithMock(utils, 'execute')
         utils.execute(mox.IgnoreArg(),
@@ -248,9 +251,10 @@ class CryptoTestCase(test.TestCase):
                       mox.IgnoreArg(),
                       mox.IgnoreArg(),
                       mox.IgnoreArg(),
-                      mox.IgnoreArg()).AndRaise(exception.ProcessExecutionError)
+                      mox.IgnoreArg()).\
+                AndRaise(exception.ProcessExecutionError)
         self.mox.ReplayAll()
-        
+
         self.assertRaises(exception.ProcessExecutionError,
                           self.crypto.generate_key_pair)
 
@@ -287,7 +291,7 @@ class CryptoTestCase(test.TestCase):
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         self.mox.ReplayAll()
-        
+
         user_id = 'test_user'
         project_id = 'fake'
         bits = 1024
@@ -299,7 +303,7 @@ class CryptoTestCase(test.TestCase):
         self._create_file(os.path.join(temp_dir, 'temp.key'), 'aaa')
         # make a file {path to temp_dir}/crypto/temp.csr
         self._create_file(os.path.join(temp_dir, 'temp.csr'), 'bbb')
-        
+
         ref = self.crypto.generate_x509_cert(user_id, project_id, bits=bits)
         self.assertEqual(('aaa', 'sss'), ref)
 
@@ -310,9 +314,10 @@ class CryptoTestCase(test.TestCase):
         """
         self.mox.StubOutWithMock(utils, 'execute')
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg()).AndRaise(exception.ProcessExecutionError)
+                      mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndRaise(exception.ProcessExecutionError)
         self.mox.ReplayAll()
-        
+
         user_id = 'test_user'
         project_id = 'fake'
         bits = 1024
@@ -325,17 +330,18 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.generate_vpn_files. """
         self.flags(use_project_ca=True)
         self._count = 0
+
         def stub_execute(*cmd, **kwargs):
             self._count += 1
             self._create_file(csr_fn, 'sss')
             self._create_file(crt_fn)
-        
+
         self.stubs.Set(utils, 'execute', stub_execute)
         self.mox.StubOutWithMock(self.crypto, '_sign_csr')
         self.crypto._sign_csr(mox.IgnoreArg(),
                              mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
         self.mox.ReplayAll()
-        
+
         project_id = 'fake'
         project_folder = self.crypto.ca_folder(project_id)
         csr_fn = os.path.join(project_folder, 'server.csr')
@@ -344,10 +350,10 @@ class CryptoTestCase(test.TestCase):
         # make sure the condition that ca_path exists
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
-        
+
         self.crypto.generate_vpn_files(project_id)
         self.assertEqual(1, self._count)
-        
+
         os.remove(csr_fn)
         os.remove(crt_fn)
 
@@ -356,17 +362,18 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.generate_vpn_files. """
         self.flags(use_project_ca=True)
         self._count = 0
+
         def stub_execute(*cmd, **kwargs):
             self._count += 1
-        
+
         self.stubs.Set(utils, 'execute', stub_execute)
-        
+
         project_id = 'fake'
         project_folder = self.crypto.ca_folder(project_id)
         crt_fn = os.path.join(project_folder, 'server.crt')
         # make sure that server.crt already exists
         self._create_file(crt_fn)
-        
+
         self.crypto.generate_vpn_files(project_id)
         self.assertEqual(0, self._count)
 
@@ -378,16 +385,18 @@ class CryptoTestCase(test.TestCase):
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(utils, 'execute')
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
-        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(('aaa=bbb=ccc', None))
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn(('aaa=bbb=ccc', None))
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         self.mox.ReplayAll()
-        
+
         csr_text = 'test'
         project_id = 'fake'
         ca_path = self.crypto.ca_path(project_id)
@@ -396,7 +405,7 @@ class CryptoTestCase(test.TestCase):
             os.remove(ca_path)
         # make a file {path to temp_dir}/crypto/outbound.csr
         self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
-        
+
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
 
@@ -410,16 +419,17 @@ class CryptoTestCase(test.TestCase):
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(('aaa=bbb=ccc', None))
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn(('aaa=bbb=ccc', None))
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         self.mox.ReplayAll()
-        
+
         csr_text = 'test'
         project_id = 'fake'
         # make a file {path to temp_dir}/crypto/outbound.csr
         self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
-        
+
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
 
@@ -433,11 +443,12 @@ class CryptoTestCase(test.TestCase):
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(('aaa=bbb=ccc', None))
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn(('aaa=bbb=ccc', None))
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         self.mox.ReplayAll()
-        
+
         csr_text = 'test'
         project_id = 'fake'
         ca_path = self.crypto.ca_path(project_id)
@@ -446,7 +457,7 @@ class CryptoTestCase(test.TestCase):
             self._create_file(ca_path)
         # make a file {path to temp_dir}/crypto/outbound.csr
         self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
-        
+
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
 
@@ -456,16 +467,18 @@ class CryptoTestCase(test.TestCase):
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(utils, 'execute')
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
-        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(('aaa=bbb=ccc', None))
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn(('aaa=bbb=ccc', None))
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         self.mox.ReplayAll()
-        
+
         csr_text = 'test'
         project_id = 'fake'
         ca_path = self.crypto.ca_path(project_id)
@@ -479,7 +492,7 @@ class CryptoTestCase(test.TestCase):
         self.assertFalse(os.path.exists(ca_folder))
         # make a file {path to temp_dir}/crypto/outbound.csr
         self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
-        
+
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
         self.assertTrue(os.path.exists(ca_folder))
@@ -493,9 +506,10 @@ class CryptoTestCase(test.TestCase):
         self.mox.StubOutWithMock(utils, 'execute')
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
-                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndRaise(exception.ProcessExecutionError)
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndRaise(exception.ProcessExecutionError)
         self.mox.ReplayAll()
-        
+
         csr_text = 'test'
         project_id = 'fake'
         self.assertRaises(exception.ProcessExecutionError,
@@ -518,14 +532,15 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_mkreq_exception_rsa_gen_key(self):
         """
-        ValueError is raised when ValueError is raised in M2Crypto.RSA.gen_key()
+        ValueError is raised
+        when ValueError is raised in M2Crypto.RSA.gen_key()
         """
         self.mox.StubOutWithMock(M2Crypto.RSA, 'gen_key')
         M2Crypto.RSA.gen_key(mox.IgnoreArg(),
                              mox.IgnoreArg(),
                              callback=mox.IgnoreArg()).AndRaise(ValueError)
         self.mox.ReplayAll()
-        
+
         bits = 1024
         subject = 'nova'
         ca = 0
@@ -552,14 +567,15 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_mkcacert_exception_rsa_gen_key(self):
         """
-        ValueError is raised when ValueError is raised in M2Crypto.RSA.gen_key()
+        ValueError is raised
+        when ValueError is raised in M2Crypto.RSA.gen_key()
         """
         self.mox.StubOutWithMock(M2Crypto.RSA, 'gen_key')
         M2Crypto.RSA.gen_key(mox.IgnoreArg(),
                              mox.IgnoreArg(),
                              callback=mox.IgnoreArg()).AndRaise(ValueError)
         self.mox.ReplayAll()
-        
+
         bits = 1024
         subject = 'nova'
         ca = 0
@@ -576,7 +592,7 @@ class CryptoTestCase(test.TestCase):
 
         ref = self.crypto.compute_md5(fp)
         self.assertEqual('acbd18db4cc2f85cedef654fccc4a4d8', ref)
-        
+
         fp.close()
 
     @attr(kind='small')
@@ -588,7 +604,7 @@ class CryptoTestCase(test.TestCase):
 
         self.assertRaises(IOError,
                           self.crypto.compute_md5, fp)
-        
+
         fp.close()
 
 
@@ -635,22 +651,25 @@ class RevokeCertsTest(test.TestCase):
         """Test for nova.crypto.revoke_cert. """
         project_id = 'fake'
         file_name = 'test_file'
-        
+
         self._count = 0
         self._cmd = []
         self._kwargs = []
+
         def stub_execute(*cmd, **kwargs):
             self._count += 1
             self._cmd.append(cmd)
             self._kwargs.append(kwargs)
-        
+
         self.stubs.Set(utils, 'execute', stub_execute)
-        
+
         crypto.revoke_cert(project_id, file_name)
         self.assertEqual(2, self._count)
-        self.assertEqual(('openssl', 'ca', '-config', './openssl.cnf', '-revoke', file_name),
+        self.assertEqual(('openssl', 'ca', '-config', './openssl.cnf',
+                          '-revoke', file_name),
                          self._cmd[0])
-        self.assertEqual(('openssl', 'ca', '-gencrl', '-config', './openssl.cnf', '-out', FLAGS.crl_file),
+        self.assertEqual(('openssl', 'ca', '-gencrl', '-config',
+                          './openssl.cnf', '-out', FLAGS.crl_file),
                          self._cmd[1])
 
     def test_revoke_certs_by_user_and_project(self):
