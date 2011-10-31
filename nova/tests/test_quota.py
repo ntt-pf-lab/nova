@@ -98,7 +98,7 @@ class QuotaTestCase(test.TestCase):
         db.quota_get_all_by_project(mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn({'project_id': 'fake'})
         self.mox.ReplayAll()
-        
+
         rval = quota.get_project_quotas(self.context, 'fake')
         self.assertEqual(len(rval), 9)
         self.assertEqual(rval['instances'], 2)
@@ -120,7 +120,7 @@ class QuotaTestCase(test.TestCase):
         db.quota_get_all_by_project(mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn({'project_id': 'fake', 'cores': 8})
         self.mox.ReplayAll()
-        
+
         rval = quota.get_project_quotas(self.context, 'fake')
         self.assertEqual(len(rval), 9)
         self.assertEqual(rval['cores'], 8)
@@ -135,7 +135,7 @@ class QuotaTestCase(test.TestCase):
         db.quota_get_all_by_project(mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn({'project_id': 'fake'})
         self.mox.ReplayAll()
-        
+
         rval = quota.get_project_quotas(self.context, 'fake')
         self.assertEqual(len(rval), 9)
         self.assertEqual(rval['instances'], None)
