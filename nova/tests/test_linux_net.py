@@ -34,7 +34,6 @@ FLAGS = flags.FLAGS
 
 LOG = logging.getLogger('nova.tests.network')
 
-
 HOST = "testhost"
 
 instances = [{'id': 0,
@@ -53,7 +52,6 @@ instances = [{'id': 0,
               'created_at': utils.utcnow(),
               'updated_at': utils.utcnow()}]
 
-
 addresses = [{"address": "10.0.0.1"},
              {"address": "10.0.0.2"},
              {"address": "10.0.0.3"},
@@ -61,7 +59,6 @@ addresses = [{"address": "10.0.0.1"},
              {"address": "10.0.0.5"},
              {"address": "10.0.0.6"},
              {"address": "10.0.0.7"}]
-
 
 networks = [{'id': 0,
              'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -130,7 +127,6 @@ networks = [{'id': 0,
              'project_id': 'fake_project',
              'vpn_public_address': '192.168.1.2'}]
 
-
 fixed_ips = [{'id': 0,
               'network_id': 0,
               'address': '192.168.0.100',
@@ -195,7 +191,6 @@ fixed_ips = [{'id': 0,
               'instance': instances[2],
               'floating_ips': []}]
 
-
 vifs = [{'id': 0,
          'address': 'DE:AD:BE:EF:00:00',
          'uuid': '00000000-0000-0000-0000-0000000000000000',
@@ -252,6 +247,7 @@ class LinuxNetworkTestCase(test.TestCase):
         self.flags(use_single_default_gateway=True,
                    fake_network=False)
         self.cmd = None
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[0] == 'FLAGFILE=%s' % FLAGS.dhcpbridge_flagfile:
                 self.cmd = cmd
@@ -280,12 +276,18 @@ class LinuxNetworkTestCase(test.TestCase):
         self.mox.ReplayAll()
 
         self.driver.update_dhcp(None, "eth0", networks[0])
-        self.assertEqual(self.cmd[1], 'NETWORK_ID=%s' % str(networks[0]['id']))
-        self.assertEqual(self.cmd[8], '--listen-address=%s' % networks[0]['dhcp_server'])
-        self.assertEqual(self.cmd[10], '--dhcp-range=%s,static,120s' % networks[0]['dhcp_start'])
+        self.assertEqual(self.cmd[1],
+                         'NETWORK_ID=%s' % str(networks[0]['id']))
+        self.assertEqual(self.cmd[8],
+                         '--listen-address=%s' % networks[0]['dhcp_server'])
+        self.assertEqual(self.cmd[10],
+                         '--dhcp-range=%s,static,120s'
+                          % networks[0]['dhcp_start'])
 
         # use_single_default_gateway=True
-        self.assertEqual(self.cmd[15], '--dhcp-optsfile=%s' % linux_net._dhcp_file("eth0", 'opts'))
+        self.assertEqual(self.cmd[15],
+                         '--dhcp-optsfile=%s'
+                          % linux_net._dhcp_file("eth0", 'opts'))
 
     def test_update_dhcp_for_nw01(self):
         self.flags(use_single_default_gateway=True)
@@ -423,11 +425,10 @@ class LinuxNetworkTestCase(test.TestCase):
             if args[0] == 'ip' and args[1] == 'addr' and args[2] == 'show':
                 return existing, ""
             elif args[0] == 'route' and args[1] == '-n':
-                return ("192.168.0.0   0.0.0.0   255.255.255.0   U     1      0        0 eth0\n"
-                        "1.1.1.1       0.0.0.0   255.255.0.0     U     1000   0        0 eth0\n"
-                        "0.0.0.0       1.1.1.1   0.0.0.0         UG    0      0        0 eth0"), ""
-        
-        
+                return ("192.168.0.0 0.0.0.0 255.255.255.0 U 1 0 0 eth0\n"
+                        "1.1.1.1 0.0.0.0 255.255.0.0 U 1000 0 0 eth0\n"
+                        "0.0.0.0 1.1.1.1 0.0.0.0 UG 0 0 0 eth0"), ""
+
         self.stubs.Set(utils, 'execute', fake_execute)
         network = {'dhcp_server': '192.168.1.1',
                    'cidr': '192.168.1.0/24',
@@ -497,10 +498,10 @@ class LinuxNetworkTestCase(test.TestCase):
 
         def stub_utils_execute(*cmd, **kwargs):
 
-            str=("-s 0.0.0.0/0 -d 169.254.169.254/32 "
-                 "-p tcp -m tcp --dport 80 -j DNAT "
-                 "--to-destination %s:%s" 
-                 % (FLAGS.ec2_dmz_host, FLAGS.ec2_port))
+            str = ("-s 0.0.0.0/0 -d 169.254.169.254/32 "
+                   "-p tcp -m tcp --dport 80 -j DNAT "
+                   "--to-destination %s:%s"
+                   % (FLAGS.ec2_dmz_host, FLAGS.ec2_port))
 
             process_input = ''
             if cmd == ('iptables-restore',):
@@ -533,22 +534,22 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_init_host(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
-            str1='-s %s -j SNAT --to-source %s' \
-                 % (FLAGS.fixed_range, FLAGS.routing_source_ip)
-            str2='-s %s -d %s -j ACCEPT' \
-                 % (FLAGS.fixed_range, FLAGS.dmz_cidr)
-            str3='-s %(range)s -d %(range)s -j ACCEPT' \
-                 % {'range': FLAGS.fixed_range}
+            str1 = '-s %s -j SNAT --to-source %s' \
+                   % (FLAGS.fixed_range, FLAGS.routing_source_ip)
+            str2 = '-s %s -d %s -j ACCEPT' \
+                   % (FLAGS.fixed_range, FLAGS.dmz_cidr)
+            str3 = '-s %(range)s -d %(range)s -j ACCEPT' \
+                   % {'range': FLAGS.fixed_range}
 
             process_input = ''
             if cmd == ('iptables-restore',):
                 process_input = kwargs['process_input']
 
-            if (str1 in process_input and 
-                str2 in process_input and 
+            if (str1 in process_input and
+                str2 in process_input and
                 str3 in process_input):
                     self.stub_flag = True
 
@@ -563,7 +564,7 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_init_host_exception_command_failed(self):
         """ Ensure raise exception when command failed"""
         self.flags(fake_network=False)
-        
+
         def stub_utils_execute(*cmd, **kwargs):
             raise exception.ProcessExecutionError
 
@@ -576,8 +577,8 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_bind_floating_ip(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.floating_ip = None
+
         def stub_utils_execute(*cmd, **kwargs):
             self.floating_ip = cmd[3]
             return 'fake', 0
@@ -592,9 +593,9 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_bind_floating_ip_configuration_send_arp_true(self):
         """ Ensure call utils.execute when FLAGS.send_arp_for_ha is true"""
         self.flags(fake_network=False,
-                   send_arp_for_ha = True)
-
+                   send_arp_for_ha=True)
         self.floating_ip = None
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[0] == 'arping':
                 self.floating_ip = cmd[2]
@@ -625,8 +626,8 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_unbind_floating_ip(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.floating_ip = None
+
         def stub_utils_execute(*cmd, **kwargs):
             self.floating_ip = cmd[3]
             return 'fake', 0
@@ -656,8 +657,8 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_ensure_metadata_ip(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[3] == '169.254.169.254/32':
                 self.stub_flag = True
@@ -685,29 +686,29 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_ensure_vpn_forward(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.public_ip = '1.1.1.1'
         self.private_ip = '192.168.1.1'
         self.port = '5000'
         self.stub_cnt = 0
+
         def stub_utils_execute(*cmd, **kwargs):
-            str1='-d %s -p udp --dport 1194 -j ACCEPT' \
-                 % self.private_ip           
-            str2='-d %s -p udp --dport %s -j DNAT --to %s:1194' \
-                 % (self.public_ip, self.port, self.private_ip)
+            str1 = '-d %s -p udp --dport 1194 -j ACCEPT' \
+                   % self.private_ip
+            str2 = '-d %s -p udp --dport %s -j DNAT --to %s:1194' \
+                   % (self.public_ip, self.port, self.private_ip)
             process_input = ''
             if cmd == ('iptables-restore',):
                 process_input = kwargs['process_input']
             if str1 in process_input:
-                self.stub_cnt +=1
+                self.stub_cnt += 1
             elif str2 in process_input:
-                self.stub_cnt +=1
+                self.stub_cnt += 1
 
             return 'fake', 0
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
-        linux_net.ensure_vpn_forward(self.public_ip, 
+        linux_net.ensure_vpn_forward(self.public_ip,
                                      self.port, self.private_ip)
         self.assertEquals(2, self.stub_cnt)
 
@@ -729,31 +730,31 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_ensure_floating_forward(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.floating_ip = '1,1,1,1'
         self.fixed_ip = '10.10.10.10'
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             str1 = '-d %s -j DNAT --to %s' \
-                   % (self.floating_ip, self.fixed_ip)           
+                   % (self.floating_ip, self.fixed_ip)
             str2 = '-s %s -j SNAT --to %s' \
                    % (self.fixed_ip, self.floating_ip)
 
             process_input = ''
             if cmd == ('iptables-restore',):
                 process_input = kwargs['process_input']
-            if (str1 in process_input and 
+            if (str1 in process_input and
                 str2 in process_input):
                 self.stub_flag = True
             return 'fake', 0
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
-        linux_net.ensure_floating_forward(self.floating_ip, 
+        linux_net.ensure_floating_forward(self.floating_ip,
                                           self.fixed_ip)
         self.assert_(self.stub_flag)
 
-        linux_net.remove_floating_forward(self.floating_ip, 
+        linux_net.remove_floating_forward(self.floating_ip,
                                           self.fixed_ip)
 
     @attr(kind='small')
@@ -774,20 +775,20 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_remove_floating_forward(self):
         """ Ensure call utils.execute"""
         self.flags(fake_network=False)
-
         self.floating_ip = '1,1,1,1'
         self.fixed_ip = '10.10.10.10'
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             str1 = '-d %s -j DNAT --to %s' \
-                   % (self.floating_ip, self.fixed_ip)           
+                   % (self.floating_ip, self.fixed_ip)
             str2 = '-s %s -j SNAT --to %s' \
                    % (self.fixed_ip, self.floating_ip)
 
             process_input = ''
             if cmd == ('iptables-restore',):
                 process_input = kwargs['process_input']
-            if (str1 in process_input and 
+            if (str1 in process_input and
                 str2 in process_input):
                 self.stub_flag = True
 
@@ -795,12 +796,12 @@ class LinuxNetworkTestCase(test.TestCase):
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
-        linux_net.ensure_floating_forward(self.floating_ip, 
+        linux_net.ensure_floating_forward(self.floating_ip,
                                           self.fixed_ip)
         self.assert_(self.stub_flag)
 
         self.stub_flag = False
-        linux_net.remove_floating_forward(self.floating_ip, 
+        linux_net.remove_floating_forward(self.floating_ip,
                                           self.fixed_ip)
         self.assertFalse(self.stub_flag)
 
@@ -821,7 +822,9 @@ class LinuxNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_get_dhcp_leases(self):
         """ Ensure return network's hosts config"""
-        def stub_db_network_get_associated_fixed_ips(context, network_id):
+
+        def stub_db_network_get_associated_fixed_ips(
+                                            context, network_id):
             return fixed_ips
 
         self.stubs.Set(db, 'network_get_associated_fixed_ips',
@@ -834,7 +837,9 @@ class LinuxNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_get_dhcp_leases_database(self):
         """ Ensure return network's hosts config only host = FLAGS.host"""
-        def stub_db_network_get_associated_fixed_ips(context, network_id):
+
+        def stub_db_network_get_associated_fixed_ips(
+                                            context, network_id):
             return fixed_ips
 
         self.stubs.Set(db, 'network_get_associated_fixed_ips',
@@ -847,7 +852,9 @@ class LinuxNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_get_dhcp_hosts_database(self):
         """ Ensure return network's hosts config only host = FLAGS.host"""
-        def stub_db_network_get_associated_fixed_ips(context, network_id):
+
+        def stub_db_network_get_associated_fixed_ips(
+                                            context, network_id):
             return fixed_ips
 
         self.stubs.Set(db, 'network_get_associated_fixed_ips',
@@ -863,11 +870,12 @@ class LinuxNetworkTestCase(test.TestCase):
         self.dev = None
         self.address = None
         self.mac_address = None
+
         def stub_utils_execute(*cmd, **kwargs):
             self.dev = cmd[1]
             self.address = cmd[2]
             self.mac_address = cmd[3]
-            return 'fake', 0 
+            return 'fake', 0
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
@@ -875,12 +883,13 @@ class LinuxNetworkTestCase(test.TestCase):
         address = '1.1.1.1'
         mac_address = '00-00-00-00-00-00-00-E0'
         linux_net.release_dhcp(dev, address, mac_address)
-        self.assertEquals((dev, address, mac_address), 
+        self.assertEquals((dev, address, mac_address),
                           (self.dev, self.address, self.mac_address))
 
     @attr(kind='small')
     def test_release_dhcpexception_command_failed(self):
         """ Ensure raise exception when command failed"""
+
         def stub_utils_execute(*cmd, **kwargs):
             raise exception.ProcessExecutionError
 
@@ -889,8 +898,8 @@ class LinuxNetworkTestCase(test.TestCase):
         dev = 'eth0'
         address = '1.1.1.1'
         mac_address = '00-00-00-00-00-00-00-E0'
-        self.assertRaises(exception.ProcessExecutionError, 
-                          linux_net.release_dhcp, dev, 
+        self.assertRaises(exception.ProcessExecutionError,
+                          linux_net.release_dhcp, dev,
                           address, mac_address)
 
     @attr(kind='small')
@@ -898,13 +907,13 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure exec radvd command"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if 'eth0' in cmd[2]:
                 self.stub_flag = True
 
-            return 'fake', 0 
+            return 'fake', 0
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
@@ -925,8 +934,8 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure exec radvd command when radvd is already running"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_cnt = 0
+
         def stub_utils_execute(*cmd, **kwargs):
             if 'cat' == cmd[0] and '123' in cmd[1]:
                 self.stub_cnt += 1
@@ -963,8 +972,8 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure exec radvd command when failed to kill the pid"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_cnt = 0
+
         def stub_utils_execute(*cmd, **kwargs):
             if 'cat' == cmd[0] and '123' in cmd[1]:
                 self.stub_cnt += 1
@@ -1000,8 +1009,8 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure exec radvd command when pid is stale"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_cnt = 0
+
         def stub_utils_execute(*cmd, **kwargs):
             if 'cat' == cmd[0] and '123' in cmd[1]:
                 self.stub_cnt += 1
@@ -1036,11 +1045,11 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure raise exception when radvd command failed"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if 'radvd' == cmd[0] and 'eth0' in cmd[2]:
-                raise exception.ProcessExecutionError 
+                raise exception.ProcessExecutionError
 
             return 'fake', 0
 
@@ -1051,9 +1060,8 @@ class LinuxNetworkTestCase(test.TestCase):
         self.assertFalse(os.path.exists(FLAGS.networks_path))
 
         c = context.get_admin_context()
-        self.assertRaises(exception.ProcessExecutionError, 
+        self.assertRaises(exception.ProcessExecutionError,
                           linux_net.update_ra, c, 'eth0', networks[0])
-
 
         self.assert_(os.path.exists(linux_net._ra_file('eth0', 'conf')))
         shutil.rmtree(FLAGS.networks_path)
@@ -1063,8 +1071,8 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure stops the dnsmasq instance for a given network"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd == ('kill', '-TERM', 123):
                 self.stub_flag = True
@@ -1092,11 +1100,11 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure not exec command when pid not exists"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_flag = True
+
         def stub_utils_execute(*cmd, **kwargs):
             self.stub_flag = False
-            return 'fake', 0 
+            return 'fake', 0
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
@@ -1106,7 +1114,7 @@ class LinuxNetworkTestCase(test.TestCase):
 
         linux_net._stop_dnsmasq('eth0')
         self.assert_(self.stub_flag)
-    
+
         self.assertFalse(os.path.exists(linux_net._ra_file('eth0', 'pid')))
         shutil.rmtree(FLAGS.networks_path)
 
@@ -1115,8 +1123,8 @@ class LinuxNetworkTestCase(test.TestCase):
         """ Ensure pass when command failed"""
         self.flags(fake_network=False,
                    networks_path='/tmp/test_linux_net')
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             raise exception.ProcessExecutionError
 
@@ -1125,7 +1133,7 @@ class LinuxNetworkTestCase(test.TestCase):
                 self.stub_flag = True
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
-        self.stubs.Set(logging.getLogger("nova.linux_net"), 
+        self.stubs.Set(logging.getLogger("nova.linux_net"),
                        'debug', stub_debug)
 
         # pre-condition
@@ -1147,14 +1155,14 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_initialize_gateway_device_parameter_is_none(self):
         """ Ensure do nothing when parameter is none"""
         self.flags(fake_network=False)
-        
         self.stub_flag = True
+
         def stub_utils_execute(*cmd, **kwargs):
             self.stub_flag = False
             return 'fake', 0
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
- 
+
         linux_net.initialize_gateway_device('eth0', None)
         self.assert_(self.stub_flag)
 
@@ -1177,22 +1185,22 @@ class LinuxNetworkTestCase(test.TestCase):
              'brd', '192.168.1.255', 'dev', 'eth0'),
             ('arping', '-U', '192.168.1.1', '-A', '-I', 'eth0', '-c', 1),
         ]
-    
+
         executes = []
 
         def stub_utils_execute(*args, **kwargs):
             if args[0] != 'route':
                 executes.append(args)
 
-            if (args[0] == 'ip' and 
-                args[1] == 'addr' and 
+            if (args[0] == 'ip' and
+                args[1] == 'addr' and
                 args[2] == 'show'):
                 return existing, ""
 
             elif args[0] == 'route' and args[1] == '-n':
-                return ("192.168.0.0   0.0.0.0   255.255.255.0   U     1      0        0 eth0\n"
-                        "1.1.1.1       0.0.0.0   255.255.0.0     U     1000   0        0 eth0\n"
-                        "0.0.0.0       1.1.1.1   0.0.0.0         UG    0      0        0 eth0"), ""
+                return ("192.168.0.0 0.0.0.0 255.255.255.0 U 1 0 0 eth0\n"
+                        "1.1.1.1 0.0.0.0 255.255.0.0 U 1000 0 0 eth0\n"
+                        "0.0.0.0 1.1.1.1 0.0.0.0 UG 0 0 0 eth0"), ""
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
@@ -1217,7 +1225,7 @@ class LinuxNetworkTestCase(test.TestCase):
                    'cidr': '192.168.1.0/24',
                    'broadcast': '192.168.1.255',
                    'cidr_v6': '2001:db8::/64'}
-        self.assertRaises(exception.ProcessExecutionError, 
+        self.assertRaises(exception.ProcessExecutionError,
                           linux_net.initialize_gateway_device,
                           'eth0', network)
 
@@ -1271,7 +1279,7 @@ class LinuxNetworkTestCase(test.TestCase):
             return 'fake', ''
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
-        
+
         self.mox.StubOutWithMock(db, 'network_get_associated_fixed_ips')
         self.mox.StubOutWithMock(db, 'virtual_interface_get_by_instance')
 
@@ -1282,39 +1290,39 @@ class LinuxNetworkTestCase(test.TestCase):
         self.mox.ReplayAll()
         self.driver.update_dhcp(None, "eth0", networks[0])
 
-        self.assertEqual(self.cmd[1], 
+        self.assertEqual(self.cmd[1],
                          'NETWORK_ID=%s' % str(networks[0]['id']))
-        self.assertEqual(self.cmd[8], 
-                         '--listen-address=%s' 
+        self.assertEqual(self.cmd[8],
+                         '--listen-address=%s'
                          % networks[0]['dhcp_server'])
-        self.assertEqual(self.cmd[10], 
-                         '--dhcp-range=%s,static,120s' 
+        self.assertEqual(self.cmd[10],
+                         '--dhcp-range=%s,static,120s'
                          % networks[0]['dhcp_start'])
 
         # dns_server not none
         self.assertEqual(self.cmd[15], '-h')
         self.assertEqual(self.cmd[16], '-R')
-        self.assertEqual(self.cmd[17], 
+        self.assertEqual(self.cmd[17],
                          '--server=%s' % FLAGS.dns_server)
 
     @attr(kind='small')
     def test_update_dhcp_configuration_pid_kill(self):
         """ Ensure kill pid when pid is not none"""
         self.flags(fake_network=False)
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[0] == 'cat':
                 conffile = linux_net._dhcp_file("eth0", 'conf')
                 return conffile, ''
             elif cmd[0] == 'kill':
                 self.stub_flag = True
- 
+
             return 'fake', ''
- 
+
         def stub_dnsmasq_pid_for(dev):
             return 123
-    
+
         self.stubs.Set(utils, 'execute', stub_utils_execute)
         self.stubs.Set(linux_net, '_dnsmasq_pid_for', stub_dnsmasq_pid_for)
 
@@ -1334,21 +1342,22 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_update_dhcp_configuration_pid_is_stale(self):
         """ Ensure """
         self.flags(fake_network=False)
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             return 'fake', ''
- 
+
         def stub_dnsmasq_pid_for(dev):
             return 123
-    
+
         def stub_debug(msg, *args, **kwargs):
             if msg == 'Pid %d is stale, relaunching dnsmasq':
                 self.stub_flag = True
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
         self.stubs.Set(linux_net, '_dnsmasq_pid_for', stub_dnsmasq_pid_for)
-        self.stubs.Set(logging.getLogger("nova.linux_net"), 'debug', stub_debug)
+        self.stubs.Set(logging.getLogger("nova.linux_net"),
+                       'debug', stub_debug)
 
         self.mox.StubOutWithMock(db, 'network_get_associated_fixed_ips')
         self.mox.StubOutWithMock(db, 'virtual_interface_get_by_instance')
@@ -1366,27 +1375,28 @@ class LinuxNetworkTestCase(test.TestCase):
     def test_update_dhcp_exception_failed_to_kill_pid(self):
         """ Ensure """
         self.flags(fake_network=False)
-
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[0] == 'cat':
                 conffile = linux_net._dhcp_file("eth0", 'conf')
                 return conffile, ''
             elif cmd[0] == 'kill':
                 raise exception.ProcessExecutionError
-            
+
             return 'fake', ''
- 
+
         def stub_dnsmasq_pid_for(dev):
             return 123
-    
+
         def stub_debug(msg, *args, **kwargs):
             if msg == 'Hupping dnsmasq threw %s':
                 self.stub_flag = True
 
         self.stubs.Set(utils, 'execute', stub_utils_execute)
         self.stubs.Set(linux_net, '_dnsmasq_pid_for', stub_dnsmasq_pid_for)
-        self.stubs.Set(logging.getLogger("nova.linux_net"), 'debug', stub_debug)
+        self.stubs.Set(logging.getLogger("nova.linux_net"),
+                       'debug', stub_debug)
 
         self.mox.StubOutWithMock(db, 'network_get_associated_fixed_ips')
         self.mox.StubOutWithMock(db, 'virtual_interface_get_by_instance')
@@ -1400,6 +1410,7 @@ class LinuxNetworkTestCase(test.TestCase):
         self.driver.update_dhcp(None, "eth0", networks[0])
         self.assert_(self.stub_flag)
 
+
 class IptablesRuleTestCase(test.TestCase):
 
     @attr(kind='small')
@@ -1407,32 +1418,33 @@ class IptablesRuleTestCase(test.TestCase):
         """ Ensure eq"""
         chain = 'nova-filter-top'
         rule = '-j nova-filter-top'
-        wrap=False
-        top=True
+        wrap = False
+        top = True
 
         cls1 = linux_net.IptablesRule(chain, rule, wrap, top)
         cls2 = linux_net.IptablesRule(chain, rule, wrap, top)
 
-        self.assertEquals(cls1,cls2)
+        self.assertEquals(cls1, cls2)
 
     @attr(kind='small')
     def test_ne(self):
         """ Ensure ne"""
         chain = 'nova-filter-top'
         rule = '-j nova-filter-top'
-        wrap=False
-        top=True
+        wrap = False
+        top = True
 
         cls1 = linux_net.IptablesRule(chain, rule, wrap, top)
 
         chain = 'local'
         rule = '-j $local'
-        wrap=False
-        top=False
+        wrap = False
+        top = False
 
         cls2 = linux_net.IptablesRule(chain, rule, wrap, top)
 
-        self.assertNotEquals(cls1,cls2)
+        self.assertNotEquals(cls1, cls2)
+
 
 class IptablesTableTestCase(test.TestCase):
 
@@ -1464,7 +1476,7 @@ class IptablesTableTestCase(test.TestCase):
 
         self.assert_(chain not in iptables.ipv4['filter'].chains)
         self.assert_(chain in iptables.ipv4['filter'].unwrapped_chains)
-        iptables.ipv4['filter'].remove_chain(chain,wrap=False)
+        iptables.ipv4['filter'].remove_chain(chain, wrap=False)
         self.assert_(chain not in iptables.ipv4['filter'].chains)
         self.assert_(chain not in iptables.ipv4['filter'].unwrapped_chains)
 
@@ -1477,14 +1489,18 @@ class IptablesTableTestCase(test.TestCase):
         iptables.ipv4['filter'].add_chain(add_chain)
 
         self.assert_(add_chain in iptables.ipv4['filter'].chains)
-        self.assert_(add_chain not in iptables.ipv4['filter'].unwrapped_chains)
+        self.assert_(add_chain not in \
+                     iptables.ipv4['filter'].unwrapped_chains)
         self.assert_(del_chain not in iptables.ipv4['filter'].chains)
-        self.assert_(del_chain not in iptables.ipv4['filter'].unwrapped_chains)
+        self.assert_(del_chain not in \
+                     iptables.ipv4['filter'].unwrapped_chains)
         iptables.ipv4['filter'].remove_chain(del_chain)
         self.assert_(add_chain in iptables.ipv4['filter'].chains)
-        self.assert_(add_chain not in iptables.ipv4['filter'].unwrapped_chains)
+        self.assert_(add_chain not in \
+                     iptables.ipv4['filter'].unwrapped_chains)
         self.assert_(del_chain not in iptables.ipv4['filter'].chains)
-        self.assert_(del_chain not in iptables.ipv4['filter'].unwrapped_chains)
+        self.assert_(del_chain not in \
+                     iptables.ipv4['filter'].unwrapped_chains)
 
         iptables.ipv4['filter'].remove_chain(add_chain)
 
@@ -1494,7 +1510,8 @@ class IptablesTableTestCase(test.TestCase):
         chain = 'sg-fallback'
         rule = '-j DROP'
         iptables = linux_net.iptables_manager
-        self.assertRaises(ValueError, iptables.ipv4['filter'].add_rule, chain, rule)
+        self.assertRaises(ValueError,
+                          iptables.ipv4['filter'].add_rule, chain, rule)
 
     @attr(kind='small')
     def test_remove_rule(self):
@@ -1509,7 +1526,7 @@ class IptablesTableTestCase(test.TestCase):
         iptables.ipv4['filter'].remove_rule(chain, rule)
         cnt_after = len(iptables.ipv4['filter'].rules)
 
-        self.assertEqual(cnt_before-1, cnt_after)
+        self.assertEqual(cnt_before - 1, cnt_after)
 
         iptables.ipv4['filter'].remove_chain(chain)
 
@@ -1523,7 +1540,7 @@ class IptablesTableTestCase(test.TestCase):
         iptables.ipv4['filter'].add_chain(add_chain)
         iptables.ipv4['filter'].add_rule(add_chain, rule)
 
-        cnt_before = len(iptables.ipv4['filter'].rules)        
+        cnt_before = len(iptables.ipv4['filter'].rules)
         iptables.ipv4['filter'].remove_rule(del_chain, rule)
         cnt_after = len(iptables.ipv4['filter'].rules)
 
@@ -1546,7 +1563,7 @@ class IptablesTableTestCase(test.TestCase):
         iptables.ipv4['filter'].empty_chain(chain)
         cnt_after = len(iptables.ipv4['filter'].rules)
 
-        self.assertEqual(cnt_before-3, cnt_after)
+        self.assertEqual(cnt_before - 3, cnt_after)
 
         iptables.ipv4['filter'].remove_chain(chain)
 
@@ -1569,6 +1586,7 @@ class IptablesTableTestCase(test.TestCase):
         iptables.ipv4['filter'].empty_chain(chain)
         iptables.ipv4['filter'].remove_chain(chain)
 
+
 class IptablesManagerTestCase(test.TestCase):
 
     def setUp(self):
@@ -1585,10 +1603,10 @@ class IptablesManagerTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_apply_configuration_use_ipv6_false(self):
-        self.flags(fake_network=False)
-
         """ Ensure not using ipv6"""
+        self.flags(fake_network=False)
         self.stub_flag = False
+
         def stub_utils_execute(*cmd, **kwargs):
             if cmd[0] == 'ip6tables-save':
                 self.stub_flag = True
@@ -1600,7 +1618,7 @@ class IptablesManagerTestCase(test.TestCase):
         iptables.apply()
         self.assert_(self.stub_flag)
 
-        self.flags(use_ipv6 = False)
+        self.flags(use_ipv6=False)
         self.stub_flag = False
 
         iptables.apply()
@@ -1617,8 +1635,9 @@ class IptablesManagerTestCase(test.TestCase):
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
         iptables = linux_net.iptables_manager
-        self.assertRaises(exception.ProcessExecutionError, 
+        self.assertRaises(exception.ProcessExecutionError,
                           iptables.apply)
+
 
 class LinuxNetInterfaceDriverTestcase(test.TestCase):
 
@@ -1626,9 +1645,9 @@ class LinuxNetInterfaceDriverTestcase(test.TestCase):
         super(LinuxNetInterfaceDriverTestcase, self).setUp()
         network_driver = FLAGS.network_driver
         self.driver = utils.import_object(network_driver)
-        self.driver.db = db        
-        linux_net.interface_driver = \
-            utils.import_object('nova.network.linux_net.LinuxNetInterfaceDriver')
+        self.driver.db = db
+        test_driver = 'nova.network.linux_net.LinuxNetInterfaceDriver'
+        linux_net.interface_driver = utils.import_object(test_driver)
 
     def tearDown(self):
         linux_net.interface_driver = \
@@ -1638,24 +1657,25 @@ class LinuxNetInterfaceDriverTestcase(test.TestCase):
     @attr(kind='small')
     def test_plug(self):
         """ Ensure raise exception"""
-        self.assertRaises(NotImplementedError, 
-                          linux_net.plug, 
-                          networks[0], 
+        self.assertRaises(NotImplementedError,
+                          linux_net.plug,
+                          networks[0],
                           '00-00-00-00-00-00-00-E0')
 
     @attr(kind='small')
     def test_unplug(self):
         """ Ensure raise exception"""
-        self.assertRaises(NotImplementedError, 
-                          linux_net.unplug, 
+        self.assertRaises(NotImplementedError,
+                          linux_net.unplug,
                           networks[0])
 
     @attr(kind='small')
     def test_get_dev(self):
         """ Ensure raise exception"""
-        self.assertRaises(NotImplementedError, 
-                          linux_net.get_dev, 
+        self.assertRaises(NotImplementedError,
+                          linux_net.get_dev,
                           networks[0])
+
 
 class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
 
@@ -1663,9 +1683,9 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
         super(LinuxBridgeInterfaceDriverTestcase, self).setUp()
         network_driver = FLAGS.network_driver
         self.driver = utils.import_object(network_driver)
-        self.driver.db = db        
-        linux_net.interface_driver = \
-            utils.import_object('nova.network.linux_net.LinuxBridgeInterfaceDriver')
+        self.driver.db = db
+        test_driver = 'nova.network.linux_net.LinuxBridgeInterfaceDriver'
+        linux_net.interface_driver = utils.import_object(test_driver)
 
     def tearDown(self):
         linux_net.interface_driver = \
@@ -1688,8 +1708,8 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
     def test_plug_configuration_all_command_exec(self):
         """ Ensure exec all command(=15)"""
         self.flags(fake_network=False)
-
         self.stub_cnt = 0
+
         def stub_device_exists(device):
             return False
 
@@ -1698,7 +1718,8 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
             if cmd == ('route', '-n'):
                 return '0.0.0.0 1.1.1.1 vlan100', 0
 
-            elif cmd == ('ip', 'addr', 'show', 'dev', 'vlan100', 'scope', 'global'):
+            elif cmd == ('ip', 'addr', 'show', 'dev',
+                         'vlan100', 'scope', 'global'):
                 return 'inet fake1 fake2 fake3', 0
 
             return 'fake', 0
@@ -1714,8 +1735,8 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
     def test_plug_parameter_mac_address_none(self):
         """ Ensure """
         self.flags(fake_network=False)
-
         self.stub_flag = False
+
         def stub_device_exists(device):
             return False
 
@@ -1747,7 +1768,8 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
             if cmd == ('route', '-n'):
                 return '0.0.0.0 1.1.1.1 vlan100', 0
 
-            elif cmd == ('ip', 'addr', 'show', 'dev', 'vlan100', 'scope', 'global'):
+            elif cmd == ('ip', 'addr', 'show', 'dev',
+                         'vlan100', 'scope', 'global'):
                 return 'inet fake1 fake2 fake3', 'Error!'
 
             return 'fake', 0
@@ -1755,8 +1777,8 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
         self.stubs.Set(linux_net, '_device_exists', stub_device_exists)
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
-        self.assertRaises(exception.Error, 
-                          linux_net.plug, 
+        self.assertRaises(exception.Error,
+                          linux_net.plug,
                           networks[2], '00-00-00-00-00-00-00-E0')
 
     @attr(kind='small')
@@ -1773,8 +1795,8 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
         self.stubs.Set(linux_net, '_device_exists', stub_device_exists)
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
-        self.assertRaises(exception.ProcessExecutionError, 
-                          linux_net.plug, 
+        self.assertRaises(exception.ProcessExecutionError,
+                          linux_net.plug,
                           networks[2], '00-00-00-00-00-00-00-E0')
 
     @attr(kind='small')
@@ -1788,7 +1810,7 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
         """ Ensure get device name"""
         rtn = linux_net.get_dev(networks[0])
         self.assertEquals(networks[0]['bridge'], rtn)
-        
+
     def test_ensure_bridge_parameter_interface_is_none(self):
         """ Ensure """
         self.flags(fake_network=False)
@@ -1811,15 +1833,16 @@ class LinuxBridgeInterfaceDriverTestcase(test.TestCase):
         linux_net.LinuxBridgeInterfaceDriver().ensure_bridge('fa0', None)
         self.assert_(self.stub_flag)
 
+
 class LinuxOVSInterfaceDriverTestcase(test.TestCase):
 
     def setUp(self):
         super(LinuxOVSInterfaceDriverTestcase, self).setUp()
         network_driver = FLAGS.network_driver
         self.driver = utils.import_object(network_driver)
-        self.driver.db = db        
-        linux_net.interface_driver = \
-            utils.import_object('nova.network.linux_net.LinuxOVSInterfaceDriver')
+        self.driver.db = db
+        test_driver = 'nova.network.linux_net.LinuxOVSInterfaceDriver'
+        linux_net.interface_driver = utils.import_object(test_driver)
 
     def tearDown(self):
         linux_net.interface_driver = \
@@ -1836,8 +1859,8 @@ class LinuxOVSInterfaceDriverTestcase(test.TestCase):
     def test_plug_configuration_device_not_exists(self):
         """ Ensure exec command when device not exists"""
         self.flags(fake_network=False)
-
         self.stub_cnt = 0
+
         def stub_device_exists(device):
             return False
 
@@ -1866,8 +1889,8 @@ class LinuxOVSInterfaceDriverTestcase(test.TestCase):
         self.stubs.Set(linux_net, '_device_exists', stub_device_exists)
         self.stubs.Set(utils, 'execute', stub_utils_execute)
 
-        self.assertRaises(exception.ProcessExecutionError, 
-                          linux_net.plug, 
+        self.assertRaises(exception.ProcessExecutionError,
+                          linux_net.plug,
                           networks[0], '00-00-00-00-00-00-00-E0')
 
     @attr(kind='small')
