@@ -84,12 +84,13 @@ class SchedulerDependentManagerTestCase(test.TestCase):
     def test_periodic_tasks_configuration_not_last_capabilities(self):
         """Test for nova.manager.SchedulerDependentManager.periodic_tasks. """
         self._count = 0
+
         def stub_update_service_capabilities(context, service_name, host, capabilities):
             self._count += 1
-        
+
         self.stubs.Set(manager.api, "update_service_capabilities",
                                     stub_update_service_capabilities)
-        
+
         self.manager.periodic_tasks()
         self.assertEqual(0, self._count)
 
@@ -101,16 +102,17 @@ class SchedulerDependentManagerTestCase(test.TestCase):
         self._host = None
         self._capabilities = None
         self._count = 0
+
         def stub_update_service_capabilities(context, service_name, host, capabilities):
             self._context = context
             self._service_name = service_name
             self._host = host
             self._capabilities = capabilities
             self._count += 1
-        
+
         self.stubs.Set(manager.api, "update_service_capabilities",
                                     stub_update_service_capabilities)
-        
+
         capabilities = {'a': 1}
         self.manager.update_service_capabilities(capabilities)
         self.manager.periodic_tasks()
