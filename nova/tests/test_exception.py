@@ -103,18 +103,20 @@ class WrapExceptionTestCase(test.TestCase):
 
 
 class NovaExceptionTestCase(test.TestCase):
-    
+
     @attr(kind='small')
     def test_initialize_error(self):
         self.stubs.Set(NovaException, "message", "%s %id")
-        ex = NovaException(test="test")        
+        ex = NovaException(test="test")
         self.assertEqual("%s %id", str(ex))
-    
+
     @attr(kind='small')
     def test_ImagePaginationFailed(self):
         ex = exception.ImagePaginationFailed()
-        self.assertEqual("Failed to paginate through images from image service", str(ex))
-    
+        self.assertEqual("Failed to paginate through images "
+                         "from image service",
+                          str(ex))
+
     @attr(kind='small')
     def test_VirtualInterfaceCreateException(self):
         ex = exception.VirtualInterfaceCreateException()
@@ -123,7 +125,7 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_VirtualInterfaceMacAddressException(self):
         ex = exception.VirtualInterfaceMacAddressException()
-        self.assertEqual("5 attempts to create virtual interface" 
+        self.assertEqual("5 attempts to create virtual interface"
                 "with unique mac address failed", str(ex))
 
     @attr(kind='small')
@@ -224,45 +226,51 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_VolumeServiceUnavailable(self):
         ex = exception.VolumeServiceUnavailable()
-        self.assertEqual("Volume service is unavailable at this time.", str(ex))
+        self.assertEqual("Volume service is unavailable at this time.",
+                         str(ex))
 
     @attr(kind='small')
     def test_ComputeServiceUnavailable(self):
         ex = exception.ComputeServiceUnavailable()
-        self.assertEqual("Compute service is unavailable at this time.", str(ex))
+        self.assertEqual("Compute service is unavailable at this time.",
+                         str(ex))
 
     @attr(kind='small')
     def test_UnableToMigrateToSelf(self):
-        ex = exception.UnableToMigrateToSelf(instance_id="i-xxxxxxxx", host="test")
-        self.assertEqual("Unable to migrate instance (i-xxxxxxxx) " 
+        ex = exception.UnableToMigrateToSelf(instance_id="i-xxxxxxxx",
+                                             host="test")
+        self.assertEqual("Unable to migrate instance (i-xxxxxxxx) "
                 "to current host (test).", str(ex))
 
     @attr(kind='small')
     def test_SourceHostUnavailable(self):
         ex = exception.SourceHostUnavailable()
-        self.assertEqual("Original compute host is unavailable at this time.", str(ex))
+        self.assertEqual("Original compute host is unavailable at this time.",
+                         str(ex))
 
     @attr(kind='small')
     def test_InvalidHypervisorType(self):
         ex = exception.InvalidHypervisorType()
-        self.assertEqual("The supplied hypervisor type of is invalid.", str(ex))
+        self.assertEqual("The supplied hypervisor type of is invalid.",
+                         str(ex))
 
     @attr(kind='small')
     def test_DestinationHypervisorTooOld(self):
         ex = exception.DestinationHypervisorTooOld()
-        self.assertEqual("The instance requires a newer hypervisor version than " 
-                "has been provided.", str(ex))
+        self.assertEqual("The instance requires a newer hypervisor version "
+                         "than has been provided.", str(ex))
 
     @attr(kind='small')
     def test_DestinationDiskExists(self):
         ex = exception.DestinationDiskExists(path="/var")
-        self.assertEqual("The supplied disk path (/var) already exists, " 
+        self.assertEqual("The supplied disk path (/var) already exists, "
                 "it is expected not to exist.", str(ex))
 
     @attr(kind='small')
     def test_InvalidDevicePath(self):
         ex = exception.InvalidDevicePath(path="/var")
-        self.assertEqual("The supplied device path (/var) is invalid.", str(ex))
+        self.assertEqual("The supplied device path (/var) is invalid.",
+                         str(ex))
 
     @attr(kind='small')
     def test_InvalidCPUInfo(self):
@@ -271,17 +279,22 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_InvalidVLANTag(self):
-        ex = exception.InvalidVLANTag(bridge="br100", tag="100", pgroup="TEST")
-        self.assertEqual("VLAN tag is not appropriate for the port group " 
-                "br100. Expected VLAN tag is 100, " 
-                "but the one associated with the port group is TEST.", str(ex))
+        ex = exception.InvalidVLANTag(bridge="br100",
+                                      tag="100",
+                                      pgroup="TEST")
+        self.assertEqual("VLAN tag is not appropriate for the port group "
+                "br100. Expected VLAN tag is 100, "
+                "but the one associated with the port group is TEST.",
+                str(ex))
 
     @attr(kind='small')
     def test_InvalidVLANPortGroup(self):
-        ex = exception.InvalidVLANPortGroup(bridge="br100", expected="100", actual="10")
-        self.assertEqual("vSwitch which contains the port group br100 is " 
-                "not associated with the desired physical adapter. " 
-                "Expected vSwitch is 100, but the one associated " 
+        ex = exception.InvalidVLANPortGroup(bridge="br100",
+                                            expected="100",
+                                            actual="10")
+        self.assertEqual("vSwitch which contains the port group br100 is "
+                "not associated with the desired physical adapter. "
+                "Expected vSwitch is 100, but the one associated "
                 "is 10.", str(ex))
 
     @attr(kind='small')
@@ -331,8 +344,9 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_VolumeMetadataNotFound(self):
-        ex = exception.VolumeMetadataNotFound(volume_id="v", metadata_key="key")
-        self.assertEqual("Volume v has no metadata with " 
+        ex = exception.VolumeMetadataNotFound(volume_id="v",
+                                              metadata_key="key")
+        self.assertEqual("Volume v has no metadata with "
                 "key key.", str(ex))
 
     @attr(kind='small')
@@ -348,13 +362,14 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_VolumeTypeNotFoundByName(self):
         ex = exception.VolumeTypeNotFoundByName(volume_type_name="name")
-        self.assertEqual("Volume type with name name " 
+        self.assertEqual("Volume type with name name "
                 "could not be found.", str(ex))
 
     @attr(kind='small')
     def test_VolumeTypeExtraSpecsNotFound(self):
-        ex = exception.VolumeTypeExtraSpecsNotFound(volume_type_id="v", extra_specs_key="k")
-        self.assertEqual("Volume Type v has no extra specs with " 
+        ex = exception.VolumeTypeExtraSpecsNotFound(volume_type_id="v",
+                                                    extra_specs_key="k")
+        self.assertEqual("Volume Type v has no extra specs with "
                 "key k.", str(ex))
 
     @attr(kind='small')
@@ -391,8 +406,9 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_ListingImageRefsNotSupported(self):
         ex = exception.ListingImageRefsNotSupported()
-        self.assertEqual("Some images have been stored via hrefs." 
-        + " This version of the api does not support displaying image hrefs.", str(ex))
+        self.assertEqual("Some images have been stored via hrefs."
+        + " This version of the api does not support displaying image hrefs.",
+        str(ex))
 
     @attr(kind='small')
     def test_ImageNotFound(self):
@@ -416,8 +432,10 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_ProjectMembershipNotFound(self):
-        ex = exception.ProjectMembershipNotFound(user_id="test", project_id="test")
-        self.assertEqual("User test is not a member of project test.", str(ex))
+        ex = exception.ProjectMembershipNotFound(user_id="test",
+                                                 project_id="test")
+        self.assertEqual("User test is not a member of project test.",
+                         str(ex))
 
     @attr(kind='small')
     def test_UserRoleNotFound(self):
@@ -442,23 +460,28 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_NetworkNotFoundForBridge(self):
         ex = exception.NetworkNotFoundForBridge(bridge="default")
-        self.assertEqual("Network could not be found for bridge default", str(ex))
+        self.assertEqual("Network could not be found for bridge default",
+                         str(ex))
 
     @attr(kind='small')
     def test_NetworkNotFoundForUUID(self):
-        ex = exception.NetworkNotFoundForUUID(uuid="99999999-9999-9999-9999-999999999999")
-        self.assertEqual("Network could not be found for uuid 99999999-9999-9999-9999-999999999999", 
+        ex = exception.NetworkNotFoundForUUID(
+                            uuid="99999999-9999-9999-9999-999999999999")
+        self.assertEqual("Network could not be found for uuid "
+                         "99999999-9999-9999-9999-999999999999",
                          str(ex))
 
     @attr(kind='small')
     def test_NetworkNotFoundForCidr(self):
         ex = exception.NetworkNotFoundForCidr(cidr="0.0.0.0")
-        self.assertEqual("Network could not be found with cidr 0.0.0.0.", str(ex))
+        self.assertEqual("Network could not be found with cidr 0.0.0.0.",
+                         str(ex))
 
     @attr(kind='small')
     def test_NetworkNotFoundForInstance(self):
         ex = exception.NetworkNotFoundForInstance(instance_id="i")
-        self.assertEqual("Network could not be found for instance i.", str(ex))
+        self.assertEqual("Network could not be found for instance i.",
+                         str(ex))
 
     @attr(kind='small')
     def test_NoNetworksFound(self):
@@ -467,8 +490,9 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_NetworkNotFoundForProject(self):
-        ex = exception.NetworkNotFoundForProject(network_uuid="i",project_id="test")
-        self.assertEqual("Either Network uuid i is not present or " 
+        ex = exception.NetworkNotFoundForProject(network_uuid="i",
+                                                 project_id="test")
+        self.assertEqual("Either Network uuid i is not present or "
                 "is not assigned to the project test.", str(ex))
 
     @attr(kind='small')
@@ -479,7 +503,8 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_DatastoreNotFound(self):
         ex = exception.DatastoreNotFound()
-        self.assertEqual("Could not find the datastore reference(s) which the VM uses.", str(ex))
+        self.assertEqual("Could not find the datastore reference(s) "
+                         "which the VM uses.", str(ex))
 
     @attr(kind='small')
     def test_FixedIpNotFound(self):
@@ -499,18 +524,20 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_FixedIpNotFoundForNetworkHost(self):
         ex = exception.FixedIpNotFoundForNetworkHost(host="h", network_id="i")
-        self.assertEqual("Network host h has zero fixed ips " 
+        self.assertEqual("Network host h has zero fixed ips "
                 "in network i.", str(ex))
 
     @attr(kind='small')
     def test_FixedIpNotFoundForSpecificInstance(self):
-        ex = exception.FixedIpNotFoundForSpecificInstance(ip="h", instance_id="i")
+        ex = exception.FixedIpNotFoundForSpecificInstance(ip="h",
+                                                          instance_id="i")
         self.assertEqual("Instance i doesn't have fixed ip 'h'.", str(ex))
 
     @attr(kind='small')
     def test_FixedIpNotFoundForVirtualInterface(self):
         ex = exception.FixedIpNotFoundForVirtualInterface(vif_id="h")
-        self.assertEqual("Virtual interface h has zero associated fixed ips.", str(ex))
+        self.assertEqual("Virtual interface h has zero associated fixed ips.",
+                         str(ex))
 
     @attr(kind='small')
     def test_FixedIpNotFoundForHost(self):
@@ -519,8 +546,9 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_FixedIpNotFoundForNetwork(self):
-        ex = exception.FixedIpNotFoundForNetwork(address="h", network_uuid="i")
-        self.assertEqual("Fixed IP address (h) does not exist in " 
+        ex = exception.FixedIpNotFoundForNetwork(address="h",
+                                                 network_uuid="i")
+        self.assertEqual("Fixed IP address (h) does not exist in "
                 "network (i).", str(ex))
 
     @attr(kind='small')
@@ -635,8 +663,9 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_SecurityGroupNotFoundForProject(self):
-        ex = exception.SecurityGroupNotFoundForProject(security_group_id="s", project_id="p")
-        self.assertEqual("Security group s not found " 
+        ex = exception.SecurityGroupNotFoundForProject(security_group_id="s",
+                                                       project_id="p")
+        self.assertEqual("Security group s not found "
                 "for project p.", str(ex))
 
     @attr(kind='small')
@@ -646,14 +675,17 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_SecurityGroupExistsForInstance(self):
-        ex = exception.SecurityGroupExistsForInstance(security_group_id="s", instance_id="i")
-        self.assertEqual("Security group s is already associated" 
+        ex = exception.SecurityGroupExistsForInstance(security_group_id="s",
+                                                      instance_id="i")
+        self.assertEqual("Security group s is already associated"
                  " with the instance i", str(ex))
 
     @attr(kind='small')
     def test_SecurityGroupNotExistsForInstance(self):
-        ex = exception.SecurityGroupNotExistsForInstance(security_group_id="s", instance_id="i")
-        self.assertEqual("Security group s is not associated with" 
+        ex = exception.SecurityGroupNotExistsForInstance(
+                                            security_group_id="s",
+                                            instance_id="i")
+        self.assertEqual("Security group s is not associated with"
                  " the instance i", str(ex))
 
     @attr(kind='small')
@@ -664,7 +696,7 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_MigrationNotFoundByStatus(self):
         ex = exception.MigrationNotFoundByStatus(instance_id="i", status="s")
-        self.assertEqual("Migration not found for instance i " 
+        self.assertEqual("Migration not found for instance i "
                 "with status s.", str(ex))
 
     @attr(kind='small')
@@ -677,8 +709,8 @@ class NovaExceptionTestCase(test.TestCase):
         ex = exception.ConsolePoolNotFoundForHostType(console_type="type",
                                                       compute_host="h",
                                                       host="test")
-        self.assertEqual("Console pool of type type " 
-                "for compute host h " 
+        self.assertEqual("Console pool of type type "
+                "for compute host h "
                 "on proxy host test not found.", str(ex))
 
     @attr(kind='small')
@@ -689,12 +721,14 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_ConsoleNotFoundForInstance(self):
         ex = exception.ConsoleNotFoundForInstance(instance_id="i")
-        self.assertEqual("Console for instance i could not be found.", str(ex))
+        self.assertEqual("Console for instance i could not be found.",
+                         str(ex))
 
     @attr(kind='small')
     def test_ConsoleNotFoundInPoolForInstance(self):
-        ex = exception.ConsoleNotFoundInPoolForInstance(instance_id="i",pool_id="p")
-        self.assertEqual("Console for instance i " 
+        ex = exception.ConsoleNotFoundInPoolForInstance(instance_id="i",
+                                                        pool_id="p")
+        self.assertEqual("Console for instance i "
                 "in pool p could not be found.", str(ex))
 
     @attr(kind='small')
@@ -710,7 +744,7 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_InstanceTypeNotFoundByName(self):
         ex = exception.InstanceTypeNotFoundByName(instance_type_name="i")
-        self.assertEqual("Instance type with name i " 
+        self.assertEqual("Instance type with name i "
                 "could not be found.", str(ex))
 
     @attr(kind='small')
@@ -726,12 +760,13 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_SchedulerHostFilterNotFound(self):
         ex = exception.SchedulerHostFilterNotFound(filter_name="f")
-        self.assertEqual("Scheduler Host Filter f could not be found.", str(ex))
+        self.assertEqual("Scheduler Host Filter f could not be found.",
+                         str(ex))
 
     @attr(kind='small')
     def test_SchedulerCostFunctionNotFound(self):
         ex = exception.SchedulerCostFunctionNotFound(cost_fn_str="str")
-        self.assertEqual("Scheduler cost function str could" 
+        self.assertEqual("Scheduler cost function str could"
                 " not be found.", str(ex))
 
     @attr(kind='small')
@@ -741,14 +776,16 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_InstanceMetadataNotFound(self):
-        ex = exception.InstanceMetadataNotFound(instance_id="i", metadata_key="k")
-        self.assertEqual("Instance i has no metadata with " 
+        ex = exception.InstanceMetadataNotFound(instance_id="i",
+                                                metadata_key="k")
+        self.assertEqual("Instance i has no metadata with "
                 "key k.", str(ex))
 
     @attr(kind='small')
     def test_InstanceTypeExtraSpecsNotFound(self):
-        ex = exception.InstanceTypeExtraSpecsNotFound(instance_type_id="i", extra_specs_key="k")
-        self.assertEqual("Instance Type i has no extra specs with " 
+        ex = exception.InstanceTypeExtraSpecsNotFound(instance_type_id="i",
+                                                      extra_specs_key="k")
+        self.assertEqual("Instance Type i has no extra specs with "
                 "key k.", str(ex))
 
     @attr(kind='small')
@@ -784,7 +821,7 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_SwitchNotFoundForNetworkAdapter(self):
         ex = exception.SwitchNotFoundForNetworkAdapter(adapter="eth0")
-        self.assertEqual("Virtual switch associated with the " 
+        self.assertEqual("Virtual switch associated with the "
                 "network adapter eth0 not found.", str(ex))
 
     @attr(kind='small')
@@ -794,8 +831,9 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_ClassNotFound(self):
-        ex = exception.ClassNotFound(class_name="clazz")
-        self.assertEqual("Class clazz could not be found", str(ex))
+        ex = exception.ClassNotFound(class_name="clazz", exception="error")
+        self.assertEqual("Class clazz could not be found: error",
+                         str(ex))
 
     @attr(kind='small')
     def test_NotAllowed(self):
@@ -815,7 +853,8 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_RotationRequiredForBackup(self):
         ex = exception.RotationRequiredForBackup()
-        self.assertEqual("Rotation param is required for backup image_type", str(ex))
+        self.assertEqual("Rotation param is required for backup image_type",
+                         str(ex))
 
     @attr(kind='small')
     def test_Duplicate(self):
@@ -845,7 +884,7 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_LDAPMembershipExists(self):
         ex = exception.LDAPMembershipExists(uid="u", group_dn="dn")
-        self.assertEqual("User u is already a member of " 
+        self.assertEqual("User u is already a member of "
                 "the group dn", str(ex))
 
     @attr(kind='small')
@@ -886,39 +925,47 @@ class NovaExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_VSANovaAccessParamNotFound(self):
         ex = exception.VSANovaAccessParamNotFound()
-        self.assertEqual("Nova access parameters were not specified.", str(ex))
+        self.assertEqual("Nova access parameters were not specified.",
+                         str(ex))
 
     @attr(kind='small')
     def test_VirtualStorageArrayNotFound(self):
         ex = exception.VirtualStorageArrayNotFound(id=0)
-        self.assertEqual("Virtual Storage Array 0 could not be found.", str(ex))
+        self.assertEqual("Virtual Storage Array 0 could not be found.",
+                         str(ex))
 
     @attr(kind='small')
     def test_VirtualStorageArrayNotFoundByName(self):
         ex = exception.VirtualStorageArrayNotFoundByName(name="i")
-        self.assertEqual("Virtual Storage Array i could not be found.", str(ex))
+        self.assertEqual("Virtual Storage Array i could not be found.",
+                         str(ex))
 
     @attr(kind='small')
     def test_CannotResizeToSameSize(self):
         ex = exception.CannotResizeToSameSize()
-        self.assertEqual("When resizing, instances must change size!", str(ex))
+        self.assertEqual("When resizing, instances must change size!",
+                         str(ex))
 
     @attr(kind='small')
     def test_CannotResizeToSmallerSize(self):
         ex = exception.CannotResizeToSmallerSize()
-        self.assertEqual("Resizing to a smaller size is not supported.", str(ex))
+        self.assertEqual("Resizing to a smaller size is not supported.",
+                         str(ex))
 
     @attr(kind='small')
     def test_ImageTooLarge(self):
         ex = exception.ImageTooLarge()
-        self.assertEqual("Image is larger than instance type allows", str(ex))
+        self.assertEqual("Image is larger than instance type allows",
+                         str(ex))
 
     @attr(kind='small')
     def test_ZoneRequestError(self):
         ex = exception.ZoneRequestError()
-        self.assertEqual("1 or more Zones could not complete the request", str(ex))
+        self.assertEqual("1 or more Zones could not complete the request",
+                         str(ex))
         ex = exception.ZoneRequestError("test")
         self.assertEqual("test", str(ex))
+
 
 class ProcessExecutionErrorTestCase(test.TestCase):
 
@@ -952,11 +999,12 @@ class ProcessExecutionErrorTestCase(test.TestCase):
                     'Exit code: %(exit_code)s\nStdout: %(stdout)r\n'
                     'Stderr: %(stderr)r') % locals()
 
-        err = exception.ProcessExecutionError(exit_code=exit_code, 
+        err = exception.ProcessExecutionError(exit_code=exit_code,
                                               cmd=cmd,
                                               description=description)
         msg = IOError.__str__(err)
         self.assertEqual(message, msg)
+
 
 class DBErrorTestCase(test.TestCase):
     @attr(kind='small')
@@ -967,13 +1015,14 @@ class DBErrorTestCase(test.TestCase):
         err2 = exception.DBError(inner_exception=err)
         self.assertEqual(err, err2.inner_exception)
 
+
 class ExceptionTestCase(test.TestCase):
     @attr(kind='small')
     def test_wrap_db_error(self):
 
         def fake():
             return True
-        
+
         wrap = exception.wrap_db_error(fake)()
         self.assert_(wrap)
 
@@ -982,7 +1031,7 @@ class ExceptionTestCase(test.TestCase):
 
         from nova.virt import driver
         cls = driver.ComputeDriver()
-        
+
         try:
             err_flag = False
             wrap = exception.wrap_db_error(cls.init_host)('fake')
@@ -990,4 +1039,3 @@ class ExceptionTestCase(test.TestCase):
             err_flag = True
         finally:
             self.assert_(err_flag)
-
