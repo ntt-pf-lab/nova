@@ -113,7 +113,7 @@ def get_instance_type(id):
     try:
         ctxt = context.get_admin_context()
         return db.instance_type_get(ctxt, id)
-    except exception.DBError:
+    except (exception.DBError, exception.InstanceTypeNotFound):
         raise exception.ApiError(_("Unknown instance type: %s") % id)
 
 
@@ -124,7 +124,7 @@ def get_instance_type_by_name(name):
     try:
         ctxt = context.get_admin_context()
         return db.instance_type_get_by_name(ctxt, name)
-    except exception.DBError:
+    except (exception.DBError, exception.InstanceTypeNotFoundByName):
         raise exception.ApiError(_("Unknown instance type: %s") % name)
 
 
