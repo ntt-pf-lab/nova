@@ -25,6 +25,7 @@ from nova import rpc
 from nova import test
 from nova.network import api
 from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
 
 FLAGS = flags.FLAGS
 
@@ -119,6 +120,23 @@ class APITestCase(test.TestCase):
         self.assertEqual(floating_ips[0]['id'], ref['id'])
 
     @attr(kind='small')
+    def test_get_floating_ip_parameter_floating_ip_not_found(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        def fake_floating_ip_get(context, floating_ip_id):
+            return exception.FloatingIpNotFound(id=floating_ip_id)
+
+        self.stubs.Set(self.api.db, "floating_ip_get",
+                                    fake_floating_ip_get)
+
+        floating_ip_id = 99999
+        self.assertRaises(exception.ApiError,
+                          self.api.get_floating_ip,
+                          self.context, floating_ip_id)
+
+    @attr(kind='small')
     def test_get_floating_ip_by_ip(self):
         """Test for nova.network.api.API.get_floating_ip_by_ip. """
         def fake_floating_ip_get_by_address(context, address):
@@ -156,6 +174,23 @@ class APITestCase(test.TestCase):
         instance_id = 1
         ref = self.api.get_vifs_by_instance(self.context, instance_id)
         self.assertEqual(virtual_interfaces, ref)
+
+    @attr(kind='small')
+    def test_get_vifs_by_instance_parameter_instance_not_found(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        def fake_instance_get(context, instance_id):
+            return exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(self.api.db, "instance_get",
+                                    fake_instance_get)
+
+        instance_id = 99999
+        self.assertRaises(exception.ApiError,
+                          self.api.get_vifs_by_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_allocate_floating_ip(self):
@@ -584,9 +619,44 @@ class APITestCase(test.TestCase):
         self.assertEqual(network_info, ref)
 
     @attr(kind='small')
+    def test_allocate_for_instance_parameter_instance_is_none(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        instance = None
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        kwargs['project_id'] = 'fake'
+        kwargs['requested_networks'] = networks
+        self.assertRaises(exception.ApiError,
+                          self.api.allocate_for_instance,
+                          self.context, instance, **kwargs)
+
+    @attr(kind='small')
+    def test_allocate_for_instance_parameter_instance_not_found(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        def fake_instance_get(context, instance_id):
+            return exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(self.api.db, "instance_get",
+                                    fake_instance_get)
+
+        instance = {'id': 99999}
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        kwargs['project_id'] = 'fake'
+        kwargs['requested_networks'] = networks
+        self.assertRaises(exception.ApiError,
+                          self.api.allocate_for_instance,
+                          self.context, instance, **kwargs)
+
+    @attr(kind='small')
     def test_deallocate_for_instance(self):
         """Test for nova.network.api.API.deallocate_for_instance. """
-
         def cast(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('deallocate_for_instance', content['method'])
@@ -603,9 +673,42 @@ class APITestCase(test.TestCase):
         self.api.deallocate_for_instance(self.context, instance, **kwargs)
 
     @attr(kind='small')
+    def test_deallocate_for_instance_parameter_instance_is_none(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        instance = None
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        kwargs['fixed_ips'] = fixed_ips
+        self.assertRaises(exception.ApiError,
+                          self.api.deallocate_for_instance,
+                          self.context, instance, **kwargs)
+
+    @attr(kind='small')
+    def test_deallocate_for_instance_parameter_instance_not_found(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        def fake_instance_get(context, instance_id):
+            return exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(self.api.db, "instance_get",
+                                    fake_instance_get)
+
+        instance = {'id': 99999}
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        kwargs['fixed_ips'] = fixed_ips
+        self.assertRaises(exception.ApiError,
+                          self.api.deallocate_for_instance,
+                          self.context, instance, **kwargs)
+
+    @attr(kind='small')
     def test_add_fixed_ip_to_instance(self):
         """Test for nova.network.api.API.add_fixed_ip_to_instance. """
-
         def cast(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('add_fixed_ip_to_instance', content['method'])
@@ -625,7 +728,6 @@ class APITestCase(test.TestCase):
     @attr(kind='small')
     def test_remove_fixed_ip_from_instance(self):
         """Test for nova.network.api.API.remove_fixed_ip_from_instance. """
-
         def cast(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('remove_fixed_ip_from_instance',
@@ -642,9 +744,26 @@ class APITestCase(test.TestCase):
                             self.context, instance_id, address)
 
     @attr(kind='small')
+    def test_remove_fixed_ip_from_instance_parameter_instance_not_found(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        def fake_instance_get(context, instance_id):
+            return exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(self.api.db, "instance_get",
+                                    fake_instance_get)
+
+        instance_id = 99999
+        address = '10.0.0.1'
+        self.assertRaises(exception.ApiError,
+                          self.api.remove_fixed_ip_from_instance,
+                          self.context, instance_id, address)
+
+    @attr(kind='small')
     def test_add_network_to_project(self):
         """Test for nova.network.api.API.add_network_to_project. """
-
         def cast(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('add_network_to_project', content['method'])
@@ -677,9 +796,36 @@ class APITestCase(test.TestCase):
         self.assertEqual(network_info, ref)
 
     @attr(kind='small')
+    def test_get_instance_nw_info_parameter_instance_is_none(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        instance = None
+        self.assertRaises(exception.ApiError,
+                          self.api.get_instance_nw_info,
+                          self.context, instance)
+
+    @attr(kind='small')
+    def test_get_instance_nw_info_parameter_instance_not_found(self):
+        raise SkipTest("Parameter check is not implemented.")
+        """
+        ApiError is raised
+        """
+        def fake_instance_get(context, instance_id):
+            return exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(self.api.db, "instance_get",
+                                    fake_instance_get)
+
+        instance = {'id': 99999}
+        self.assertRaises(exception.ApiError,
+                          self.api.get_instance_nw_info,
+                          self.context, instance)
+
+    @attr(kind='small')
     def test_validate_networks(self):
         """Test for nova.network.api.API.validate_networks. """
-
         def call(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('validate_networks', content['method'])
