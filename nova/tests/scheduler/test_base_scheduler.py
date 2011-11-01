@@ -27,6 +27,7 @@ from nose.plugins.skip import SkipTest
 
 FLAGS = flags.FLAGS
 
+
 class FakeBaseScheduler(base_scheduler.BaseScheduler):
     # No need to stub anything at the moment
     pass
@@ -59,7 +60,35 @@ class BaseSchedulerTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_filter_hosts(self):
-        """Test for nova.scheduler.base_scheduler.BaseScheduler.filter_hosts. """
+        """
+        Test for nova.scheduler.base_scheduler.BaseScheduler.filter_hosts.
+        """
+        topic = 'compute'
+        request_spec = {}
+        request_spec['filter'] = 'AllHostsFilter'
+        instance_type = dict(name='tiny',
+                             memory_mb=50,
+                             vcpus=10,
+                             local_gb=500,
+                             flavorid=1,
+                             swap=500,
+                             rxtx_quota=30000,
+                             rxtx_cap=200,
+                             extra_specs={})
+        request_spec['instance_type'] = instance_type
+        hosts = 'testhost'
+        zm = FakeZoneManager()
+        self.basescheduler.set_zone_manager(zm)
+        ref = self.basescheduler.filter_hosts(topic, request_spec, hosts)
+        hostlist = [(host, services)
+                    for host, services in zm.service_states.iteritems()]
+        self.assertEqual(hostlist, ref)
+
+    @attr(kind='small')
+    def test_filter_hosts_parameter_filter_name_is_none(self):
+        """
+        SchedulerHostFilterNotFound is not raised when filter is None
+        """
         topic = 'compute'
         request_spec = {}
         instance_type = dict(name='tiny',
@@ -82,9 +111,12 @@ class BaseSchedulerTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_filter_hosts_parameter_instance_type_is_none(self):
-        """Test for nova.scheduler.base_scheduler.BaseScheduler.filter_hosts. """
+        """
+        hosts or [] is returned when instance_type is None
+        """
         topic = 'compute'
         request_spec = {}
+        request_spec['filter'] = 'AllHostsFilter'
         hosts = 'testhost'
         ref = self.basescheduler.filter_hosts(topic, request_spec, hosts)
         self.assertEqual(hosts, ref)
@@ -114,7 +146,9 @@ class BaseSchedulerTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_weigh_hosts_parameter_num_instances_is_zero(self):
-        """Test for nova.scheduler.base_scheduler.BaseScheduler.weigh_hosts. """
+        """
+        [] is returned when num_instances is zero
+        """
         topic = 'compute'
         request_spec = {}
         request_spec['num_instances'] = 0
@@ -122,19 +156,21 @@ class BaseSchedulerTestCase(test.TestCase):
         hosts = [(host, services['compute'])
                  for host, services in zm.service_states.items()
                  if 'compute' in services]
-        
+
         instlist = self.basescheduler.weigh_hosts(topic, request_spec, hosts)
         self.assertEqual(0, len(instlist))
 
     @attr(kind='small')
     def test_weigh_hosts_parameter_hosts_is_empty(self):
-        """Test for nova.scheduler.base_scheduler.BaseScheduler.weigh_hosts. """
+        """
+        Test for nova.scheduler.base_scheduler.BaseScheduler.weigh_hosts.
+        """
         raise SkipTest("FIXME This test case goes into an infinite roop.")
-        
+
         topic = 'compute'
         request_spec = {}
         request_spec['num_instances'] = 4
         hosts = []
-        
+
         instlist = self.basescheduler.weigh_hosts(topic, request_spec, hosts)
         self.assertEqual(None, instlist)
