@@ -39,8 +39,8 @@ FLAGS = flags.FLAGS
 def _setup_networking(instance_id, ip='1.2.3.4', flo_addr='1.2.1.2'):
     ctxt = context.get_admin_context()
     network_ref = db.project_get_networks(ctxt,
-                                           'fake',
-                                           associate=True)[0]
+                                          'fake',
+                                          associate=True)[0]
     vif = {'address': '56:12:12:12:12:12',
            'network_id': network_ref['id'],
            'instance_id': instance_id}
@@ -178,7 +178,7 @@ class DbApiTestCase(test.TestCase):
                                     'topic': 'compute'})
         # test and assert
         result = self.db.api.service_get_by_host_and_topic(
-                                    self.context, 'host2', 'compute')
+                                            self.context, 'host2', 'compute')
         self.assertTrue(result is None)
 
     @attr(kind='small')
@@ -261,7 +261,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.service_get_all_compute_by_host(
-                                        self.context, 'host1')
+                                            self.context, 'host1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -383,7 +383,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.service_get_by_args(
-                                self.context, 'host1', 'binary1')
+                                            self.context, 'host1', 'binary1')
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
         self.assertEqual('host1', result.host)
@@ -449,17 +449,18 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.service_create(self.context, {'id': 1})
-        self.db.api.compute_node_create(self.context, {'id': 1,
-                                                  'service_id': 1,
-                                                  'vcpus': 1,
-                                                  'memory_mb': 1,
-                                                  'local_gb': 1,
-                                                  'vcpus_used': 1,
-                                                  'memory_mb_used': 1,
-                                                  'local_gb_used': 1,
-                                                  'hypervisor_type': 'kvm',
-                                                  'hypervisor_version': 1,
-                                                  'cpu_info': 'cpu_info1'})
+        self.db.api.compute_node_create(self.context,
+                                        {'id': 1,
+                                         'service_id': 1,
+                                         'vcpus': 1,
+                                         'memory_mb': 1,
+                                         'local_gb': 1,
+                                         'vcpus_used': 1,
+                                         'memory_mb_used': 1,
+                                         'local_gb_used': 1,
+                                         'hypervisor_type': 'kvm',
+                                         'hypervisor_version': 1,
+                                         'cpu_info': 'cpu_info1'})
 
         # test and assert
         result = self.db.api.compute_node_get(self.context, 1)
@@ -490,17 +491,18 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.service_create(self.context, {'id': 1})
-        self.db.api.compute_node_create(self.context, {'id': 1,
-                                                  'service_id': 1,
-                                                  'vcpus': 1,
-                                                  'memory_mb': 1,
-                                                  'local_gb': 1,
-                                                  'vcpus_used': 1,
-                                                  'memory_mb_used': 1,
-                                                  'local_gb_used': 1,
-                                                  'hypervisor_type': 'kvm',
-                                                  'hypervisor_version': 1,
-                                                  'cpu_info': 'cpu_info1'})
+        self.db.api.compute_node_create(self.context,
+                                        {'id': 1,
+                                         'service_id': 1,
+                                         'vcpus': 1,
+                                         'memory_mb': 1,
+                                         'local_gb': 1,
+                                         'vcpus_used': 1,
+                                         'memory_mb_used': 1,
+                                         'local_gb_used': 1,
+                                         'hypervisor_type': 'kvm',
+                                         'hypervisor_version': 1,
+                                         'cpu_info': 'cpu_info1'})
 
         # test and assert
         result = self.db.api.compute_node_get(self.context, 1)
@@ -593,7 +595,7 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         certificate_list = self.db.api.certificate_get_all_by_project(
-                                                self.context, 'project1')
+                                            self.context, 'project1')
         self.assertEqual(0, len(certificate_list))
 
         # test and assert
@@ -603,7 +605,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
         certificate_list = self.db.api.certificate_get_all_by_project(
-                                                self.context, 'project1')
+                                            self.context, 'project1')
         self.assertEqual(1, len(certificate_list))
 
     @attr(kind='small')
@@ -626,7 +628,7 @@ class DbApiTestCase(test.TestCase):
         self.db.api.certificate_create(self.context,
                                        {'id': 1, 'project_id': 'project1'})
         certificate_list = db.api.certificate_get_all_by_project(
-                                        self.context, 'project1')
+                                            self.context, 'project1')
         self.assertEqual(1, len(certificate_list))
 
         # test and assert
@@ -634,7 +636,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is None)
 
         certificate_list = db.api.certificate_get_all_by_project(
-                                        self.context, 'project1')
+                                            self.context, 'project1')
         self.assertEqual(0, len(certificate_list))
 
     @attr(kind='small')
@@ -655,7 +657,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.certificate_get_all_by_project(
-                                        self.context, 'project1')
+                                            self.context, 'project1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -706,7 +708,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.certificate_get_all_by_user_and_project(
-                                        self.context, 'user1', 'project1')
+                                            self.context, 'user1', 'project1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -718,7 +720,7 @@ class DbApiTestCase(test.TestCase):
     def test_certificate_get_all_by_user_and_project_database_not_found(self):
         # test and assert
         result = self.db.api.certificate_get_all_by_user_and_project(
-                                        self.context, 'user1', 'project1')
+                                            self.context, 'user1', 'project1')
         self.assertTrue(result is not None)
         self.assertEqual([], result)
 
@@ -825,8 +827,8 @@ class DbApiTestCase(test.TestCase):
         floating_ip_count_by_project
         """
         # setup
-        self.db.api.floating_ip_create(
-                        self.context, {'id': 1, 'project_id': 'project1'})
+        self.db.api.floating_ip_create(self.context,
+                                       {'id': 1, 'project_id': 'project1'})
 
         # test and assert
         result = self.db.api.floating_ip_count_by_project(
@@ -892,9 +894,10 @@ class DbApiTestCase(test.TestCase):
         # setup
         self.db.api.fixed_ip_create(self.context, {'address': '10.1.1.1'})
         fixed_ip = self.db.fixed_ip_get_by_address(self.context, "10.1.1.1")
-        self.db.api.floating_ip_create(self.context, {'id': 1,
-                                                 'address': '1.0.0.0',
-                                                 'fixed_ip_id': fixed_ip.id})
+        self.db.api.floating_ip_create(self.context,
+                                       {'id': 1,
+                                        'address': '1.0.0.0',
+                                        'fixed_ip_id': fixed_ip.id})
 
         # test and assert
         result = self.db.api.floating_ip_disassociate(self.context, '1.0.0.0')
@@ -925,7 +928,8 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.floating_ip_fixed_ip_associate(
-                        self.context, '1.0.0.0', '10.1.1.1', 'localhost')
+                                            self.context,
+                                            '1.0.0.0', '10.1.1.1', 'localhost')
         self.assertTrue(result is None)
 
         floating_ip = db.api.floating_ip_get(self.context, 1)
@@ -991,12 +995,12 @@ class DbApiTestCase(test.TestCase):
         floating_ip_get_all_by_project
         """
         # setup
-        self.db.api.floating_ip_create(
-                    self.context, {'id': 1, 'project_id': 'project1'})
+        self.db.api.floating_ip_create(self.context,
+                                       {'id': 1, 'project_id': 'project1'})
 
         # test and assert
         result = self.db.api.floating_ip_get_all_by_project(
-                                    self.context, 'project1')
+                                            self.context, 'project1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -1020,7 +1024,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.floating_ip_get_by_address(
-                                        self.context, '1.0.0.0')
+                                            self.context, '1.0.0.0')
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
         self.assertEqual('1.0.0.0', result.address)
@@ -1167,7 +1171,8 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.migration_get_by_instance_and_status(
-                                    self.context, 'instance_uuid1', 'status1')
+                                            self.context,
+                                            'instance_uuid1', 'status1')
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
         self.assertEqual("instance_uuid1", result.instance_uuid)
@@ -1192,11 +1197,11 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.fixed_ip_associate(
-                                        self.context, '10.1.1.1', 1, 100)
+                                            self.context, '10.1.1.1', 1, 100)
         self.assertTrue(result is not None)
 
         fixed_ip = self.db.api.fixed_ip_get_by_address(
-                                        self.context, '10.1.1.1')
+                                            self.context, '10.1.1.1')
         self.assertTrue(result is not None)
         self.assertEqual('10.1.1.1', fixed_ip.address)
         self.assertEqual(1, fixed_ip.instance.id)
@@ -1277,7 +1282,7 @@ class DbApiTestCase(test.TestCase):
         self.db.api.fixed_ip_disassociate(self.context, '10.1.1.1')
 
         fixed_ip = self.db.api.fixed_ip_get_by_address(
-                                    self.context, '10.1.1.1')
+                                            self.context, '10.1.1.1')
         self.assertTrue(fixed_ip is not None)
         self.assertEqual('10.1.1.1', fixed_ip.address)
         self.assertEqual(None, fixed_ip.instance)
@@ -1503,8 +1508,9 @@ class DbApiTestCase(test.TestCase):
         virtual_interface_create
         """
         # test and assert
-        result = self.db.api.virtual_interface_create(
-                            self.context, {'id': 1, 'instance_id': 1})
+        result = self.db.api.virtual_interface_create(self.context,
+                                                      {'id': 1,
+                                                       'instance_id': 1})
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
 
@@ -1581,12 +1587,13 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.virtual_interface_create(self.context,
-                                             {'id': 1, 'instance_id': 1,
+                                             {'id': 1,
+                                              'instance_id': 1,
                                               'address': '10.1.1.1'})
 
         # test and assert
         result = self.db.api.virtual_interface_get_by_address(
-                                                self.context, '10.1.1.1')
+                                            self.context, '10.1.1.1')
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
         self.assertEqual('10.1.1.1', result.address)
@@ -1595,7 +1602,7 @@ class DbApiTestCase(test.TestCase):
     def test_virtual_interface_get_by_address_database_not_found(self):
         # test and assert
         result = self.db.api.virtual_interface_get_by_address(
-                                                self.context, '10.1.1.1')
+                                            self.context, '10.1.1.1')
         self.assertTrue(result is None)
 
     @attr(kind='small')
@@ -1604,8 +1611,10 @@ class DbApiTestCase(test.TestCase):
         virtual_interface_get_by_uuid
         """
         # setup
-        self.db.api.virtual_interface_create(
-                    self.context, {'id': 1, 'instance_id': 1, 'uuid': 'uuid1'})
+        self.db.api.virtual_interface_create(self.context,
+                                             {'id': 1,
+                                              'instance_id': 1,
+                                              'uuid': 'uuid1'})
 
         # test and assert
         result = self.db.api.virtual_interface_get_by_uuid(
@@ -1670,8 +1679,9 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
-        self.db.api.virtual_interface_create(
-                                    self.context, {'id': 1, 'instance_id': 1})
+        self.db.api.virtual_interface_create(self.context,
+                                             {'id': 1,
+                                              'instance_id': 1})
 
         # test and assert
         result = self.db.api.virtual_interface_get_by_instance(self.context, 1)
@@ -1697,8 +1707,10 @@ class DbApiTestCase(test.TestCase):
         virtual_interface_get_by_instance_and_network
         """
         # setup
-        self.db.api.virtual_interface_create(
-                    self.context, {'id': 1, 'instance_id': 1, 'network_id': 1})
+        self.db.api.virtual_interface_create(self.context,
+                                             {'id': 1,
+                                              'instance_id': 1,
+                                              'network_id': 1})
 
         # test and assert
         result = self.db.api.virtual_interface_get_by_instance_and_network(
@@ -1828,10 +1840,11 @@ class DbApiTestCase(test.TestCase):
         instance_data is sum of instance, sum of vcpus, sum of memory_mb
         """
         # setup
-        self.db.api.instance_create(self.context, {'id': 1,
-                                              'project_id': 'project1',
-                                              'vcpus': 2,
-                                              'memory_mb': 3})
+        self.db.api.instance_create(self.context,
+                                    {'id': 1,
+                                     'project_id': 'project1',
+                                     'vcpus': 2,
+                                     'memory_mb': 3})
 
         # test and assert
         result = self.db.api.instance_data_get_for_project(
@@ -1880,9 +1893,10 @@ class DbApiTestCase(test.TestCase):
         instance_stop
         """
         # setup
-        self.db.api.instance_create(self.context, {'id': 1,
-                                              'host': 'host1',
-                                              'task_state': 'task_state1'})
+        self.db.api.instance_create(self.context,
+                                    {'id': 1,
+                                     'host': 'host1',
+                                     'task_state': 'task_state1'})
 
         # test and assert
         result = self.db.api.instance_stop(self.context, 1)
@@ -1898,9 +1912,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_instance_stop_database_not_found(self):
         # setup
-        self.db.api.instance_create(self.context, {'id': 1,
-                                              'host': 'host1',
-                                              'task_state': 'task_state1'})
+        self.db.api.instance_create(self.context,
+                                    {'id': 1,
+                                     'host': 'host1',
+                                     'task_state': 'task_state1'})
 
         # test and assert
         self.db.api.instance_stop(self.context, 2)
@@ -1988,17 +2003,18 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.instance_create(
-                self.context, {'id': 1,
-                               'launched_at': datetime.datetime(2011, 1, 1),
-                               'terminated_at': datetime.datetime(2011, 1, 4),
-                               'project_id': 'project1'})
+                            self.context,
+                            {'id': 1,
+                             'launched_at': datetime.datetime(2011, 1, 1),
+                             'terminated_at': datetime.datetime(2011, 1, 4),
+                             'project_id': 'project1'})
 
         # test and assert
         result = self.db.api.instance_get_active_by_window(
-                                self.context,
-                                datetime.datetime(2011, 1, 2),
-                                datetime.datetime(2011, 1, 3),
-                                'project1')
+                                    self.context,
+                                    datetime.datetime(2011, 1, 2),
+                                    datetime.datetime(2011, 1, 3),
+                                    'project1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -2008,17 +2024,18 @@ class DbApiTestCase(test.TestCase):
     def test_instance_get_active_by_window_database_not_found(self):
         # setup
         self.db.api.instance_create(
-                self.context, {'id': 1,
-                               'launched_at': datetime.datetime(2010, 1, 1),
-                               'terminated_at': datetime.datetime(2010, 1, 4),
-                               'project_id': 'project1'})
+                            self.context,
+                            {'id': 1,
+                             'launched_at': datetime.datetime(2010, 1, 1),
+                             'terminated_at': datetime.datetime(2010, 1, 4),
+                             'project_id': 'project1'})
 
         # test and assert
         result = self.db.api.instance_get_active_by_window(
-                                self.context,
-                                datetime.datetime(2011, 1, 2),
-                                datetime.datetime(2011, 1, 3),
-                                'project1')
+                                    self.context,
+                                    datetime.datetime(2011, 1, 2),
+                                    datetime.datetime(2011, 1, 3),
+                                    'project1')
         self.assertTrue(result is not None)
         self.assertEqual([], result)
 
@@ -2029,17 +2046,18 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.instance_create(
-                self.context, {'id': 1,
-                               'launched_at': datetime.datetime(2011, 1, 1),
-                               'terminated_at': datetime.datetime(2011, 1, 4),
-                               'project_id': 'project1'})
+                            self.context,
+                            {'id': 1,
+                             'launched_at': datetime.datetime(2011, 1, 1),
+                             'terminated_at': datetime.datetime(2011, 1, 4),
+                             'project_id': 'project1'})
 
         # test and assert
         result = self.db.api.instance_get_active_by_window_joined(
-                                self.context,
-                                datetime.datetime(2011, 1, 2),
-                                datetime.datetime(2011, 1, 3),
-                                'project1')
+                                    self.context,
+                                    datetime.datetime(2011, 1, 2),
+                                    datetime.datetime(2011, 1, 3),
+                                    'project1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -2050,17 +2068,18 @@ class DbApiTestCase(test.TestCase):
         # mock
         # setup
         self.db.api.instance_create(
-                self.context, {'id': 1,
-                               'launched_at': datetime.datetime(2010, 1, 1),
-                               'terminated_at': datetime.datetime(2010, 1, 4),
-                               'project_id': 'project1'})
+                            self.context,
+                            {'id': 1,
+                             'launched_at': datetime.datetime(2010, 1, 1),
+                             'terminated_at': datetime.datetime(2010, 1, 4),
+                             'project_id': 'project1'})
 
         # test and assert
         result = self.db.api.instance_get_active_by_window_joined(
-                                self.context,
-                                datetime.datetime(2011, 1, 2),
-                                datetime.datetime(2011, 1, 3),
-                                'project1')
+                                    self.context,
+                                    datetime.datetime(2011, 1, 2),
+                                    datetime.datetime(2011, 1, 3),
+                                    'project1')
         self.assertTrue(result is not None)
         self.assertEqual([], result)
 
@@ -2153,12 +2172,13 @@ class DbApiTestCase(test.TestCase):
         instance_get_all_by_reservation
         """
         # setup
-        self.db.api.instance_create(
-                self.context, {'id': 1, 'reservation_id': 'reservation1'})
+        self.db.api.instance_create(self.context,
+                                    {'id': 1,
+                                     'reservation_id': 'reservation1'})
 
         # test and assert
         result = db.api.instance_get_all_by_reservation(
-                                        self.context, 'reservation1')
+                                    self.context, 'reservation1')
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -2168,11 +2188,12 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_instance_get_all_by_reservation_database_not_found(self):
         # setup
-        self.db.api.instance_create(
-                self.context, {'id': 1, 'reservation_id': 'reservation1'})
+        self.db.api.instance_create(self.context,
+                                    {'id': 1,
+                                     'reservation_id': 'reservation1'})
         # test and assert
         result = self.db.api.instance_get_all_by_reservation(
-                                        self.context, 'reservation2')
+                                    self.context, 'reservation2')
         self.assertTrue(result is not None)
         self.assertEqual([], result)
 
@@ -2226,7 +2247,7 @@ class DbApiTestCase(test.TestCase):
                                'address': '02:00:00:00:00:00'})
         # test and assert
         result = db.api.instance_get_by_fixed_ipv6(
-                                self.context, '3:0:0:0:0:0:0:0')
+                                    self.context, '3:0:0:0:0:0:0:0')
         self.assertTrue(result is not None)
         self.assertEqual(1, result['id'])
 
@@ -2235,7 +2256,7 @@ class DbApiTestCase(test.TestCase):
         # mock
         self.mox.StubOutWithMock(db.api.IMPL, 'instance_get_by_fixed_ipv6')
         db.api.IMPL.instance_get_by_fixed_ipv6(
-                                mox.IgnoreArg(), mox.IgnoreArg())
+                                    mox.IgnoreArg(), mox.IgnoreArg())
         self.mox.ReplayAll()
 
         # test and assert
@@ -2292,11 +2313,11 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.network_create_safe(self.context,
                                         {'cidr_v6': '3.0.0.0/29'})
-        self.db.api.virtual_interface_create(
-                self.context, {'id': 1,
-                               'network_id': 1,
-                               'instance_id': 1,
-                               'address': '02:00:00:00:00:00'})
+        self.db.api.virtual_interface_create(self.context,
+                                             {'id': 1,
+                                              'network_id': 1,
+                                              'instance_id': 1,
+                                              'address': '02:00:00:00:00:00'})
 
         # test and assert
         result = self.db.api.instance_get_fixed_addresses_v6(self.context, 1)
@@ -2331,11 +2352,13 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
-        self.db.api.fixed_ip_create(self.context, {'id': 100,
-                                                   'instance_id': 1})
-        self.db.api.floating_ip_create(self.context, {'id': 1,
-                                                 'fixed_ip_id': 100,
-                                                 'address': '1.0.0.0'})
+        self.db.api.fixed_ip_create(self.context,
+                                    {'id': 100,
+                                     'instance_id': 1})
+        self.db.api.floating_ip_create(self.context,
+                                       {'id': 1,
+                                        'fixed_ip_id': 100,
+                                        'address': '1.0.0.0'})
 
         # test and assert
         result = self.db.api.instance_get_floating_address(self.context, 1)
@@ -2348,9 +2371,10 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.fixed_ip_create(self.context,
                                     {'id': 100, 'instance_id': 1})
-        self.db.api.floating_ip_create(self.context, {'id': 1,
-                                                 'fixed_ip_id': 100,
-                                                 'address': '1.0.0.0'})
+        self.db.api.floating_ip_create(self.context,
+                                       {'id': 1,
+                                        'fixed_ip_id': 100,
+                                        'address': '1.0.0.0'})
 
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForInstance,
@@ -2388,8 +2412,8 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, {'id': 1})
 
         # test and assert
-        result = self.db.api.instance_update(
-                            self.context, 1, {'host': 'host1'})
+        result = self.db.api.instance_update(self.context, 1,
+                                             {'host': 'host1'})
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
 
@@ -2445,11 +2469,11 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.instance_remove_security_group(
-                                                self.context, 1, 1)
+                                            self.context, 1, 1)
         self.assertTrue(result is None)
 
         security_group_list = self.db.api.security_group_get_by_instance(
-                                                self.context, 1)
+                                            self.context, 1)
         self.assertEqual(0, len(security_group_list))
 
     @attr(kind='small')
@@ -2464,7 +2488,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.instance_remove_security_group(
-                                                self.context, 1, 2)
+                                            self.context, 1, 2)
         self.assertTrue(result is None)
 
     @attr(kind='small')
@@ -2473,13 +2497,14 @@ class DbApiTestCase(test.TestCase):
         instance_action_create
         """
         # test and assert
-        result = self.db.api.instance_action_create(
-                                self.context, {'id': 1, 'instance_id': 1})
+        result = self.db.api.instance_action_create(self.context,
+                                                    {'id': 1,
+                                                     'instance_id': 1})
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
 
         instance_action_list = self.db.api.instance_get_actions(
-                                                self.context, result.id)
+                                            self.context, result.id)
         self.assertTrue(instance_action_list is not None)
         self.assertEqual(1, len(instance_action_list))
         self.assertEqual(1, instance_action_list[0].id)
@@ -2530,9 +2555,10 @@ class DbApiTestCase(test.TestCase):
         key_pair_create
         """
         # test and assert
-        result = self.db.api.key_pair_create(self.context, {'id': 1,
-                                                       'user_id': 'user1',
-                                                       'name': 'name1'})
+        result = self.db.api.key_pair_create(self.context,
+                                             {'id': 1,
+                                              'user_id': 'user1',
+                                              'name': 'name1'})
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
 
@@ -2556,9 +2582,10 @@ class DbApiTestCase(test.TestCase):
         key_pair_destroy
         """
         # setup
-        self.db.api.key_pair_create(self.context, {'id': 1,
-                                              'user_id': 'user1',
-                                              'name': 'name1'})
+        self.db.api.key_pair_create(self.context,
+                                    {'id': 1,
+                                     'user_id': 'user1',
+                                     'name': 'name1'})
 
         # test and assert
         result = self.db.api.key_pair_destroy(self.context, 'user1', 'name1')
@@ -2571,9 +2598,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_key_pair_destroy_database_not_found(self):
         # setup
-        self.db.api.key_pair_create(self.context, {'id': 1,
-                                              'user_id': 'user1',
-                                              'name': 'name1'})
+        self.db.api.key_pair_create(self.context,
+                                    {'id': 1,
+                                     'user_id': 'user1',
+                                     'name': 'name1'})
         # test and assert
         self.assertRaises(exception.KeypairNotFound,
                           self.db.api.key_pair_destroy,
@@ -2585,9 +2613,10 @@ class DbApiTestCase(test.TestCase):
         key_pair_destroy_all_by_user
         """
         # setup
-        self.db.api.key_pair_create(self.context, {'id': 1,
-                                              'user_id': 'user1',
-                                              'name': 'name1'})
+        self.db.api.key_pair_create(self.context,
+                                    {'id': 1,
+                                     'user_id': 'user1',
+                                     'name': 'name1'})
 
         # test and assert
         result = self.db.api.key_pair_destroy_all_by_user(
@@ -2602,9 +2631,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_key_pair_destroy_all_by_user_database_not_found(self):
         # setup
-        self.db.api.key_pair_create(self.context, {'id': 1,
-                                              'user_id': 'user1',
-                                              'name': 'name1'})
+        self.db.api.key_pair_create(self.context,
+                                    {'id': 1,
+                                     'user_id': 'user1',
+                                     'name': 'name1'})
 
         # test and assert
         result = db.api.key_pair_destroy_all_by_user(self.context, 'user2')
@@ -2619,9 +2649,10 @@ class DbApiTestCase(test.TestCase):
         key_pair_get
         """
         # setup
-        self.db.api.key_pair_create(self.context, {'id': 1,
-                                              'user_id': 'user1',
-                                              'name': 'name1'})
+        self.db.api.key_pair_create(self.context,
+                                    {'id': 1,
+                                     'user_id': 'user1',
+                                     'name': 'name1'})
 
         # test and assert
         result = self.db.api.key_pair_get(self.context, 'user1', 'name1')
@@ -2633,9 +2664,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_key_pair_get_database_not_found(self):
         # setup
-        self.db.api.key_pair_create(self.context, {'id': 1,
-                                              'user_id': 'user1',
-                                              'name': 'name1'})
+        self.db.api.key_pair_create(self.context,
+                                    {'id': 1,
+                                     'user_id': 'user1',
+                                     'name': 'name1'})
 
         # test and assert
         self.assertRaises(exception.KeypairNotFound,
@@ -2649,7 +2681,8 @@ class DbApiTestCase(test.TestCase):
         """
         # setup
         self.db.api.key_pair_create(self.context,
-                                    {'id': 1, 'user_id': 'user1'})
+                                    {'id': 1,
+                                     'user_id': 'user1'})
 
         # test and assert
         result = self.db.api.key_pair_get_all_by_user(self.context, 'user1')
@@ -2663,7 +2696,8 @@ class DbApiTestCase(test.TestCase):
     def test_key_pair_get_all_by_user_database_not_found(self):
         # setup
         self.db.api.key_pair_create(self.context,
-                                    {'id': 1, 'user_id': 'user1'})
+                                    {'id': 1,
+                                     'user_id': 'user1'})
 
         # test and assert
         result = db.api.key_pair_get_all_by_user(self.context, 'user2')
@@ -2686,9 +2720,9 @@ class DbApiTestCase(test.TestCase):
     def test_network_associate_with_force(self):
         raise SkipTest("network record should be store when associate called")
         # setup
-        self.db.api.network_create_safe(
-                        self.context, {'id': 100,
-                                       'project_id': 'other_project'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'other_project'})
 
         # test and assert
         result = self.db.api.network_associate(
@@ -2951,10 +2985,10 @@ class DbApiTestCase(test.TestCase):
         unset project_id and host
         """
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1'})
         # test and assert
         self.db.api.network_disassociate(self.context, 100)
         nw = self.db.api.network_get(self.context, 100)
@@ -2974,14 +3008,14 @@ class DbApiTestCase(test.TestCase):
         """
         raise SkipTest("Network host is not unset.")
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1'})
-        self.db.api.network_create_safe(
-                            self.context, {'id': 101,
-                                           'project_id': 'project1',
-                                           'host': 'host1'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 101,
+                                         'project_id': 'project1',
+                                         'host': 'host1'})
         # test and assert
         self.db.api.network_disassociate_all(self.context)
         nw = self.db.api.network_get(self.context, 100)
@@ -2994,10 +3028,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1'})
         # test and assert
         nw = self.db.api.network_get(self.context, 100)
         self.assertEqual(100, nw.id)
@@ -3005,10 +3039,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get_as_user(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1'})
         self.context.is_admin = False
         self.context.user_id = 'user1'
         self.context.project_id = 'project1'
@@ -3027,10 +3061,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get_all(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1'})
         # test and assert
         nw = self.db.api.network_get_all(self.context)
         self.assertIn(100, [n.id for n in nw])
@@ -3053,11 +3087,11 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get_all_by_uuids(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': None,
-                                           'host': 'host1',
-                                           'uuid': 'uuid'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': None,
+                                         'host': 'host1',
+                                         'uuid': 'uuid'})
         # test and assert
         nw = self.db.api.network_get_all_by_uuids(self.context, ['uuid'])
         self.assertEqual(100, nw[0].id)
@@ -3065,24 +3099,24 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get_all_by_uuids_with_project_id(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1',
-                                           'uuid': 'uuid'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1',
+                                         'uuid': 'uuid'})
         # test and assert
         nw = self.db.api.network_get_all_by_uuids(
-                            self.context, ['uuid'], 'project1')
+                                    self.context, ['uuid'], 'project1')
         self.assertEqual(100, nw[0].id)
 
     @attr(kind='small')
     def test_network_get_all_by_uuids_no_network(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': 'host1',
-                                           'uuid': 'uuid'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': 'host1',
+                                         'uuid': 'uuid'})
         # test and assert
         self.assertRaises(exception.NoNetworksFound,
                           self.db.api.network_get_all_by_uuids,
@@ -3091,11 +3125,11 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get_all_by_uuids_no_network_host(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': 'project1',
-                                           'host': None,
-                                           'uuid': 'uuid'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': 'project1',
+                                         'host': None,
+                                         'uuid': 'uuid'})
         # test and assert
         self.assertRaises(exception.NetworkHostNotSet,
                           self.db.api.network_get_all_by_uuids,
@@ -3104,11 +3138,11 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_network_get_all_by_uuids_no_network_for_project(self):
         # setup
-        self.db.api.network_create_safe(
-                            self.context, {'id': 100,
-                                           'project_id': None,
-                                           'host': 'host1',
-                                           'uuid': 'uuid'})
+        self.db.api.network_create_safe(self.context,
+                                        {'id': 100,
+                                         'project_id': None,
+                                         'host': 'host1',
+                                         'uuid': 'uuid'})
         # test and assert
         self.assertRaises(exception.NoNetworksFound,
                           self.db.api.network_get_all_by_uuids,
@@ -3467,8 +3501,8 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_auth_token_destroy(self):
         # setup
-        self.db.api.auth_token_create(
-                        self.context, {'token_hash': 'hash',
+        self.db.api.auth_token_create(self.context,
+                                      {'token_hash': 'hash',
                                        'user_id': 'user1'})
         # test and assert
         self.db.api.auth_token_destroy(self.context, 'hash')
@@ -3479,8 +3513,8 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_auth_token_destroy_database_not_found(self):
         # setup
-        self.db.api.auth_token_create(
-                        self.context, {'token_hash': 'hash',
+        self.db.api.auth_token_create(self.context,
+                                      {'token_hash': 'hash',
                                        'user_id': 'user1'})
         # test and assert
         self.assertRaises(exception.AuthTokenNotFound,
@@ -3490,20 +3524,20 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_auth_token_update(self):
         # setup
-        self.db.api.auth_token_create(
-                        self.context, {'token_hash': 'hash',
+        self.db.api.auth_token_create(self.context,
+                                      {'token_hash': 'hash',
                                        'user_id': 'user1'})
         # test and assert
-        self.db.api.auth_token_update(self.context,
-                                      'hash', {'user_id': 'user2'})
+        self.db.api.auth_token_update(self.context, 'hash',
+                                      {'user_id': 'user2'})
         token = self.db.api.auth_token_get(self.context, 'hash')
         self.assertEqual('user2', token.user_id)
 
     @attr(kind='small')
     def test_auth_token_update_database_not_found(self):
         # setup
-        self.db.api.auth_token_create(
-                        self.context, {'token_hash': 'hash',
+        self.db.api.auth_token_create(self.context,
+                                      {'token_hash': 'hash',
                                        'user_id': 'user1'})
         # test and assert
         self.assertRaises(exception.AuthTokenNotFound,
@@ -3729,7 +3763,7 @@ class DbApiTestCase(test.TestCase):
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         # test and assert
         target_num = self.db.volume_allocate_iscsi_target(
-                                                self.context, 1, 'host')
+                                            self.context, 1, 'host')
         self.assertEqual(1, target_num)
 
     @attr(kind='small')
@@ -3842,7 +3876,7 @@ class DbApiTestCase(test.TestCase):
                                   {'size': '3g', 'project_id': 'project1'})
         # test and assert
         count, sum = self.db.api.volume_data_get_for_project(
-                                                self.context, 'project1')
+                                            self.context, 'project1')
         self.assertEqual(3, count)
         self.assertEqual(6, sum)
 
@@ -3850,7 +3884,7 @@ class DbApiTestCase(test.TestCase):
     def test_volume_data_get_for_project_database_not_found(self):
         # test and assert
         count, sum = self.db.api.volume_data_get_for_project(
-                                                self.context, 'project1')
+                                            self.context, 'project1')
         self.assertEqual(0, count)
         self.assertEqual(0, sum)
 
@@ -4467,7 +4501,7 @@ class DbApiTestCase(test.TestCase):
         vol['metadata'] = {'type': 'test'}
         self.db.api.volume_create(self.context, vol)
         meta = self.db.api.volume_metadata_get_item(
-                                        self.context, 1, 'type')
+                                    self.context, 1, 'type')
         self.assertEqual('type', meta.key)
         self.assertEqual('test', meta.value)
 
@@ -4869,7 +4903,8 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.block_device_mapping_create(self.context, bdm)
         self.db.api.block_device_mapping_update(
-                                self.context, 1, {'device_name': '/dev/sdg'})
+                                    self.context, 1,
+                                    {'device_name': '/dev/sdg'})
         results = self.db.api.block_device_mapping_get_all_by_instance(
                                                             self.context, 1)
         result = results[0]
@@ -4900,8 +4935,9 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.block_device_mapping_create(self.context, bdm)
         self.db.api.block_device_mapping_update(
-                                self.context, 2, {'instance_id': 2,
-                                                  'device_name': '/dev/sdg'})
+                                    self.context, 2,
+                                    {'instance_id': 2,
+                                     'device_name': '/dev/sdg'})
         results = self.db.api.block_device_mapping_get_all_by_instance(
                                                             self.context, 1)
         result = results[0]
@@ -4929,8 +4965,8 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.block_device_mapping_create(self.context, bdm)
         self.db.api.block_device_mapping_update_or_create(
-                                self.context, {'instance_id': 1,
-                                               'device_name': '/dev/sdg'})
+                                    self.context, {'instance_id': 1,
+                                                   'device_name': '/dev/sdg'})
         results = self.db.api.block_device_mapping_get_all_by_instance(
                                                             self.context, 2)
         result = results[0]
@@ -4958,9 +4994,9 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.block_device_mapping_create(self.context, bdm)
         self.db.api.block_device_mapping_update_or_create(
-                                self.context, {'instance_id': 1,
-                                               'no_device': True,
-                                               'device_name': '/dev/sdh'})
+                                    self.context, {'instance_id': 1,
+                                                   'no_device': True,
+                                                   'device_name': '/dev/sdh'})
         results = self.db.api.block_device_mapping_get_all_by_instance(
                                                             self.context, 1)
         result = results[0]
@@ -4982,9 +5018,9 @@ class DbApiTestCase(test.TestCase):
         bdm['no_device'] = False
         self.db.api.block_device_mapping_create(self.context, bdm)
         self.db.api.block_device_mapping_update_or_create(
-                                self.context, {'instance_id': 1,
-                                               'virtual_name': 'swap',
-                                               'device_name': '/dev/sdg'})
+                                    self.context, {'instance_id': 1,
+                                                   'virtual_name': 'swap',
+                                                   'device_name': '/dev/sdg'})
         results = self.db.api.block_device_mapping_get_all_by_instance(
                                                             self.context, 1)
         result = results[0]
@@ -5228,7 +5264,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.security_group_create(self.context, group)
         result = self.db.api.security_group_get_by_name(
-                                        self.context, 'fake', 'default')
+                                            self.context, 'fake', 'default')
         self.assertEqual('default', result.name)
         self.assertEqual('test', result.description)
         self.assertEqual('fake', result.user_id)
@@ -5262,7 +5298,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.security_group_create(self.context, group)
         results = self.db.api.security_group_get_by_project(
-                                                self.context, 'fake')
+                                            self.context, 'fake')
         result = results[0]
         self.assertEqual('default', result.name)
         self.assertEqual('test', result.description)
@@ -5280,7 +5316,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.security_group_create(self.context, group)
         result = self.db.api.security_group_get_by_project(
-                                                self.context, 'fake2')
+                                            self.context, 'fake2')
         self.assertEqual([], result)
 
     @attr(kind='small')
@@ -5830,7 +5866,7 @@ class DbApiTestCase(test.TestCase):
         # test and assert
         self.db.api.provider_fw_rule_create(self.context, rule)
         results = self.db.api.provider_fw_rule_get_all_by_cidr(
-                                                self.context, '0.0.0.0')
+                                            self.context, '0.0.0.0')
         self.assertEqual('tcp', results[0].protocol)
         self.assertEqual(0, results[0].from_port)
         self.assertEqual(80, results[0].to_port)
@@ -7158,7 +7194,8 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.console_pool_create(self.context, con)
         pool = self.db.api.console_pool_get_by_host_type(
-                                self.context, 'compute', 'localhost', 'vnc')
+                                    self.context, 'compute',
+                                    'localhost', 'vnc')
         self.assertEqual('localhost', pool.address)
         self.assertEqual('fake', pool.username)
         self.assertEqual('fake', pool.password)
@@ -7198,7 +7235,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.console_pool_create(self.context, con)
         pools = self.db.api.console_pool_get_all_by_host_type(
-                                        self.context, 'localhost', 'vnc')
+                                    self.context, 'localhost', 'vnc')
         pool = pools[0]
         self.assertEqual('localhost', pool.address)
         self.assertEqual('fake', pool.username)
@@ -7222,7 +7259,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.console_pool_create(self.context, con)
         pools = self.db.api.console_pool_get_all_by_host_type(
-                                        self.context, 'localhost', 'xcp')
+                                    self.context, 'localhost', 'xcp')
         self.assertEqual([], pools)
 
     @attr(kind='small')
@@ -7519,9 +7556,8 @@ class DbApiTestCase(test.TestCase):
         extra_specs = {}
         extra_specs['key'] = 'kkk'
         extra_specs['value'] = 'vvv'
-        self.db.api.instance_type_extra_specs_update_or_create(self.context,
-                                                               100,
-                                                               extra_specs)
+        self.db.api.instance_type_extra_specs_update_or_create(
+                                    self.context, 100, extra_specs)
 
         # test and assert
         result = self.db.api.instance_type_get_all(self.context, True)
@@ -7977,7 +8013,7 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, i)
         # test and assert
         metadata = self.db.api.instance_metadata_get_item(
-                                                self.context, 1, 'type')
+                                    self.context, 1, 'type')
         self.assertEqual('test', metadata.value)
 
     @attr(kind='small')
@@ -7990,7 +8026,8 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, i)
         # test and assert
         self.db.api.instance_metadata_update(
-                            self.context, 1, {'type': 'new_type'}, False)
+                                    self.context, 1,
+                                    {'type': 'new_type'}, False)
         metadata = self.db.api.instance_metadata_get(self.context, 1)
         self.assertEqual('new_type', metadata['type'])
 
@@ -8004,7 +8041,8 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, i)
         # test and assert
         self.db.api.instance_metadata_update(
-                            self.context, 1, {'type': 'new_type'}, True)
+                                    self.context, 1,
+                                    {'type': 'new_type'}, True)
         metadata = self.db.api.instance_metadata_get(self.context, 1)
         self.assertEqual('new_type', metadata['type'])
 
@@ -8018,7 +8056,8 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_create(self.context, i)
         # test and assert
         self.db.api.instance_metadata_update(
-                            self.context, 1, {'spec': 'new_spec'}, False)
+                                    self.context, 1,
+                                    {'spec': 'new_spec'}, False)
         metadata = self.db.api.instance_metadata_get(self.context, 1)
         self.assertEqual('test', metadata['type'])
         self.assertEqual('new_spec', metadata['spec'])
@@ -8050,7 +8089,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.agent_build_create(self.context, ab)
         result = self.db.api.agent_build_get_by_triple(
-                                self.context, 'kvm', 'linux', 'x86_64')
+                                    self.context, 'kvm', 'linux', 'x86_64')
         self.assertEqual('http://localhost', result.url)
         self.assertEqual('1.0', result.version)
         self.assertEqual('hash', result.md5hash)
@@ -8087,7 +8126,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.agent_build_create(self.context, ab)
         result = self.db.api.agent_build_get_by_triple(
-                                self.context, 'kvm', 'linux', 'x86_64')
+                                    self.context, 'kvm', 'linux', 'x86_64')
         self.assertEqual('http://localhost', result.url)
         self.assertEqual('1.0', result.version)
         self.assertEqual('hash', result.md5hash)
@@ -8106,7 +8145,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.agent_build_create(self.context, ab)
         result = self.db.api.agent_build_get_by_triple(
-                            self.context, 'kvm', 'windows', 'x86_64')
+                                    self.context, 'kvm', 'windows', 'x86_64')
         self.assertEqual(None, result)
 
     @attr(kind='small')
@@ -8295,7 +8334,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.instance_type_create(self.context, values)
         self.db.api.instance_type_extra_specs_delete(
-                                            self.context, 100, 'unknow_key')
+                                    self.context, 100, 'unknow_key')
         result = self.db.api.instance_type_extra_specs_get(self.context, 100)
         self.assertEqual('value1', result['key1'])
 
@@ -8317,7 +8356,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.instance_type_create(self.context, values)
         result = self.db.api.instance_type_extra_specs_get_item(
-                                            self.context, 100, 'key1')
+                                    self.context, 100, 'key1')
         self.assertEqual('key1', result.key)
         self.assertEqual('value1', result.value)
 
@@ -8335,7 +8374,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.instance_type_create(self.context, values)
         self.db.api.instance_type_extra_specs_update_or_create(
-                                        self.context, 100, {'key1': 'value2'})
+                                    self.context, 100, {'key1': 'value2'})
         result = self.db.api.instance_type_extra_specs_get(self.context, 100)
         self.assertEqual('value2', result['key1'])
 
@@ -8353,7 +8392,7 @@ class DbApiTestCase(test.TestCase):
 
         self.db.api.instance_type_create(self.context, values)
         self.db.api.instance_type_extra_specs_update_or_create(
-                                        self.context, 100, {'key2': 'value2'})
+                                    self.context, 100, {'key2': 'value2'})
         result = self.db.api.instance_type_extra_specs_get(self.context, 100)
         self.assertEqual('value1', result['key1'])
         self.assertEqual('value2', result['key2'])
