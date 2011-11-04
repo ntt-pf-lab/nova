@@ -62,7 +62,7 @@ class UtilsTestCase(test.TestCase):
         self.assertEqual(block_device_mappings[0]['id'], self._bdm_id)
 
     @attr(kind='small')
-    def test_terminate_volumes_parameter_instance_not_found(self):
+    def test_terminate_volumes_param_instance_not_found(self):
         """
         InstanceNotFound is raised when specified instance is not found
         """
@@ -71,7 +71,7 @@ class UtilsTestCase(test.TestCase):
                           db, self.context, 99999)
 
     @attr(kind='small')
-    def test_terminate_volumes_database_volume_id_is_not_none_and_delete_on_termination_is_true(self):
+    def test_terminate_volumes_db_bdm_delete_on_termination_is_true(self):
         """Test for nova.compute.utils.terminate_volumes. """
         self._volume_id = None
 
@@ -93,7 +93,7 @@ class UtilsTestCase(test.TestCase):
                          self._volume_id)
 
     @attr(kind='small')
-    def test_terminate_volumes_exception_volume_api_delete(self):
+    def test_terminate_volumes_ex_volume_api_delete(self):
         """
         All BlockDeviceMappings are deleted
         even when exception is raised in volume_api.delete()
