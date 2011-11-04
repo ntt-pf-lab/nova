@@ -71,7 +71,7 @@ class FlagsValuesTestCase(test.TestCase):
         self.assertEqual(self.FLAGS.true, False)
 
     @attr(kind='small')
-    def test_call_flags_use_gnu_get_opt(self):
+    def test_call_cfg_use_gnu_get_opt(self):
         """
         in case using GNU getopt
         """
@@ -109,7 +109,7 @@ class FlagsValuesTestCase(test.TestCase):
         self.assertEqual(self.FLAGS.true, False)
 
     @attr(kind='small')
-    def test_call_exception_unrecognized_flag_error_with_unparsed_args(self):
+    def test_call_ex_gflags_error_with_unparsed_args(self):
         """
         exception will not be raised when __call__() is called before DECLARE
         """
@@ -118,9 +118,10 @@ class FlagsValuesTestCase(test.TestCase):
         self.assertEqual(['flags_test', 'foo'], args)
 
     @attr(kind='small')
-    def test_call_exception_unrecognized_flag_error_with_unparsed_args_use_gnu_get_opt(self):
+    def test_call_ex_gflags_error_with_unparsed_args_use_gnu_get_opt(self):
         """
-        exception will not be raised when __call__() is called before DECLARE in using GNU getopt
+        exception will not be raised
+        when __call__() is called before DECLARE in using GNU getopt
         """
         self.FLAGS.UseGnuGetOpt()
         argv = ['flags_test', '--string', 'foo']
@@ -128,9 +129,10 @@ class FlagsValuesTestCase(test.TestCase):
         self.assertEqual(['flags_test', 'foo'], args)
 
     @attr(kind='small')
-    def test_call_exception_unrecognized_flag_error_without_unparsed_args(self):
+    def test_call_ex_gflags_error_without_unparsed_args(self):
         """
-        exception will not be raised when argument of the option is invalid in using GNU getopt
+        exception will not be raised
+        when argument of the option is invalid in using GNU getopt
         """
         self.FLAGS.UseGnuGetOpt()
         argv = ['flags_test', '--string']
@@ -138,28 +140,28 @@ class FlagsValuesTestCase(test.TestCase):
         self.assertEqual(['flags_test'], args)
 
     @attr(kind='small')
-    def test_getitem_configuration_flag_is_dirty(self):
+    def test_getitem_cfg_flag_is_dirty(self):
         """
         ParseNewFlags() is executed before __getitem__() is called
         """
         argv = ['flags_test', '--string', 'foo']
         self.FLAGS(argv)
         self.assertFalse(self.FLAGS.IsDirty('string'))
-        
+
         flags.DEFINE_string('string', 'bar', 'desc',
                             flag_values=self.FLAGS)
         self.assert_(self.FLAGS.IsDirty('string'))
         self.assert_(self.FLAGS['string'])
 
     @attr(kind='small')
-    def test_getattr_configuration_flag_is_dirty(self):
+    def test_getattr_cfg_flag_is_dirty(self):
         """
         ParseNewFlags() is executed before __getattr__() is called
         """
         argv = ['flags_test', '--string', 'foo']
         self.FLAGS(argv)
         self.assertFalse(self.FLAGS.IsDirty('string'))
-        
+
         flags.DEFINE_string('string', 'bar', 'desc',
                             flag_values=self.FLAGS)
         self.assert_(self.FLAGS.IsDirty('string'))
@@ -178,7 +180,7 @@ class FlagsValuesTestCase(test.TestCase):
         self.assertEqual(self.global_FLAGS.answer, 256)
 
     @attr(kind='small')
-    def test_declare_flags_name_not_in_flag_values(self):
+    def test_declare_cfg_name_not_in_flag_values(self):
         """
         UnrecognizedFlag is raised when name not in flag_values
         """
@@ -225,6 +227,7 @@ class FlagsValuesTestCase(test.TestCase):
         FLAGS.flags_unittest = 'bar'
         self.assertEqual(FLAGS.flags_unittest, 'bar')
 
+
 class StrWrapperTestCase(test.TestCase):
 
     def setUp(self):
@@ -244,7 +247,7 @@ class StrWrapperTestCase(test.TestCase):
         self.assertEqual('1', wrapper['int'])
 
     @attr(kind='small')
-    def test_getitem_exception_key_error(self):
+    def test_getitem_ex_key_error(self):
         """
         KeyError is raised when val is not found
         """
