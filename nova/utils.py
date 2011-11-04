@@ -518,7 +518,7 @@ def xhtml_escape(value):
     http://github.com/facebook/tornado/blob/master/tornado/escape.py
 
     """
-    return saxutils.escape(value, {'"': '&quot;'})
+    return saxutils.escape(value, {'"': '&quot;', '\'': '&apos;'})
 
 
 def utf8(value):
