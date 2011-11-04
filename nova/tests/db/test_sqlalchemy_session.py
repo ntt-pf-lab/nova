@@ -32,7 +32,8 @@ class SQLAlchemySessionTestCase(test.TestCase):
     @attr(kind='small')
     def test_get_session(self):
         session = db_session.get_session()
-        self.assert_('sqlalchemy.orm.session.Session object' in str(session))
+        self.assertEqual("<class 'sqlalchemy.orm.session.Session'>",
+                         str(session.__class__))
 
     @attr(kind='small')
     def test_get_session_configuration(self):
@@ -42,7 +43,8 @@ class SQLAlchemySessionTestCase(test.TestCase):
         session = db_session.get_session()
         self.assert_(db_session._ENGINE is not None)
         self.assert_(db_session._MAKER is not None)
-        self.assert_('sqlalchemy.orm.session.Session object'in str(session))
+        self.assertEqual("<class 'sqlalchemy.orm.session.Session'>",
+                         str(session.__class__))
 
     @attr(kind='small')
     def test_get_session_parametar(self):
@@ -50,7 +52,8 @@ class SQLAlchemySessionTestCase(test.TestCase):
             when parametar is not default"""
         session = db_session.get_session(autocommit=False,
                                          expire_on_commit=True)
-        self.assert_('sqlalchemy.orm.session.Session object' in str(session))
+        self.assertEqual("<class 'sqlalchemy.orm.session.Session'>",
+                         str(session.__class__))
 
     @attr(kind='small')
     def test_get_engine_configuration_drivername_is_other(self):
