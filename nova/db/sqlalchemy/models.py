@@ -878,3 +878,18 @@ def register_models():
     engine = create_engine(FLAGS.sql_connection, echo=False)
     for model in models:
         model.metadata.create_all(engine)
+
+
+class EventLog(BASE, NovaBase):
+    """Represents a eventlog."""
+    __tablename__ = 'eventlog'
+    id = Column(Integer, primary_key=True)
+    request_id = Column(String(255))
+    message_id = Column(String(255))
+    event_type = Column(String(255))
+    publisher_id = Column(String(255))
+    priority = Column(String(255))
+    message = Column(Text)
+    status = Column(String(255))
+    user_id = Column(String(255))
+    tenant_id = Column(String(255))

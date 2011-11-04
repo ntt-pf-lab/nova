@@ -833,3 +833,7 @@ class ZoneRequestError(Error):
 
 class InsufficientFreeMemory(NovaException):
     message = _("Insufficient free memory on compute node to start %(uuid)s.")
+
+
+class EventLogNotFound(NotFound):
+    message = _("EventLog Not Found.")

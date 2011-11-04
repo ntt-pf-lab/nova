@@ -1571,3 +1571,30 @@ def vsa_get_all(context):
 def vsa_get_all_by_project(context, project_id):
     """Get all Virtual Storage Array records by project ID."""
     return IMPL.vsa_get_all_by_project(context, project_id)
+
+
+def eventlog_create(context, values):
+    """Create EventLog record."""
+    return IMPL.eventlog_create(context, values)
+
+
+def eventlog_update(context, message_id, values):
+    """Update EventLog record."""
+    return IMPL.eventlog_update(context, message_id, values)
+
+
+def eventlog_get(context, message_id, session=None):
+    """Get EventLog record."""
+    return IMPL.eventlog_get(context, message_id, session=None)
+
+
+def eventlog_get_by_request_id(context, request_id, session=None):
+    return IMPL.eventlog_get_by_request_id(context, request_id, session=None)
+
+
+def eventlog_get_all_by_request_id(context, request_id, session=None):
+    return IMPL.eventlog_get_all_by_request_id(context, request_id, session=None)
+
+
+def eventlog_get_error_by_request_id(context, request_id, session=None):
+    return IMPL.eventlog_get_error_by_request_id(context, request_id, session=None)
