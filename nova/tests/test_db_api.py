@@ -126,7 +126,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_service_destroy_database_not_found(self):
+    def test_service_destroy_db_not_found(self):
         # test and assert
         self.assertRaises(exception.ServiceNotFound,
                           self.db.api.service_destroy,
@@ -146,7 +146,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
     @attr(kind='small')
-    def test_service_get_database_not_found(self):
+    def test_service_get_db_not_found(self):
         # test and assert
         self.assertRaises(exception.ServiceNotFound,
                           self.db.api.service_get,
@@ -171,7 +171,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', result.topic)
 
     @attr(kind='small')
-    def test_service_get_by_host_and_topic_database_not_found(self):
+    def test_service_get_by_host_and_topic_db_not_found(self):
         # setup
         self.db.api.service_create(self.context,
                                    {'id': 1, 'host': 'host1',
@@ -197,7 +197,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_service_get_all_database_not_found(self):
+    def test_service_get_all_db_not_found(self):
         # test and assert
         result = db.api.service_get_all(self.context)
         self.assertTrue(result is not None)
@@ -220,7 +220,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', result[0].topic)
 
     @attr(kind='small')
-    def test_service_get_all_by_topic_database_not_found(self):
+    def test_service_get_all_by_topic_db_not_found(self):
         # test and assert
         result = self.db.api.service_get_all_by_topic(self.context, 'compute')
         self.assertTrue(result is not None)
@@ -243,7 +243,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', result[0].host)
 
     @attr(kind='small')
-    def test_service_get_all_by_host_database_not_found(self):
+    def test_service_get_all_by_host_db_not_found(self):
         # test and assert
         result = self.db.api.service_get_all_by_host(self.context, 'host1')
         self.assertTrue(result is not None)
@@ -270,7 +270,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', result[0].topic)
 
     @attr(kind='small')
-    def test_service_get_all_compute_by_host_database_not_found(self):
+    def test_service_get_all_compute_by_host_db_not_found(self):
         """
         should not be raise exception.
         """
@@ -305,7 +305,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(3, result[0][1])
 
     @attr(kind='small')
-    def test_service_get_all_compute_sorted_database_not_found(self):
+    def test_service_get_all_compute_sorted_db_not_found(self):
         # test and assert
         result = self.db.api.service_get_all_compute_sorted(self.context)
         self.assertTrue(result is not None)
@@ -335,7 +335,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(2, result[0][1])
 
     @attr(kind='small')
-    def test_service_get_all_network_sorted_database_not_found(self):
+    def test_service_get_all_network_sorted_db_not_found(self):
         # test and assert
         result = db.api.service_get_all_network_sorted(self.context)
         self.assertTrue(result is not None)
@@ -365,7 +365,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(3, result[0][1])
 
     @attr(kind='small')
-    def test_service_get_all_volume_sorted_database_not_found(self):
+    def test_service_get_all_volume_sorted_db_not_found(self):
         # test and assert
         result = self.db.api.service_get_all_volume_sorted(self.context)
         self.assertTrue(result is not None)
@@ -390,7 +390,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('binary1', result.binary)
 
     @attr(kind='small')
-    def test_service_get_by_args_database_not_found(self):
+    def test_service_get_by_args_db_not_found(self):
         # test and assert
         self.assertRaises(exception.HostBinaryNotFound,
                           self.db.api.service_get_by_args,
@@ -410,7 +410,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(service is not None)
 
     @attr(kind='small')
-    def test_service_create_database_duplicate(self):
+    def test_service_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.service_create(self.context, {'id': 1})
@@ -436,7 +436,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', service.host)
 
     @attr(kind='small')
-    def test_service_update_database_not_found(self):
+    def test_service_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.ServiceNotFound,
                           self.db.api.service_update,
@@ -478,7 +478,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("cpu_info1", result.cpu_info)
 
     @attr(kind='small')
-    def test_compute_node_get_database_not_found(self):
+    def test_compute_node_get_db_not_found(self):
         # test and assert
         self.assertRaises(exception.ComputeHostNotFound,
                           self.db.api.compute_node_get,
@@ -520,7 +520,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("cpu_info1", result.cpu_info)
 
     @attr(kind='small')
-    def test_compute_node_create_database_duplicate(self):
+    def test_compute_node_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.service_create(self.context, {'id': 1})
@@ -582,7 +582,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(2, compute_node.vcpus)
 
     @attr(kind='small')
-    def test_compute_node_update_database_not_found(self):
+    def test_compute_node_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.ComputeHostNotFound,
                           self.db.api.compute_node_update,
@@ -609,7 +609,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, len(certificate_list))
 
     @attr(kind='small')
-    def test_certificate_create_database_duplicate(self):
+    def test_certificate_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.certificate_create(self.context, {'id': 1})
@@ -640,7 +640,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(0, len(certificate_list))
 
     @attr(kind='small')
-    def test_certificate_destroy_database_not_found(self):
+    def test_certificate_destroy_db_not_found(self):
         # test and assert
         self.assertRaises(exception.CertificateNotFound,
                           self.db.api.certificate_destroy,
@@ -665,7 +665,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('project1', result[0].project_id)
 
     @attr(kind='small')
-    def test_certificate_get_all_by_project_database_not_found(self):
+    def test_certificate_get_all_by_project_db_not_found(self):
         # test and assert
         result = self.db.api.certificate_get_all_by_project(
                                         self.context, 'project1')
@@ -690,7 +690,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('user1', result[0].user_id)
 
     @attr(kind='small')
-    def test_certificate_get_all_by_user_database_not_found(self):
+    def test_certificate_get_all_by_user_db_not_found(self):
         # test and assert
         result = self.db.api.certificate_get_all_by_user(self.context, 'user1')
         self.assertTrue(result is not None)
@@ -717,7 +717,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('project1', result[0].project_id)
 
     @attr(kind='small')
-    def test_certificate_get_all_by_user_and_project_database_not_found(self):
+    def test_certificate_get_all_by_user_and_project_db_not_found(self):
         # test and assert
         result = self.db.api.certificate_get_all_by_user_and_project(
                                             self.context, 'user1', 'project1')
@@ -744,7 +744,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('user1', certificate_list[0].user_id)
 
     @attr(kind='small')
-    def test_certificate_update_database_not_found(self):
+    def test_certificate_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.CertificateNotFound,
                           self.db.api.certificate_update,
@@ -764,7 +764,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
     @attr(kind='small')
-    def test_floating_ip_get_database_not_found(self):
+    def test_floating_ip_get_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFound,
                           self.db.api.floating_ip_get,
@@ -790,7 +790,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('project1', floating_ip.project_id)
 
     @attr(kind='small')
-    def test_floating_ip_allocate_address_database_not_found(self):
+    def test_floating_ip_allocate_address_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFound,
                           self.db.api.floating_ip_allocate_address,
@@ -811,7 +811,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(floating_ip is not None)
 
     @attr(kind='small')
-    def test_floating_ip_create_database_duplicate(self):
+    def test_floating_ip_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.floating_ip_create(self.context, {'id': 1})
@@ -856,7 +856,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(False, floating_ip.auto_assigned)
 
     @attr(kind='small')
-    def test_floating_ip_deallocate_database_not_found(self):
+    def test_floating_ip_deallocate_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           self.db.api.floating_ip_deallocate,
@@ -880,7 +880,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_floating_ip_destroy_database_not_found(self):
+    def test_floating_ip_destroy_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           self.db.api.floating_ip_destroy,
@@ -910,7 +910,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(None, floating_ip.fixed_ip)
 
     @attr(kind='small')
-    def test_floating_ip_disassociate_database_not_found(self):
+    def test_floating_ip_disassociate_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           self.db.api.floating_ip_disassociate,
@@ -939,7 +939,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('localhost', floating_ip.host)
 
     @attr(kind='small')
-    def test_floating_ip_fixed_ip_associate_database_not_found(self):
+    def test_floating_ip_fixed_ip_associate_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           self.db.api.floating_ip_fixed_ip_associate,
@@ -961,7 +961,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_floating_ip_get_all_database_not_found(self):
+    def test_floating_ip_get_all_db_not_found(self):
         # test and assert
         self.assertRaises(exception.NoFloatingIpsDefined,
                           db.api.floating_ip_get_all,
@@ -983,7 +983,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_floating_ip_get_all_by_host_database_not_found(self):
+    def test_floating_ip_get_all_by_host_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForHost,
                           self.db.api.floating_ip_get_all_by_host,
@@ -1007,7 +1007,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_floating_ip_get_all_by_project_database_not_found(self):
+    def test_floating_ip_get_all_by_project_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForProject,
                           self.db.api.floating_ip_get_all_by_project,
@@ -1030,7 +1030,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('1.0.0.0', result.address)
 
     @attr(kind='small')
-    def test_floating_ip_get_by_address_database_not_found(self):
+    def test_floating_ip_get_by_address_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           db.api.floating_ip_get_by_address,
@@ -1055,7 +1055,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', floating_ip.host)
 
     @attr(kind='small')
-    def test_floating_ip_update_database_not_found(self):
+    def test_floating_ip_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           db.api.floating_ip_update,
@@ -1080,7 +1080,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(True, floating_ip.auto_assigned)
 
     @attr(kind='small')
-    def test_floating_ip_set_auto_assigned_database_not_found(self):
+    def test_floating_ip_set_auto_assigned_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FloatingIpNotFoundForAddress,
                           db.api.floating_ip_set_auto_assigned,
@@ -1106,7 +1106,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('source_compute1', migration.source_compute)
 
     @attr(kind='small')
-    def test_migration_update_database_not_found(self):
+    def test_migration_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.MigrationNotFound,
                           self.db.api.migration_update,
@@ -1128,7 +1128,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, migration.id)
 
     @attr(kind='small')
-    def test_migration_create_database_duplicate(self):
+    def test_migration_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.migration_create(self.context, {'id': 1})
@@ -1152,7 +1152,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
     @attr(kind='small')
-    def test_migration_get_database_not_found(self):
+    def test_migration_get_db_not_found(self):
         # test and assert
         self.assertRaises(exception.MigrationNotFound,
                           self.db.api.migration_get,
@@ -1179,7 +1179,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("status1", result.status)
 
     @attr(kind='small')
-    def test_migration_get_by_instance_and_status_database_not_found(self):
+    def test_migration_get_by_instance_and_status_db_not_found(self):
         # test and assert
         self.assertRaises(exception.MigrationNotFoundByStatus,
                           self.db.api.migration_get_by_instance_and_status,
@@ -1208,7 +1208,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, fixed_ip.network.id)
 
     @attr(kind='small')
-    def test_fixed_ip_associate_database_not_found(self):
+    def test_fixed_ip_associate_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForNetwork,
                           db.api.fixed_ip_associate,
@@ -1239,7 +1239,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', fixed_ip.host)
 
     @attr(kind='small')
-    def test_fixed_ip_associate_pool_database_not_found(self):
+    def test_fixed_ip_associate_pool_db_not_found(self):
         # test and assert
         self.assertRaises(exception.NoMoreFixedIps,
                           db.api.fixed_ip_associate_pool,
@@ -1259,7 +1259,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('10.1.1.1', fixed_ip.address)
 
     @attr(kind='small')
-    def test_fixed_ip_create_database_duplicate(self):
+    def test_fixed_ip_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.fixed_ip_create(self.context, {'address': '10.1.1.1'})
@@ -1288,7 +1288,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(None, fixed_ip.instance)
 
     @attr(kind='small')
-    def test_fixed_ip_disassociate_database_not_found(self):
+    def test_fixed_ip_disassociate_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForAddress,
                           db.api.fixed_ip_disassociate,
@@ -1321,7 +1321,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(False, fixed_ip.leased)
 
     @attr(kind='small')
-    def test_fixed_ip_disassociate_all_by_timeout_database_not_found(self):
+    def test_fixed_ip_disassociate_all_by_timeout_db_not_found(self):
         """
         returned update count. "not found" means count zero.
         """
@@ -1346,7 +1346,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue('10.1.1.1', result[0].address)
 
     @attr(kind='small')
-    def test_fixed_ip_get_all_database_not_found(self):
+    def test_fixed_ip_get_all_db_not_found(self):
         """
         fixed_ip already stored in test db.
         """
@@ -1364,7 +1364,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_fixed_ip_get_all_by_instance_host_database_not_found(self):
+    def test_fixed_ip_get_all_by_instance_host_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -1381,7 +1381,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('10.1.1.1', result.address)
 
     @attr(kind='small')
-    def test_fixed_ip_get_by_address_database_not_found(self):
+    def test_fixed_ip_get_by_address_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForAddress,
                           db.api.fixed_ip_get_by_address,
@@ -1403,7 +1403,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].instance_id)
 
     @attr(kind='small')
-    def test_fixed_ip_get_by_instance_database_not_found(self):
+    def test_fixed_ip_get_by_instance_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForInstance,
                           db.api.fixed_ip_get_by_instance,
@@ -1426,7 +1426,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', result.host)
 
     @attr(kind='small')
-    def test_fixed_ip_get_by_network_host_database_not_found(self):
+    def test_fixed_ip_get_by_network_host_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForNetworkHost,
                           db.api.fixed_ip_get_by_network_host,
@@ -1448,7 +1448,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].virtual_interface_id)
 
     @attr(kind='small')
-    def test_fixed_ip_get_by_virtual_interface_database_not_found(self):
+    def test_fixed_ip_get_by_virtual_interface_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForVirtualInterface,
                           db.api.fixed_ip_get_by_virtual_interface,
@@ -1471,7 +1471,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, result.id)
 
     @attr(kind='small')
-    def test_fixed_ip_get_network_database_not_found(self):
+    def test_fixed_ip_get_network_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForAddress,
                           db.api.fixed_ip_get_network,
@@ -1496,7 +1496,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', fixed_ip.host)
 
     @attr(kind='small')
-    def test_fixed_ip_update_database_not_found(self):
+    def test_fixed_ip_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.FixedIpNotFoundForAddress,
                           db.api.fixed_ip_update,
@@ -1518,7 +1518,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(virtual_interface is not None)
 
     @attr(kind='small')
-    def test_virtual_interface_create_database_duplicate(self):
+    def test_virtual_interface_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.virtual_interface_create(self.context,
@@ -1550,7 +1550,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('uuid1', virtual_interface.uuid)
 
     @attr(kind='small')
-    def test_virtual_interface_update_database_not_found(self):
+    def test_virtual_interface_update_db_not_found(self):
         raise SkipTest("No checks in db, so AttributeError occured in api")
         # test and assert
         # FIXME VirtualInterfaceNotFound does not exist.
@@ -1574,7 +1574,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.instance_id)
 
     @attr(kind='small')
-    def test_virtual_interface_get_database_not_found(self):
+    def test_virtual_interface_get_db_not_found(self):
         # test and assert
         # FIXME VirtualInterfaceNotFound does not exist.
         result = self.db.api.virtual_interface_get(self.context, 1)
@@ -1599,7 +1599,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('10.1.1.1', result.address)
 
     @attr(kind='small')
-    def test_virtual_interface_get_by_address_database_not_found(self):
+    def test_virtual_interface_get_by_address_db_not_found(self):
         # test and assert
         result = self.db.api.virtual_interface_get_by_address(
                                             self.context, '10.1.1.1')
@@ -1624,7 +1624,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('uuid1', result.uuid)
 
     @attr(kind='small')
-    def test_virtual_interface_get_by_uuid_database_not_found(self):
+    def test_virtual_interface_get_by_uuid_db_not_found(self):
         """
         should be raise exception
         """
@@ -1657,7 +1657,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, result.network.id)
 
     @attr(kind='small')
-    def test_virtual_interface_get_by_fixed_ip_database_not_found(self):
+    def test_virtual_interface_get_by_fixed_ip_db_not_found(self):
         """
         virtual_interface_get_by_fixed_ip
         """
@@ -1692,7 +1692,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].instance_id)
 
     @attr(kind='small')
-    def test_virtual_interface_get_by_instance_database_not_found(self):
+    def test_virtual_interface_get_by_instance_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
 
@@ -1721,7 +1721,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.network_id)
 
     @attr(kind='small')
-    def test_virtual_interface_get_by_instance_and_network_database_not_found(self):
+    def test_virtual_interface_get_by_instance_and_network_db_not_found(self):
         # test and assert
         result = self.db.api.virtual_interface_get_by_instance_and_network(
                                                             self.context, 1, 1)
@@ -1746,7 +1746,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].network_id)
 
     @attr(kind='small')
-    def test_virtual_interface_get_by_network_database_not_found(self):
+    def test_virtual_interface_get_by_network_db_not_found(self):
         # test and assert
         result = self.db.api.virtual_interface_get_by_network(self.context, 1)
         self.assertTrue(result is not None)
@@ -1770,7 +1770,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is None)
 
     @attr(kind='small')
-    def test_virtual_interface_delete_database_not_found(self):
+    def test_virtual_interface_delete_db_not_found(self):
         raise SkipTest("UnmappedInstanceError:\
             Class '__builtin__.NoneType' is not mapped")
         # test and assert
@@ -1799,7 +1799,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is None)
 
     @attr(kind='small')
-    def test_virtual_interface_delete_by_instance_database_not_found(self):
+    def test_virtual_interface_delete_by_instance_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
 
@@ -1823,7 +1823,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, instance.id)
 
     @attr(kind='small')
-    def test_instance_create_database_duplicate(self):
+    def test_instance_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
@@ -1853,7 +1853,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual((1, 2, 3), result)
 
     @attr(kind='small')
-    def test_instance_data_get_for_project_database_not_found(self):
+    def test_instance_data_get_for_project_db_not_found(self):
         # test and assert
         result = self.db.api.instance_data_get_for_project(
                                             self.context, 'project1')
@@ -1877,7 +1877,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_instance_destroy_database_not_found(self):
+    def test_instance_destroy_db_not_found(self):
         # test and assert
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
@@ -1910,7 +1910,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(None, instance.updated_at)
 
     @attr(kind='small')
-    def test_instance_stop_database_not_found(self):
+    def test_instance_stop_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context,
                                     {'id': 1,
@@ -1941,7 +1941,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('uuid1', result.uuid)
 
     @attr(kind='small')
-    def test_instance_get_by_uuid_database_not_found(self):
+    def test_instance_get_by_uuid_db_not_found(self):
         # test and assert
         self.assertRaises(exception.InstanceNotFound,
                           self.db.api.instance_get_by_uuid,
@@ -1961,7 +1961,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
     @attr(kind='small')
-    def test_instance_get_database_not_found(self):
+    def test_instance_get_db_not_found(self):
         # test and assert
         self.assertRaises(exception.InstanceNotFound,
                           self.db.api.instance_get,
@@ -1983,14 +1983,14 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_instance_get_all_database_not_found(self):
+    def test_instance_get_all_db_not_found(self):
         # test and assert
         result = self.db.api.instance_get_all(self.context)
         self.assertTrue(result is not None)
         self.assertEqual([], result)
 
     @attr(kind='small')
-    def test_instance_get_all_by_filters_database_not_found(self):
+    def test_instance_get_all_by_filters_db_not_found(self):
         # test and assert
         result = self.db.api.instance_get_all_by_filters(self.context, {})
         self.assertTrue(result is not None)
@@ -2021,7 +2021,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_instance_get_active_by_window_database_not_found(self):
+    def test_instance_get_active_by_window_db_not_found(self):
         # setup
         self.db.api.instance_create(
                             self.context,
@@ -2064,7 +2064,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
-    def test_instance_get_active_by_window_joined_database_not_found(self):
+    def test_instance_get_active_by_window_joined_db_not_found(self):
         # mock
         # setup
         self.db.api.instance_create(
@@ -2101,7 +2101,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('user1', result[0].user_id)
 
     @attr(kind='small')
-    def test_instance_get_all_by_user_database_not_found(self):
+    def test_instance_get_all_by_user_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context,
                                     {'id': 1, 'user_id': 'user1'})
@@ -2130,7 +2130,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('project1', result[0].project_id)
 
     @attr(kind='small')
-    def test_instance_get_all_by_project_database_not_found(self):
+    def test_instance_get_all_by_project_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context,
                                     {'id': 1, 'project_id': 'project1'})
@@ -2157,7 +2157,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', result[0].host)
 
     @attr(kind='small')
-    def test_instance_get_all_by_host_database_not_found(self):
+    def test_instance_get_all_by_host_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context, {'id': 1, 'host': 'host1'})
 
@@ -2186,7 +2186,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('reservation1', result[0].reservation_id)
 
     @attr(kind='small')
-    def test_instance_get_all_by_reservation_database_not_found(self):
+    def test_instance_get_all_by_reservation_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context,
                                     {'id': 1,
@@ -2213,7 +2213,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
     @attr(kind='small')
-    def test_instance_get_by_fixed_ip_database_not_found(self):
+    def test_instance_get_by_fixed_ip_db_not_found(self):
         # mock
         self.mox.StubOutWithMock(db.api.IMPL, 'instance_get_by_fixed_ip')
         db.api.IMPL.instance_get_by_fixed_ip(mox.IgnoreArg(), mox.IgnoreArg())
@@ -2252,7 +2252,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result['id'])
 
     @attr(kind='small')
-    def test_instance_get_by_fixed_ipv6_database_not_found(self):
+    def test_instance_get_by_fixed_ipv6_db_not_found(self):
         # mock
         self.mox.StubOutWithMock(db.api.IMPL, 'instance_get_by_fixed_ipv6')
         db.api.IMPL.instance_get_by_fixed_ipv6(
@@ -2279,7 +2279,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('10.1.1.1', result[0])
 
     @attr(kind='small')
-    def test_instance_get_fixed_addresses_database_not_found(self):
+    def test_instance_get_fixed_addresses_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.fixed_ip_create(self.context,
@@ -2327,7 +2327,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('::ff:ff00:0', result[0])
 
     @attr(kind='small')
-    def test_instance_get_fixed_addresses_v6_database_not_found(self):
+    def test_instance_get_fixed_addresses_v6_db_not_found(self):
         # mock
         self.mox.StubOutWithMock(self.db.api.IMPL, 'instance_create')
         self.db.api.IMPL.instance_create(mox.IgnoreArg(), mox.IgnoreArg())
@@ -2366,7 +2366,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('1.0.0.0', result)
 
     @attr(kind='small')
-    def test_instance_get_floating_address_database_not_found(self):
+    def test_instance_get_floating_address_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.fixed_ip_create(self.context,
@@ -2382,7 +2382,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 2)
 
     @attr(kind='small')
-    def test_instance_get_project_vpn_database_not_found(self):
+    def test_instance_get_project_vpn_db_not_found(self):
         # mock
         self.mox.StubOutWithMock(db.api.IMPL, 'instance_get_project_vpn')
         db.api.IMPL.instance_get_project_vpn(mox.IgnoreArg(), mox.IgnoreArg())
@@ -2400,7 +2400,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_instance_set_state_database_not_found(self):
+    def test_instance_set_state_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -2422,7 +2422,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host1', instance.host)
 
     @attr(kind='small')
-    def test_instance_update_database_not_found(self):
+    def test_instance_update_db_not_found(self):
         # test and assert
         self.assertRaises(exception.InstanceNotFound,
                           self.db.api.instance_update,
@@ -2448,7 +2448,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, security_group_list[0].instances[0].id)
 
     @attr(kind='small')
-    def test_instance_add_security_group_database_not_found(self):
+    def test_instance_add_security_group_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.security_group_create(self.context, {'id': 1})
@@ -2477,7 +2477,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(0, len(security_group_list))
 
     @attr(kind='small')
-    def test_instance_remove_security_group_database_not_found(self):
+    def test_instance_remove_security_group_db_not_found(self):
         """
         should be raise exception.
         """
@@ -2511,7 +2511,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, instance_action_list[0].instance_id)
 
     @attr(kind='small')
-    def test_instance_action_create_database_duplicate(self):
+    def test_instance_action_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.instance_action_create(self.context, {'id': 1})
@@ -2539,7 +2539,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].instance_id)
 
     @attr(kind='small')
-    def test_instance_get_actions_database_not_found(self):
+    def test_instance_get_actions_db_not_found(self):
         # setup
         self.db.api.instance_action_create(self.context,
                                            {'id': 1, 'instance_id': 1})
@@ -2566,7 +2566,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(key_pair is not None)
 
     @attr(kind='small')
-    def test_key_pair_create_database_duplicate(self):
+    def test_key_pair_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         self.db.api.key_pair_create(self.context, {'id': 1})
@@ -2596,7 +2596,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 'user1', 'name1')
 
     @attr(kind='small')
-    def test_key_pair_destroy_database_not_found(self):
+    def test_key_pair_destroy_db_not_found(self):
         # setup
         self.db.api.key_pair_create(self.context,
                                     {'id': 1,
@@ -2629,7 +2629,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 'user1', 'name1')
 
     @attr(kind='small')
-    def test_key_pair_destroy_all_by_user_database_not_found(self):
+    def test_key_pair_destroy_all_by_user_db_not_found(self):
         # setup
         self.db.api.key_pair_create(self.context,
                                     {'id': 1,
@@ -2662,7 +2662,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('name1', result.name)
 
     @attr(kind='small')
-    def test_key_pair_get_database_not_found(self):
+    def test_key_pair_get_db_not_found(self):
         # setup
         self.db.api.key_pair_create(self.context,
                                     {'id': 1,
@@ -2693,7 +2693,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('user1', result[0].user_id)
 
     @attr(kind='small')
-    def test_key_pair_get_all_by_user_database_not_found(self):
+    def test_key_pair_get_all_by_user_db_not_found(self):
         # setup
         self.db.api.key_pair_create(self.context,
                                     {'id': 1,
@@ -2771,7 +2771,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result)
 
     @attr(kind='small')
-    def test_network_count_allocated_ips_database_not_found(self):
+    def test_network_count_allocated_ips_db_not_found(self):
         # setup
         self.db.api.fixed_ip_create(self.context,
                                     {'address': '10.1.1.1',
@@ -2810,7 +2810,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(2, result)
 
     @attr(kind='small')
-    def test_network_count_available_ips_database_not_found(self):
+    def test_network_count_available_ips_db_not_found(self):
         """
         all network ips are allocated.
         """
@@ -2856,7 +2856,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result)
 
     @attr(kind='small')
-    def test_network_count_reserved_ips_database_not_found(self):
+    def test_network_count_reserved_ips_db_not_found(self):
         """
         resolved count from FixedIp table. (not networks)
         """
@@ -2931,7 +2931,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('11:22:33:44', nw.uuid)
 
     @attr(kind='small')
-    def test_network_create_safe_database_duplicate(self):
+    def test_network_create_safe_db_duplicate(self):
         """
         safe means no error occurs when primary key is duplicate.
         """
@@ -2957,7 +2957,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 100)
 
     @attr(kind='small')
-    def test_network_delete_safe_database_not_found(self):
+    def test_network_delete_safe_db_not_found(self):
         """
         safe means no exception occures when network is not found
         """
@@ -2976,7 +2976,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_network_create_fixed_ips_database_duplicate(self):
+    def test_network_create_fixed_ips_db_duplicate(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -2996,7 +2996,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(None, nw.host)
 
     @attr(kind='small')
-    def test_network_disassociate_database_not_found(self):
+    def test_network_disassociate_db_not_found(self):
         self.assertRaises(exception.NetworkNotFound,
                           self.db.api.network_disassociate,
                           self.context, 100)
@@ -3053,7 +3053,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('project1', nw.project_id)
 
     @attr(kind='small')
-    def test_network_get_database_not_found(self):
+    def test_network_get_db_not_found(self):
         self.assertRaises(exception.NetworkNotFound,
                           self.db.api.network_get,
                           self.context, 100)
@@ -3070,7 +3070,7 @@ class DbApiTestCase(test.TestCase):
         self.assertIn(100, [n.id for n in nw])
 
     @attr(kind='small')
-    def test_network_get_all_database_not_found(self):
+    def test_network_get_all_db_not_found(self):
         """
         looks violation for policy. should not raise exception
         """
@@ -3167,7 +3167,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("10.1.1.2", ips[1].address)
 
     @attr(kind='small')
-    def test_network_get_associated_fixed_ips_database_not_found(self):
+    def test_network_get_associated_fixed_ips_db_not_found(self):
         # setup
         self.db.fixed_ip_create(self.context,
                                 {'address': '10.1.1.1',
@@ -3193,7 +3193,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("br100", nw.bridge)
 
     @attr(kind='small')
-    def test_network_get_by_bridge_database_not_found(self):
+    def test_network_get_by_bridge_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context,
                                     {'id': 100, 'bridge': 'br100'})
@@ -3216,7 +3216,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("uuid1", nw.uuid)
 
     @attr(kind='small')
-    def test_network_get_by_uuid_database_not_found(self):
+    def test_network_get_by_uuid_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context,
                                     {'id': 100, 'uuid': 'uuid1'})
@@ -3239,7 +3239,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual("10.1.0.0", nw.cidr)
 
     @attr(kind='small')
-    def test_network_get_by_cidr_database_not_found(self):
+    def test_network_get_by_cidr_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context,
                                     {'id': 100, 'cidr': '10.1.0.0'})
@@ -3261,7 +3261,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, nw.id)
 
     @attr(kind='small')
-    def test_network_get_by_instance_database_not_found(self):
+    def test_network_get_by_instance_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context, {'id': 100})
         self.db.fixed_ip_create(self.context,
@@ -3282,7 +3282,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, nw[0].id)
 
     @attr(kind='small')
-    def test_network_get_all_by_instance_database_not_found(self):
+    def test_network_get_all_by_instance_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context, {'id': 100})
         self.db.fixed_ip_create(self.context,
@@ -3306,7 +3306,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host', nw[0].host)
 
     @attr(kind='small')
-    def test_network_get_all_by_host_database_not_found(self):
+    def test_network_get_all_by_host_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context,
                                     {'id': 100, 'host': 'host'})
@@ -3326,7 +3326,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_network_get_index_database_not_found(self):
+    def test_network_get_index_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -3337,7 +3337,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_network_get_vpn_ip_database_not_found(self):
+    def test_network_get_vpn_ip_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -3348,7 +3348,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_network_set_cidr_database_not_found(self):
+    def test_network_set_cidr_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -3363,7 +3363,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host2', nw.host)
 
     @attr(kind='small')
-    def test_network_set_host_database_not_found(self):
+    def test_network_set_host_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context, {'id': 100, 'host': 'host'})
         # test and assert
@@ -3381,7 +3381,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host2', nw.host)
 
     @attr(kind='small')
-    def test_network_update_database_not_found(self):
+    def test_network_update_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context, {'id': 100, 'host': 'host'})
         # test and assert
@@ -3390,7 +3390,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 99, {'host': 'host2'})
 
     @attr(kind='small')
-    def test_network_update_database_duplicate(self):
+    def test_network_update_db_duplicate(self):
         raise SkipTest("No error happened when update record\
             and duplicate unique column.")
         # setup
@@ -3418,7 +3418,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result)
 
     @attr(kind='small')
-    def test_export_device_count_database_not_found(self):
+    def test_export_device_count_db_not_found(self):
         # test and assert
         result = self.db.api.export_device_count(self.context)
         self.assertEqual(0, result)
@@ -3437,7 +3437,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is not None)
 
     @attr(kind='small')
-    def test_export_device_create_safe_database_duplicate(self):
+    def test_export_device_create_safe_db_duplicate(self):
         raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         self.db.volume_create(self.context, {'id': 1, 'size': '1g'})
@@ -3461,7 +3461,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result)
 
     @attr(kind='small')
-    def test_iscsi_target_count_by_host_database_not_found(self):
+    def test_iscsi_target_count_by_host_db_not_found(self):
         # setup
         self.db.api.iscsi_target_create_safe(self.context,
                                              {'id': 1, 'host': 'host'})
@@ -3483,7 +3483,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is not None)
 
     @attr(kind='small')
-    def test_iscsi_target_create_safe_database_duplicate(self):
+    def test_iscsi_target_create_safe_db_duplicate(self):
         raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         # setup
@@ -3511,7 +3511,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 'hash')
 
     @attr(kind='small')
-    def test_auth_token_destroy_database_not_found(self):
+    def test_auth_token_destroy_db_not_found(self):
         # setup
         self.db.api.auth_token_create(self.context,
                                       {'token_hash': 'hash',
@@ -3534,7 +3534,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('user2', token.user_id)
 
     @attr(kind='small')
-    def test_auth_token_update_database_not_found(self):
+    def test_auth_token_update_db_not_found(self):
         # setup
         self.db.api.auth_token_create(self.context,
                                       {'token_hash': 'hash',
@@ -3563,7 +3563,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('http://cdn', result.cdn_management_url)
 
     @attr(kind='small')
-    def test_auth_token_create_database_duplicate(self):
+    def test_auth_token_create_db_duplicate(self):
         raise SkipTest("DBError: (IntegrityError)\
             column token_hash is not unique")
         # setup
@@ -3603,7 +3603,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, quota.hard_limit)
 
     @attr(kind='small')
-    def test_quota_get_database_not_found(self):
+    def test_quota_get_db_not_found(self):
         # setup
         self.db.api.quota_create(self.context, 'project1', 'vcpus', 1)
         self.db.api.quota_create(self.context, 'project1', 'memory_mb', 10)
@@ -3626,7 +3626,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(5, quota['disk_gb'])
 
     @attr(kind='small')
-    def test_quota_get_all_by_project_database_not_found(self):
+    def test_quota_get_all_by_project_db_not_found(self):
         # setup
         self.db.api.quota_create(self.context, 'project1', 'vcpus', 1)
         self.db.api.quota_create(self.context, 'project1', 'memory_mb', 10)
@@ -3648,7 +3648,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(5, quota['disk_gb'])
 
     @attr(kind='small')
-    def test_quota_create_database_duplicate(self):
+    def test_quota_create_db_duplicate(self):
         """
         when same project, same resource specified,
             it will be update quota value.
@@ -3675,7 +3675,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(5, quota['disk_gb'])
 
     @attr(kind='small')
-    def test_quota_update_database_not_found(self):
+    def test_quota_update_db_not_found(self):
         # setup
         self.db.api.quota_create(self.context, 'project1', 'vcpus', 1)
         self.db.api.quota_create(self.context, 'project1', 'memory_mb', 10)
@@ -3699,7 +3699,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(5, quota['disk_gb'])
 
     @attr(kind='small')
-    def test_quota_destroy_database_not_found(self):
+    def test_quota_destroy_db_not_found(self):
         # setup
         self.db.api.quota_create(self.context, 'project1', 'vcpus', 1)
         self.db.api.quota_create(self.context, 'project1', 'memory_mb', 10)
@@ -3724,7 +3724,7 @@ class DbApiTestCase(test.TestCase):
         self.assertFalse('disk_gb' in quota)
 
     @attr(kind='small')
-    def test_quota_destroy_all_by_project_database_not_found(self):
+    def test_quota_destroy_all_by_project_db_not_found(self):
         # setup
         self.db.api.quota_create(self.context, 'project1', 'vcpus', 1)
         self.db.api.quota_create(self.context, 'project1', 'memory_mb', 10)
@@ -3787,7 +3787,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, volume.instance.id)
 
     @attr(kind='small')
-    def test_volume_attached_volume_database_not_found(self):
+    def test_volume_attached_volume_db_not_found(self):
         # setup
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.instance_create(self.context, {'id': 1})
@@ -3797,7 +3797,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 2, 1, '/dev/sdb')
 
     @attr(kind='small')
-    def test_volume_attached_instance_database_not_found(self):
+    def test_volume_attached_instance_db_not_found(self):
         # setup
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.instance_create(self.context, {'id': 1})
@@ -3847,7 +3847,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', metadata['type'])
 
     @attr(kind='small')
-    def test_volume_create_database_duplicate(self):
+    def test_volume_create_db_duplicate(self):
         raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique ")
         # setup
         vol = {}
@@ -3881,7 +3881,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(6, sum)
 
     @attr(kind='small')
-    def test_volume_data_get_for_project_database_not_found(self):
+    def test_volume_data_get_for_project_db_not_found(self):
         # test and assert
         count, sum = self.db.api.volume_data_get_for_project(
                                             self.context, 'project1')
@@ -3926,7 +3926,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_volume_destroy_database_not_found(self):
+    def test_volume_destroy_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -3973,7 +3973,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(None, volume.instance)
 
     @attr(kind='small')
-    def test_volume_detached_volume_database_not_found(self):
+    def test_volume_detached_volume_db_not_found(self):
         # setup
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.instance_create(self.context, {'id': 1})
@@ -4037,7 +4037,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('detached', volume.attach_status)
 
     @attr(kind='small')
-    def test_volume_get_database_not_found(self):
+    def test_volume_get_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4082,7 +4082,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('detached', volume.attach_status)
 
     @attr(kind='small')
-    def test_volume_get_all_database_not_found(self):
+    def test_volume_get_all_db_not_found(self):
         result = self.db.api.volume_get_all(self.context)
         self.assertEqual([], result)
 
@@ -4114,7 +4114,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('detached', volume.attach_status)
 
     @attr(kind='small')
-    def test_volume_get_all_by_host_database_not_found(self):
+    def test_volume_get_all_by_host_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4160,7 +4160,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('detached', volume.attach_status)
 
     @attr(kind='small')
-    def test_volume_get_all_by_instance_database_not_found(self):
+    def test_volume_get_all_by_instance_db_not_found(self):
         """
         should not be raise.
         """
@@ -4210,7 +4210,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('detached', volume.attach_status)
 
     @attr(kind='small')
-    def test_volume_get_all_by_project_database_not_found(self):
+    def test_volume_get_all_by_project_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4236,7 +4236,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_volume_get_by_ec2_id_database_not_found(self):
+    def test_volume_get_by_ec2_id_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -4260,7 +4260,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, instance.id)
 
     @attr(kind='small')
-    def test_volume_get_instance_database_not_found(self):
+    def test_volume_get_instance_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4294,7 +4294,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, blade_id)
 
     @attr(kind='small')
-    def test_volume_get_shelf_and_blade_database_not_found(self):
+    def test_volume_get_shelf_and_blade_db_not_found(self):
         # setup
         self.db.api.export_device_create_safe(
                             self.context, {'volume_id': 1,
@@ -4315,7 +4315,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, target_num)
 
     @attr(kind='small')
-    def test_volume_get_iscsi_target_num_database_not_found(self):
+    def test_volume_get_iscsi_target_num_db_not_found(self):
         # setup
         self.db.api.iscsi_target_create_safe(self.context,
                                              {'volume_id': 1, 'target_num': 1})
@@ -4350,7 +4350,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test2', metadata['type'])
 
     @attr(kind='small')
-    def test_volume_update_database_not_found(self):
+    def test_volume_update_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4389,7 +4389,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', meta['type'])
 
     @attr(kind='small')
-    def test_volume_metadata_get_database_not_found(self):
+    def test_volume_metadata_get_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4426,7 +4426,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, meta)
 
     @attr(kind='small')
-    def test_volume_metadata_delete_database_not_found(self):
+    def test_volume_metadata_delete_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4465,7 +4465,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, meta)
 
     @attr(kind='small')
-    def test_volume_metadata_delete_all_database_not_found(self):
+    def test_volume_metadata_delete_all_db_not_found(self):
         raise SkipTest("No method found in db.api")
         # setup
         vol = {}
@@ -4506,7 +4506,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', meta.value)
 
     @attr(kind='small')
-    def test_volume_metadata_get_item_database_not_found(self):
+    def test_volume_metadata_get_item_db_not_found(self):
         raise SkipTest("No method found in db.api")
         # setup
         vol = {}
@@ -4587,7 +4587,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test2', meta['type2'])
 
     @attr(kind='small')
-    def test_volume_metadata_update_database_not_found(self):
+    def test_volume_metadata_update_db_not_found(self):
         # setup
         vol = {}
         vol['id'] = 1
@@ -4630,7 +4630,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result.display_description)
 
     @attr(kind='small')
-    def test_snapshot_create_database_duplicate(self):
+    def test_snapshot_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         snap = {}
         snap['id'] = 1
@@ -4668,7 +4668,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_snapshot_destroy_database_not_found(self):
+    def test_snapshot_destroy_db_not_found(self):
         """
         should be raise error.
         """
@@ -4727,7 +4727,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is not None)
 
     @attr(kind='small')
-    def test_snapshot_get_database_not_found(self):
+    def test_snapshot_get_db_not_found(self):
         snap = {}
         snap['id'] = 1
         snap['user_id'] = 'fake'
@@ -4763,7 +4763,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, snaps[0].id)
 
     @attr(kind='small')
-    def test_snapshot_get_all_database_not_found(self):
+    def test_snapshot_get_all_db_not_found(self):
         snaps = self.db.api.snapshot_get_all(self.context)
         self.assertEqual([], snaps)
 
@@ -4785,7 +4785,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, snaps[0].id)
 
     @attr(kind='small')
-    def test_snapshot_get_all_by_project_database_not_found(self):
+    def test_snapshot_get_all_by_project_db_not_found(self):
         snap = {}
         snap['id'] = 1
         snap['user_id'] = 'fake'
@@ -4823,7 +4823,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('100%', result.progress)
 
     @attr(kind='small')
-    def test_snapshot_update_database_not_found(self):
+    def test_snapshot_update_db_not_found(self):
         snap = {}
         snap['id'] = 1
         snap['user_id'] = 'fake'
@@ -4868,7 +4868,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(False, result.no_device)
 
     @attr(kind='small')
-    def test_block_device_mapping_create_database_duplicate(self):
+    def test_block_device_mapping_create_db_duplicate(self):
         """
         looks never duplicate occur, but it is right?
         """
@@ -4917,7 +4917,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(False, result.no_device)
 
     @attr(kind='small')
-    def test_block_device_mapping_update_database_not_found(self):
+    def test_block_device_mapping_update_db_not_found(self):
         """
         should be raise error.
         """
@@ -5048,7 +5048,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.instance.id)
 
     @attr(kind='small')
-    def test_block_device_mapping_get_all_by_instance_database_not_found(self):
+    def test_block_device_mapping_get_all_by_instance_db_not_found(self):
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5087,7 +5087,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], results)
 
     @attr(kind='small')
-    def test_block_device_mapping_destroy_database_not_found(self):
+    def test_block_device_mapping_destroy_db_not_found(self):
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5128,7 +5128,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], results)
 
     @attr(kind='small')
-    def test_block_device_mapping_destroy_by_instance_and_volume_database_not_found(self):
+    def test_block_device_mapping_destroy_by_inst_and_vol_db_not_found(self):
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5165,7 +5165,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.project_id)
 
     @attr(kind='small')
-    def test_security_group_create_database_duplicate(self):
+    def test_security_group_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         group = {}
         group['id'] = 1
@@ -5197,7 +5197,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.project_id)
 
     @attr(kind='small')
-    def test_security_group_get_all_database_not_found(self):
+    def test_security_group_get_all_db_not_found(self):
         results = self.db.api.security_group_get_all(self.context)
         self.assertEqual([], results)
 
@@ -5237,7 +5237,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.project_id)
 
     @attr(kind='small')
-    def test_security_group_get_database_not_found(self):
+    def test_security_group_get_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5271,7 +5271,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.project_id)
 
     @attr(kind='small')
-    def test_security_group_get_by_name_database_not_found(self):
+    def test_security_group_get_by_name_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5306,7 +5306,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.project_id)
 
     @attr(kind='small')
-    def test_security_group_get_by_project_database_not_found(self):
+    def test_security_group_get_by_project_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5339,7 +5339,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.project_id)
 
     @attr(kind='small')
-    def test_security_group_get_by_instance_database_not_found(self):
+    def test_security_group_get_by_instance_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5367,7 +5367,7 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result)
 
     @attr(kind='small')
-    def test_security_group_exists_database_not_found(self):
+    def test_security_group_exists_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5412,7 +5412,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_security_group_destroy_database_not_found(self):
+    def test_security_group_destroy_db_not_found(self):
         raise SkipTest("NotFound exception not raise")
         group = {}
         group['id'] = 1
@@ -5471,7 +5471,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_security_group_destroy_all_database_not_found(self):
+    def test_security_group_destroy_all_db_not_found(self):
         self.db.api.security_group_destroy_all(self.context)
 
         self.assertRaises(exception.SecurityGroupNotFound,
@@ -5508,7 +5508,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', result.cidr)
 
     @attr(kind='small')
-    def test_security_group_rule_create_database_duplicate(self):
+    def test_security_group_rule_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         group = {}
         group['id'] = 1
@@ -5558,7 +5558,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', result.cidr)
 
     @attr(kind='small')
-    def test_security_group_rule_get_database_not_found(self):
+    def test_security_group_rule_get_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5639,7 +5639,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', result[0].cidr)
 
     @attr(kind='small')
-    def test_security_group_rule_get_by_security_group_database_not_found(self):
+    def test_security_group_rule_get_by_security_group_db_not_found(self):
         """
         should be raise error.
         """
@@ -5723,7 +5723,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', result[0].cidr)
 
     @attr(kind='small')
-    def test_security_group_rule_get_by_security_group_grantee_database_not_found(self):
+    def test_security_group_rule_get_by_security_gp_grantee_db_not_found(self):
         """
         should be raise error.
         """
@@ -5775,7 +5775,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_security_group_rule_destroy_database_not_found(self):
+    def test_security_group_rule_destroy_db_not_found(self):
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5816,7 +5816,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', results[0].cidr)
 
     @attr(kind='small')
-    def test_provider_fw_rule_create_database_duplicate(self):
+    def test_provider_fw_rule_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         rule = {}
@@ -5849,7 +5849,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', results[0].cidr)
 
     @attr(kind='small')
-    def test_provider_fw_rule_get_all_database_not_found(self):
+    def test_provider_fw_rule_get_all_db_not_found(self):
         # test and assert
         results = self.db.api.provider_fw_rule_get_all(self.context)
         self.assertEqual([], results)
@@ -5873,7 +5873,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('0.0.0.0', results[0].cidr)
 
     @attr(kind='small')
-    def test_provider_fw_rule_get_all_by_cidr_database_not_found(self):
+    def test_provider_fw_rule_get_all_by_cidr_db_not_found(self):
         # setup
         rule = {}
         rule['id'] = 1
@@ -5903,7 +5903,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], results)
 
     @attr(kind='small')
-    def test_provider_fw_rule_destroy_database_not_found(self):
+    def test_provider_fw_rule_destroy_db_not_found(self):
         """
         shuld be raise error.
         """
@@ -5941,7 +5941,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(True, result.is_admin)
 
     @attr(kind='small')
-    def test_user_create_database_duplicate(self):
+    def test_user_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         user = {}
@@ -5973,7 +5973,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(True, result.is_admin)
 
     @attr(kind='small')
-    def test_user_get_database_not_found(self):
+    def test_user_get_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -5995,7 +5995,7 @@ class DbApiTestCase(test.TestCase):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
-    def test_user_get_by_uid_database_not_found(self):
+    def test_user_get_by_uid_db_not_found(self):
         raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
@@ -6016,7 +6016,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(True, result.is_admin)
 
     @attr(kind='small')
-    def test_user_get_by_access_key_database_not_found(self):
+    def test_user_get_by_access_key_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6059,7 +6059,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_user_delete_database_not_found(self):
+    def test_user_delete_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6103,7 +6103,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(True, results[0].is_admin)
 
     @attr(kind='small')
-    def test_user_get_all_database_not_found(self):
+    def test_user_get_all_db_not_found(self):
         results = self.db.api.user_get_all(self.context)
         self.assertEqual([], results)
 
@@ -6127,7 +6127,7 @@ class DbApiTestCase(test.TestCase):
         self.assertIn('roleC', roles)
 
     @attr(kind='small')
-    def test_user_get_roles_database_not_found(self):
+    def test_user_get_roles_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6169,7 +6169,7 @@ class DbApiTestCase(test.TestCase):
         self.assertIn('user', roles)
 
     @attr(kind='small')
-    def test_user_get_roles_for_project_database_not_found(self):
+    def test_user_get_roles_for_project_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6223,7 +6223,7 @@ class DbApiTestCase(test.TestCase):
         self.assertIn('user', roles)
 
     @attr(kind='small')
-    def test_user_remove_project_role_database_not_found(self):
+    def test_user_remove_project_role_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6277,7 +6277,7 @@ class DbApiTestCase(test.TestCase):
         self.assertIn('admin', roles)
 
     @attr(kind='small')
-    def test_user_add_role_database_duplicate(self):
+    def test_user_add_role_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         user = {}
@@ -6365,7 +6365,7 @@ class DbApiTestCase(test.TestCase):
         self.assertNotIn('admin', roles)
 
     @attr(kind='small')
-    def test_user_remove_role_database_not_found(self):
+    def test_user_remove_role_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6419,7 +6419,7 @@ class DbApiTestCase(test.TestCase):
         self.assertIn('user', roles)
 
     @attr(kind='small')
-    def test_user_add_project_role_database_duplicate(self):
+    def test_user_add_project_role_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         user = {}
@@ -6466,7 +6466,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(True, result.is_admin)
 
     @attr(kind='small')
-    def test_user_update_database_not_found(self):
+    def test_user_update_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6504,7 +6504,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result.description)
 
     @attr(kind='small')
-    def test_project_create_database_duplicate(self):
+    def test_project_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         user = {}
@@ -6551,7 +6551,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.members[0].name)
 
     @attr(kind='small')
-    def test_project_add_member_user_database_not_found(self):
+    def test_project_add_member_user_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6574,7 +6574,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1, 2)
 
     @attr(kind='small')
-    def test_project_add_member_project_database_not_found(self):
+    def test_project_add_member_project_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6620,7 +6620,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result.description)
 
     @attr(kind='small')
-    def test_project_get_database_not_found(self):
+    def test_project_get_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6666,7 +6666,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result[0].description)
 
     @attr(kind='small')
-    def test_project_get_all_database_not_found(self):
+    def test_project_get_all_db_not_found(self):
         # test and assert
         result = self.db.api.project_get_all(self.context)
         self.assertEqual([], result)
@@ -6696,7 +6696,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result[0].description)
 
     @attr(kind='small')
-    def test_project_get_by_user_database_not_found(self):
+    def test_project_get_by_user_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6718,7 +6718,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], result)
 
     @attr(kind='small')
-    def test_project_get_by_user_user_database_not_found(self):
+    def test_project_get_by_user_user_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6765,7 +6765,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], result.members)
 
     @attr(kind='small')
-    def test_project_remove_member_user_database_not_found(self):
+    def test_project_remove_member_user_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6788,7 +6788,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1, 2)
 
     @attr(kind='small')
-    def test_project_remove_member_project_database_not_found(self):
+    def test_project_remove_member_project_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6835,7 +6835,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result.description)
 
     @attr(kind='small')
-    def test_project_update_database_not_found(self):
+    def test_project_update_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -6883,7 +6883,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_project_delete_database_not_found(self):
+    def test_project_delete_db_not_found(self):
         # setup
         user = {}
         user['id'] = 1
@@ -7004,7 +7004,7 @@ class DbApiTestCase(test.TestCase):
         self.assertNotEqual([], result)
 
     @attr(kind='small')
-    def test_project_get_networks_database_not_found(self):
+    def test_project_get_networks_db_not_found(self):
         """
         network recored is already stored in test db.
         """
@@ -7123,7 +7123,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', pool.compute_host)
 
     @attr(kind='small')
-    def test_console_pool_create_database_duplicate(self):
+    def test_console_pool_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         con = {}
         con['id'] = 1
@@ -7163,7 +7163,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', pool.compute_host)
 
     @attr(kind='small')
-    def test_console_pool_get_database_not_found(self):
+    def test_console_pool_get_db_not_found(self):
         raise SkipTest("DBError occured")
         con = {}
         con['id'] = 1
@@ -7205,7 +7205,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', pool.compute_host)
 
     @attr(kind='small')
-    def test_console_pool_get_by_host_type_database_not_found(self):
+    def test_console_pool_get_by_host_type_db_not_found(self):
         con = {}
         con['id'] = 1
         con['address'] = 'localhost'
@@ -7246,7 +7246,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('compute', pool.compute_host)
 
     @attr(kind='small')
-    def test_console_pool_get_all_by_host_type_database_not_found(self):
+    def test_console_pool_get_all_by_host_type_db_not_found(self):
         con = {}
         con['id'] = 1
         con['address'] = 'localhost'
@@ -7280,7 +7280,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.pool_id)
 
     @attr(kind='small')
-    def test_console_create_database_duplicate(self):
+    def test_console_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         con = {}
         con['id'] = 1
@@ -7312,7 +7312,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_console_delete_database_not_found(self):
+    def test_console_delete_db_not_found(self):
         """
         should be raise error.
         """
@@ -7350,7 +7350,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.pool_id)
 
     @attr(kind='small')
-    def test_console_get_by_pool_instance_database_not_found(self):
+    def test_console_get_by_pool_instance_db_not_found(self):
         con = {}
         con['id'] = 1
         con['instance_name'] = 'test'
@@ -7383,7 +7383,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.pool_id)
 
     @attr(kind='small')
-    def test_console_get_all_by_pool_instance_database_not_found(self):
+    def test_console_get_all_by_pool_instance_db_not_found(self):
         con = {}
         con['id'] = 1
         con['instance_name'] = 'test'
@@ -7426,7 +7426,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('localhost', result.pool.address)
 
     @attr(kind='small')
-    def test_console_get_instance_database_not_found(self):
+    def test_console_get_instance_db_not_found(self):
         pool = {}
         pool['id'] = 1
         pool['address'] = 'localhost'
@@ -7452,7 +7452,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1, 2)
 
     @attr(kind='small')
-    def test_console_get_database_not_found(self):
+    def test_console_get_db_not_found(self):
         pool = {}
         pool['id'] = 1
         pool['address'] = 'localhost'
@@ -7501,7 +7501,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, result['flavorid'])
 
     @attr(kind='small')
-    def test_instance_type_create_database_duplicate(self):
+    def test_instance_type_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         values = {}
@@ -7586,7 +7586,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, result['flavorid'])
 
     @attr(kind='small')
-    def test_instance_type_get_database_not_found(self):
+    def test_instance_type_get_db_not_found(self):
         # setup
         values = {}
         values['id'] = 100
@@ -7623,7 +7623,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, result['flavorid'])
 
     @attr(kind='small')
-    def test_instance_type_get_by_name_database_not_found(self):
+    def test_instance_type_get_by_name_db_not_found(self):
         # setup
         values = {}
         values['id'] = 100
@@ -7660,7 +7660,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(100, result['flavorid'])
 
     @attr(kind='small')
-    def test_instance_type_get_by_flavor_id_database_not_found(self):
+    def test_instance_type_get_by_flavor_id_db_not_found(self):
         # setup
         values = {}
         values['id'] = 100
@@ -7716,7 +7716,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 100)
 
     @attr(kind='small')
-    def test_instance_type_destroy_database_not_found(self):
+    def test_instance_type_destroy_db_not_found(self):
         # setup
         values = {}
         values['id'] = 100
@@ -7751,7 +7751,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 100)
 
     @attr(kind='small')
-    def test_instance_type_purge_database_not_found(self):
+    def test_instance_type_purge_db_not_found(self):
         # setup
         values = {}
         values['id'] = 100
@@ -7783,7 +7783,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.password)
 
     @attr(kind='small')
-    def test_zone_create_database_duplicate(self):
+    def test_zone_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         zone = {}
@@ -7813,7 +7813,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('new_username', result.username)
 
     @attr(kind='small')
-    def test_zone_update_database_not_found(self):
+    def test_zone_update_db_not_found(self):
         # setup
         zone = {}
         zone['id'] = 1
@@ -7844,7 +7844,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_zone_delete_database_not_found(self):
+    def test_zone_delete_db_not_found(self):
         """
         should be raise error.
         """
@@ -7878,7 +7878,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.password)
 
     @attr(kind='small')
-    def test_zone_get_database_not_found(self):
+    def test_zone_get_db_not_found(self):
         # setup
         zone = {}
         zone['id'] = 1
@@ -7909,7 +7909,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('fake', result.password)
 
     @attr(kind='small')
-    def test_zone_get_all_database_not_found(self):
+    def test_zone_get_all_db_not_found(self):
         # test and assert
         results = self.db.api.zone_get_all(self.context)
         self.assertEqual([], results)
@@ -7927,7 +7927,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', metadata['type'])
 
     @attr(kind='small')
-    def test_instance_metadata_get_database_not_found(self):
+    def test_instance_metadata_get_db_not_found(self):
         # setup
         i = {}
         i['id'] = 1
@@ -7953,7 +7953,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, metadata)
 
     @attr(kind='small')
-    def test_instance_metadata_delete_database_not_found(self):
+    def test_instance_metadata_delete_db_not_found(self):
         # setup
         i = {}
         i['id'] = 1
@@ -7983,7 +7983,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, metadata)
 
     @attr(kind='small')
-    def test_instance_metadata_delete_all_database_not_found(self):
+    def test_instance_metadata_delete_all_db_not_found(self):
         """
         No method found in db.api
         """
@@ -8063,7 +8063,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('new_spec', metadata['spec'])
 
     @attr(kind='small')
-    def test_instance_metadata_update_database_not_found(self):
+    def test_instance_metadata_update_db_not_found(self):
         # setup
         i = {}
         i['id'] = 1
@@ -8095,7 +8095,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('hash', result.md5hash)
 
     @attr(kind='small')
-    def test_agent_build_create_database_duplicate(self):
+    def test_agent_build_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
         ab = {}
@@ -8132,7 +8132,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('hash', result.md5hash)
 
     @attr(kind='small')
-    def test_agent_build_get_by_triple_database_not_found(self):
+    def test_agent_build_get_by_triple_db_not_found(self):
         # setup
         ab = {}
         ab['id'] = 1
@@ -8168,7 +8168,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('hash', result.md5hash)
 
     @attr(kind='small')
-    def test_agent_build_get_all_database_not_found(self):
+    def test_agent_build_get_all_db_not_found(self):
         # setup
         results = self.db.api.agent_build_get_all(self.context)
         self.assertEqual([], results)
@@ -8191,7 +8191,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], results)
 
     @attr(kind='small')
-    def test_agent_build_destroy_database_not_found(self):
+    def test_agent_build_destroy_db_not_found(self):
         """
         should be raise error
         """
@@ -8232,7 +8232,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('windows', result.os)
 
     @attr(kind='small')
-    def test_agent_build_update_database_not_found(self):
+    def test_agent_build_update_db_not_found(self):
         """
         should be raise error
         """
@@ -8321,7 +8321,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, result)
 
     @attr(kind='small')
-    def test_instance_type_extra_specs_delete_database_not_found(self):
+    def test_instance_type_extra_specs_delete_db_not_found(self):
         # setup
         values = {}
         values['id'] = 100
@@ -8411,7 +8411,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result['name'])
 
     @attr(kind='small')
-    def test_volume_type_create_database_duplicate(self):
+    def test_volume_type_create_db_duplicate(self):
         """
         Only this method return DBError.
         """
@@ -8438,7 +8438,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', results['test']['name'])
 
     @attr(kind='small')
-    def test_volume_type_get_all_database_not_found(self):
+    def test_volume_type_get_all_db_not_found(self):
         results = self.db.api.volume_type_get_all(self.context)
         self.assertEqual({}, results)
 
@@ -8464,7 +8464,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result['name'])
 
     @attr(kind='small')
-    def test_volume_type_get_database_not_found(self):
+    def test_volume_type_get_db_not_found(self):
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8485,7 +8485,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result['name'])
 
     @attr(kind='small')
-    def test_volume_type_get_by_name_database_not_found(self):
+    def test_volume_type_get_by_name_db_not_found(self):
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8512,7 +8512,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 'test')
 
     @attr(kind='small')
-    def test_volume_type_destroy_database_not_found(self):
+    def test_volume_type_destroy_db_not_found(self):
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8534,7 +8534,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, results)
 
     @attr(kind='small')
-    def test_volume_type_purge_database_not_found(self):
+    def test_volume_type_purge_db_not_found(self):
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8556,7 +8556,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('value1', result['key1'])
 
     @attr(kind='small')
-    def test_volume_type_extra_specs_get_database_not_found(self):
+    def test_volume_type_extra_specs_get_db_not_found(self):
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8579,7 +8579,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual({}, result)
 
     @attr(kind='small')
-    def test_volume_type_extra_specs_delete_database_not_found(self):
+    def test_volume_type_extra_specs_delete_db_not_found(self):
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8653,7 +8653,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('available', result.status)
 
     @attr(kind='small')
-    def test_vsa_create_database_duplicate(self):
+    def test_vsa_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         vsa = {}
         vsa['id'] = 1
@@ -8690,7 +8690,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('new_name', result.display_name)
 
     @attr(kind='small')
-    def test_vsa_update_database_not_found(self):
+    def test_vsa_update_db_not_found(self):
         vsa = {}
         vsa['id'] = 1
         vsa['display_name'] = 'test'
@@ -8725,7 +8725,7 @@ class DbApiTestCase(test.TestCase):
                           self.context, 1)
 
     @attr(kind='small')
-    def test_vsa_destroy_database_not_found(self):
+    def test_vsa_destroy_db_not_found(self):
         """
         should be raise error.
         """
@@ -8802,7 +8802,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('vsa 1', result.name)
 
     @attr(kind='small')
-    def test_vsa_get_database_not_found(self):
+    def test_vsa_get_db_not_found(self):
         vsa = {}
         vsa['id'] = 1
         vsa['display_name'] = 'test'
@@ -8846,7 +8846,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('vsa 1', result.name)
 
     @attr(kind='small')
-    def test_vsa_get_all_database_not_found(self):
+    def test_vsa_get_all_db_not_found(self):
         results = self.db.api.vsa_get_all(self.context)
         self.assertEqual([], results)
 
@@ -8878,7 +8878,7 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('vsa 1', result.name)
 
     @attr(kind='small')
-    def test_vsa_get_all_by_project_database_not_found(self):
+    def test_vsa_get_all_by_project_db_not_found(self):
         FLAGS.vsa_name_template = "vsa %s"
         values = {}
         values['id'] = 100
