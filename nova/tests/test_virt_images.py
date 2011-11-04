@@ -30,6 +30,21 @@ from nova import flags
 FLAGS = flags.FLAGS
 
 
+fake_image = {'id': '123456',
+              'name': 'fakeimage123456',
+              'created_at': datetime.datetime(2011, 01, 01, 01, 02, 03),
+              'updated_at': datetime.datetime(2011, 01, 01, 01, 02, 03),
+              'deleted_at': None,
+              'deleted': False,
+              'status': 'active',
+              'is_public': False,
+              'container_format': 'raw',
+              'disk_format': 'raw',
+              'properties': {'kernel_id': FLAGS.null_kernel,
+                             'ramdisk_id': FLAGS.null_kernel,
+                             'architecture': 'x86_64'}}
+
+
 def _fake_get_glance_client(context, image_href):
     """nova.image.glance.get_glance_client() include bug(#198)"""
 
@@ -97,17 +112,6 @@ class VirtImagesTestCase(test.TestCase):
 
         # metadata(nova.image.fake.FakeImageService)
         timestamp = datetime.datetime(2011, 01, 01, 01, 02, 03)
-        image1 = {'id': '123456',
-                 'name': 'fakeimage123456',
-                 'created_at': timestamp,
-                 'updated_at': timestamp,
-                 'deleted_at': None,
-                 'deleted': False,
-                 'status': 'active',
-                 'is_public': False,
-                 'properties': {'kernel_id': FLAGS.null_kernel,
-                                'ramdisk_id': FLAGS.null_kernel,
-                                'architecture': 'x86_64'}}
 
         # parameter
         image_href = 123456
@@ -116,8 +120,7 @@ class VirtImagesTestCase(test.TestCase):
 
         metadata = virt_images.fetch(self.context, image_href, path,
                                    self.user_id, self.project_id)
-
-        self.assertEqual(image1, metadata)
+        self.assertEqual(fake_image, metadata)
         self.assert_(os.path.exists(path))
         with open(path, 'r') as f:
             self.assertEqual('fake chunk', f.read())
@@ -130,6 +133,7 @@ class VirtImagesTestCase(test.TestCase):
 
         image_href = 'httpfakeserver9292images1'
         path = '/tmp/virt_images.part'
+        self.assertFalse(os.path.exists(path))
 
         self.assertRaises(exception.InvalidImageRef,
                           virt_images.fetch,
@@ -178,17 +182,6 @@ class VirtImagesTestCase(test.TestCase):
 
         # metadata(nova.image.fake.FakeImageService)
         timestamp = datetime.datetime(2011, 01, 01, 01, 02, 03)
-        image1 = {'id': '123456',
-                 'name': 'fakeimage123456',
-                 'created_at': timestamp,
-                 'updated_at': timestamp,
-                 'deleted_at': None,
-                 'deleted': False,
-                 'status': 'active',
-                 'is_public': False,
-                 'properties': {'kernel_id': FLAGS.null_kernel,
-                                'ramdisk_id': FLAGS.null_kernel,
-                                'architecture': 'x86_64'}}
 
         # parameter
         image_href = 123456
@@ -201,7 +194,7 @@ class VirtImagesTestCase(test.TestCase):
                                    self.user_id, self.project_id)
 
         # Ensure return value
-        self.assertEqual(image1, metadata)
+        self.assertEqual(fake_image, metadata)
 
         # Ensure file
         self.assertFalse(os.path.exists("%s.part" % path))
@@ -209,7 +202,7 @@ class VirtImagesTestCase(test.TestCase):
         os.remove(path)
 
     @attr(kind='small')
-    def test_fetch_to_raw_configuration_not_include_fileformat_in_qemu_info(self):
+    def test_fetch_to_raw_cfg_not_include_fileformat_in_qemu_info(self):
         """ Ensure exception.ImageUnacceptable
             when not include file_format in qemu_image_info"""
 
@@ -247,17 +240,6 @@ class VirtImagesTestCase(test.TestCase):
 
         # metadata(nova.image.fake.FakeImageService)
         timestamp = datetime.datetime(2011, 01, 01, 01, 02, 03)
-        image1 = {'id': '123456',
-                 'name': 'fakeimage123456',
-                 'created_at': timestamp,
-                 'updated_at': timestamp,
-                 'deleted_at': None,
-                 'deleted': False,
-                 'status': 'active',
-                 'is_public': False,
-                 'properties': {'kernel_id': FLAGS.null_kernel,
-                                'ramdisk_id': FLAGS.null_kernel,
-                                'architecture': 'x86_64'}}
 
         # parameter
         image_href = 123456
@@ -269,7 +251,7 @@ class VirtImagesTestCase(test.TestCase):
                                    self.user_id, self.project_id)
 
         # Ensure return value
-        self.assertEqual(image1, metadata)
+        self.assertEqual(fake_image, metadata)
 
         # Ensure file
         self.assertFalse(os.path.exists("%s.part" % path))
@@ -298,17 +280,6 @@ class VirtImagesTestCase(test.TestCase):
 
         # metadata(nova.image.fake.FakeImageService)
         timestamp = datetime.datetime(2011, 01, 01, 01, 02, 03)
-        image1 = {'id': '123456',
-                 'name': 'fakeimage123456',
-                 'created_at': timestamp,
-                 'updated_at': timestamp,
-                 'deleted_at': None,
-                 'deleted': False,
-                 'status': 'active',
-                 'is_public': False,
-                 'properties': {'kernel_id': FLAGS.null_kernel,
-                                'ramdisk_id': FLAGS.null_kernel,
-                                'architecture': 'x86_64'}}
 
         # parameter
         image_href = 123456
@@ -320,7 +291,7 @@ class VirtImagesTestCase(test.TestCase):
                                             self.user_id, self.project_id)
 
         # Ensure return value
-        self.assertEqual(image1, metadata)
+        self.assertEqual(fake_image, metadata)
 
         # Ensure exec convert command
         self.assert_(self.convert_flag)
