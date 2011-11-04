@@ -306,7 +306,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertTrue(self._project_id is None)
 
     @attr(kind='small')
-    def test_validate_networks_database_fixed_ip_not_found_for_network(self):
+    def test_validate_networks_db_fixed_ip_not_found_for_network(self):
         """
         FixedIpNotFoundForNetwork is raised
         """
@@ -331,7 +331,7 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, requested_networks)
 
     @attr(kind='small')
-    def test_validate_networks_database_fixed_ip_already_in_use(self):
+    def test_validate_networks_db_fixed_ip_already_in_use(self):
         """
         FixedIpAlreadyInUse is raised
         """
@@ -402,7 +402,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertTrue(self._host is None)
 
     @attr(kind='small')
-    def test_init_parameter_not_network_driver(self):
+    def test_init_param_not_network_driver(self):
         """
         network_driver is not set to FLAGS.network_driver
         """
@@ -437,7 +437,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(flags.FLAGS.flat_injected, self._values['injected'])
 
     @attr(kind='small')
-    def test_init_host_exception_setup_network(self):
+    def test_init_host_ex_setup_network(self):
         """
         all networks are initialized even
         when exception is raised in _setup_network
@@ -459,7 +459,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(2, self._count)
 
     @attr(kind='small')
-    def test_periodic_tasks_parameter_not_timeout_fixed_ips(self):
+    def test_periodic_tasks_param_not_timeout_fixed_ips(self):
         """
         db.fixed_ip_disassociate_all_by_timeout is not called
         """
@@ -475,7 +475,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_periodic_tasks_parameter_timeout_fixed_ips(self):
+    def test_periodic_tasks_param_timeout_fixed_ips(self):
         """
         db.fixed_ip_disassociate_all_by_timeout is called
         """
@@ -520,7 +520,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(HOST, res)
 
     @attr(kind='small')
-    def test_allocate_for_instance_exception_networks_not_found(self):
+    def test_allocate_for_instance_ex_networks_not_found(self):
         """
         [] is returned when NoNetworksFound is caught
         """
@@ -585,7 +585,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(kwargs.pop('instance_id'), self._instance_id)
 
     @attr(kind='small')
-    def test_deallocate_for_instance_exception_fixed_ip_not_found(self):
+    def test_deallocate_for_instance_ex_fixed_ip_not_found(self):
         """
         deallocate_fixed_ip is not called
         """
@@ -613,7 +613,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_get_instance_nw_info_exception_fixed_ip_not_found(self):
+    def test_get_instance_nw_info_ex_fixed_ip_not_found(self):
         """
         fixed_ips is set to [] when FixedIpNotFoundForInstance is caught
         """
@@ -634,7 +634,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual([], res[0][1].get('ips'))
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_vif_network_is_none(self):
+    def test_get_instance_nw_info_db_vif_network_is_none(self):
         """
         network_info is not appended
         """
@@ -707,7 +707,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertDictMatch(res[0][1], check)
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_multi_host(self):
+    def test_get_instance_nw_info_db_multi_host(self):
         """
         dhcp_server is set to fixed_ip['address']
         """
@@ -767,7 +767,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertDictMatch(res[0][1], check)
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_not_multi_host(self):
+    def test_get_instance_nw_info_db_not_multi_host(self):
         """
         dhcp_server is set to vif['network']['gateway']
         """
@@ -821,7 +821,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertDictMatch(res[0][1], check)
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_not_network_cidr_v6(self):
+    def test_get_instance_nw_info_db_not_network_cidr_v6(self):
         """
         ip6s is set to none
         """
@@ -846,7 +846,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(None, res[0][1].get('ip6s'))
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_not_network_gateway_v6(self):
+    def test_get_instance_nw_info_db_not_network_gateway_v6(self):
         """
         gateway6 is set to none
         """
@@ -871,7 +871,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(None, res[0][1].get('gateway6'))
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_not_network_dns1(self):
+    def test_get_instance_nw_info_db_not_network_dns1(self):
         """
         info['dns'] is not appended to network['dns1']
         """
@@ -896,7 +896,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual([network['dns2']], res[0][1].get('dns'))
 
     @attr(kind='small')
-    def test_get_instance_nw_info_database_not_network_dns2(self):
+    def test_get_instance_nw_info_db_not_network_dns2(self):
         """
         info['dns'] is not appended to network['dns2']
         """
@@ -1023,7 +1023,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(vifs[0], res)
 
     @attr(kind='small')
-    def test_add_virtual_interface_exception_virtual_interface_create(self):
+    def test_add_virtual_interface_ex_virtual_interface_create(self):
         """
         VirtualInterfaceMacAddressException is raised
         """
@@ -1065,7 +1065,7 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, 1, 1)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_parameter_network_cidr_is_none(self):
+    def test_allocate_fixed_ip_param_network_cidr_is_none(self):
         """
         none is returned
         """
@@ -1081,7 +1081,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(None, res)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_parameter_address_is_not_none(self):
+    def test_allocate_fixed_ip_param_address_is_not_none(self):
         """
         db.fixed_ip_associate is called
         """
@@ -1129,7 +1129,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(False, self._reserved)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_parameter_address_is_none(self):
+    def test_allocate_fixed_ip_param_address_is_none(self):
         """
         db.fixed_ip_associate_pool is called
         """
@@ -1158,7 +1158,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(fixed_ip_address, res)
 
     @attr(kind='small')
-    def test_deallocate_fixed_ip_flags_not_force_dhcp_release(self):
+    def test_deallocate_fixed_ip_cfg_not_force_dhcp_release(self):
         """
         driver.release_dhcp is not called
         """
@@ -1188,7 +1188,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_deallocate_fixed_ip_flags_force_dhcp_release(self):
+    def test_deallocate_fixed_ip_cfg_force_dhcp_release(self):
         """
         driver.release_dhcp is called
         """
@@ -1234,7 +1234,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(vif['address'], self._mac_address)
 
     @attr(kind='small')
-    def test_deallocate_fixed_ip_exception_driver_get_dev(self):
+    def test_deallocate_fixed_ip_ex_driver_get_dev(self):
         """
         ProcessExecutionError is raised
         """
@@ -1261,7 +1261,7 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, '192.168.0.100', **kwargs)
 
     @attr(kind='small')
-    def test_deallocate_fixed_ip_exception_driver_release_dhcp(self):
+    def test_deallocate_fixed_ip_ex_driver_release_dhcp(self):
         """
         ProcessExecutionError is raised
         """
@@ -1328,7 +1328,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(now, self._updated_at)
 
     @attr(kind='small')
-    def test_lease_fixed_ip_database_fixed_ip_instance_not_found(self):
+    def test_lease_fixed_ip_db_fixed_ip_instance_not_found(self):
         """
         InstanceNotFound is raised
         """
@@ -1344,7 +1344,7 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, '192.168.0.100')
 
     @attr(kind='small')
-    def test_lease_fixed_ip_database_fixed_ip_not_allocated(self):
+    def test_lease_fixed_ip_db_fixed_ip_not_allocated(self):
         """
         LOG.warn is called
         """
@@ -1403,7 +1403,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(False, self._leased)
 
     @attr(kind='small')
-    def test_release_fixed_ip_database_fixed_ip_instance_not_found(self):
+    def test_release_fixed_ip_db_fixed_ip_instance_not_found(self):
         """
         InstanceNotFound is raised
         """
@@ -1419,7 +1419,7 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, '192.168.0.100')
 
     @attr(kind='small')
-    def test_release_fixed_ip_database_fixed_ip_not_leased(self):
+    def test_release_fixed_ip_db_fixed_ip_not_leased(self):
         """
         LOG.warn is called
         """
@@ -1451,7 +1451,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertTrue(self._kwargs['context'] is not None)
 
     @attr(kind='small')
-    def test_release_fixed_ip_database_fixed_ip_not_allocated(self):
+    def test_release_fixed_ip_db_fixed_ip_not_allocated(self):
         """
         db.fixed_ip_disassociate is called
         """
@@ -1473,7 +1473,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.network.release_fixed_ip(self.context, '192.168.0.100')
 
     @attr(kind='small')
-    def test_release_fixed_ip_flags_update_dhcp_on_disassociate(self):
+    def test_release_fixed_ip_cfg_update_dhcp_on_disassociate(self):
         """
         db.fixed_ip_get_network is called
         """
@@ -1500,7 +1500,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.network.release_fixed_ip(self.context, '192.168.0.100')
 
     @attr(kind='small')
-    def test_delete_network_database_network_is_disassociated(self):
+    def test_delete_network_db_network_is_disassociated(self):
         """
         db.network_delete_safe is called
         """
@@ -1524,7 +1524,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(network.id, self._network_id)
 
     @attr(kind='small')
-    def test_delete_network_database_network_is_associated(self):
+    def test_delete_network_db_network_is_associated(self):
         """
         ValueError is raised
         """
@@ -1539,7 +1539,7 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, '10.0.0.0/29', True)
 
     @attr(kind='small')
-    def test_allocate_for_instance_parameter_requested_networks_is_none(self):
+    def test_allocate_for_instance_param_requested_networks_is_none(self):
         """
         address is not set
         """
@@ -2052,7 +2052,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(kwargs['vpn'], self._args['vpn'])
 
     @attr(kind='small')
-    def test_allocate_for_instance_parameter_network_multi_host_is_true(self):
+    def test_allocate_for_instance_param_network_multi_host_is_true(self):
         """
         host is set to network['host']
         """
@@ -2102,7 +2102,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(kwargs['host'], self._physical_node_id)
 
     @attr(kind='small')
-    def test_allocate_for_instance_parameter_host_is_none(self):
+    def test_allocate_for_instance_param_host_is_none(self):
         """
         rpc.call is called
         """
@@ -2233,7 +2233,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(kwargs['vpn'], self._args['vpn'])
 
     @attr(kind='small')
-    def test_init_host_floating_ips_database_fixed_ip_is_none(self):
+    def test_init_host_floating_ips_db_fixed_ip_is_none(self):
         """
         driver.ensure_floating_forward is not called
         """
@@ -2254,7 +2254,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_init_host_floating_ips_database_fixed_ip_is_not_none(self):
+    def test_init_host_floating_ips_db_fixed_ip_is_not_none(self):
         """
         driver.ensure_floating_forward is called
         """
@@ -2279,7 +2279,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(floating_ip['fixed_ip']['address'], self._fixed_ip)
 
     @attr(kind='small')
-    def test_init_host_floating_ips_exception_floating_ips_not_found(self):
+    def test_init_host_floating_ips_ex_floating_ips_not_found(self):
         """
         none is returned
         """
@@ -2292,7 +2292,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertTrue(res is None)
 
     @attr(kind='small')
-    def test_init_host_floating_ips_exception_driver_bind_floating_ip(self):
+    def test_init_host_floating_ips_ex_driver_bind_floating_ip(self):
         """
         ProcessExecutionError is raised
         """
@@ -2396,7 +2396,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_allocate_for_instance_flags_auto_assign_floating_ip(self):
+    def test_allocate_for_instance_cfg_auto_assign_floating_ip(self):
         """
         network_api.associate_floating_ip is called
         """
@@ -2481,7 +2481,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertTrue(self._affect_auto_assigned)
 
     @attr(kind='small')
-    def test_deallocate_for_instance_database_floating_ip_auto_assigned(self):
+    def test_deallocate_for_instance_db_floating_ip_auto_assigned(self):
         """
         network_api.release_floating_ip is called
         """
@@ -2567,7 +2567,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_allocate_floating_ip_database_address_quota_not_exceeded(self):
+    def test_allocate_floating_ip_db_address_quota_not_exceeded(self):
         """
         db.floating_ip_allocate_address is called
         """
@@ -2596,7 +2596,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertTrue(self._is_called)
 
     @attr(kind='small')
-    def test_allocate_floating_ip_database_address_quota_exceeded(self):
+    def test_allocate_floating_ip_db_address_quota_exceeded(self):
         """
         QuotaError is raised
         """
@@ -2619,7 +2619,7 @@ class VlanNetworkTestCase(test.TestCase):
                           self.context, 'fake_project')
 
     @attr(kind='small')
-    def test_associate_floating_ip_database_floating_ip_fixed_ip_is_none(self):
+    def test_associate_floating_ip_db_floating_ip_fixed_ip_is_none(self):
         """
         driver.ensure_floating_forward is called
         """
@@ -2654,7 +2654,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(fixed_ip_address, self._fixed_ip)
 
     @attr(kind='small')
-    def test_associate_floating_ip_exception_driver_bind_floating_ip(self):
+    def test_associate_floating_ip_ex_driver_bind_floating_ip(self):
         """
         ProcessExecutionError is raised
         """
@@ -2818,7 +2818,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertTrue(self._is_called)
 
     @attr(kind='small')
-    def test_init_host_exception_driver_init_host(self):
+    def test_init_host_ex_driver_init_host(self):
         """
         ProcessExecutionError is raised
         """
@@ -2831,7 +2831,7 @@ class VlanNetworkTestCase(test.TestCase):
                           self.network.init_host)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_parameter_address_is_not_none(self):
+    def test_allocate_fixed_ip_param_address_is_not_none(self):
         """
         db.fixed_ip_associate is called
         """
@@ -2927,7 +2927,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(network['vpn_private_address'], self._private_ip)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_flags_not_fake_network_and_not_use_ipv6(self):
+    def test_allocate_fixed_ip_cfg_not_fake_network_and_not_use_ipv6(self):
         """
         db.network_update is called
         """
@@ -2983,7 +2983,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(network, self._network_ref)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_flags_not_fake_network_and_use_ipv6(self):
+    def test_allocate_fixed_ip_cfg_not_fake_network_and_use_ipv6(self):
         """
         db.network_update is called
         """
@@ -3043,7 +3043,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(gateway, self._values['gateway_v6'])
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_plug(self):
+    def test_allocate_fixed_ip_ex_driver_plug(self):
         """
         ProcessExecutionError is raised
         """
@@ -3118,7 +3118,7 @@ class VlanNetworkTestCase(test.TestCase):
                           self.context, 1, network, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_ensure_vpn_forward(self):
+    def test_allocate_fixed_ip_ex_driver_ensure_vpn_forward(self):
         """
         ProcessExecutionError is raised
         """
@@ -3159,7 +3159,7 @@ class VlanNetworkTestCase(test.TestCase):
                           self.context, 1, network, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_update_dhcp(self):
+    def test_allocate_fixed_ip_ex_driver_update_dhcp(self):
         """
         ProcessExecutionError is raised
         """
@@ -3201,7 +3201,7 @@ class VlanNetworkTestCase(test.TestCase):
                           self.context, 1, network, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_update_ra(self):
+    def test_allocate_fixed_ip_ex_driver_update_ra(self):
         """
         ProcessExecutionError is raised
         """
@@ -3268,7 +3268,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(True, self._force)
 
     @attr(kind='small')
-    def test_allocate_for_instance_parameter_requested_networks_exist(self):
+    def test_allocate_for_instance_param_requested_networks_exist(self):
         """
         db.network_get_all_by_uuids is called
         """
@@ -3616,7 +3616,7 @@ class CommonNetworkTestCase(test.TestCase):
         self.assertTrue(manager.create_networks(*args))
 
     @attr(kind='small')
-    def test_create_networks_parameter_not_cidr_and_not_subnet_v4(self):
+    def test_create_networks_param_not_cidr_and_not_subnet_v4(self):
         """
         net['cidr'], net['netmask'], net['gateway'], net['broadcast']
         and net['dhcp_start'] are not set
@@ -3673,7 +3673,7 @@ class CommonNetworkTestCase(test.TestCase):
         self.assertEqual(gateway_v6, self._values['gateway_v6'])
 
     @attr(kind='small')
-    def test_create_networks_database_network_already_exists(self):
+    def test_create_networks_db_network_already_exists(self):
         """
         ValueError is raised
         """
@@ -3715,7 +3715,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertTrue(self._is_called)
 
     @attr(kind='small')
-    def test_init_host_exception_driver_init_host(self):
+    def test_init_host_ex_driver_init_host(self):
         """
         ProcessExecutionError is raised
         """
@@ -3728,7 +3728,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                           self.network.init_host)
 
     @attr(kind='small')
-    def test_init_host_exception_driver_ensure_metadata_ip(self):
+    def test_init_host_ex_driver_ensure_metadata_ip(self):
         """
         ProcessExecutionError is raised
         """
@@ -3742,7 +3742,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                           self.network.init_host)
 
     @attr(kind='small')
-    def test_init_host_exception_driver_metadata_forward(self):
+    def test_init_host_ex_driver_metadata_forward(self):
         """
         ProcessExecutionError is raised
         """
@@ -3756,7 +3756,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                           self.network.init_host)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_flags_fake_network(self):
+    def test_allocate_fixed_ip_cfg_fake_network(self):
         """
         driver.update_dhcp is not called
         """
@@ -3789,7 +3789,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertFalse(self._is_called)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_flags_not_fake_network_and_not_use_ipv6(self):
+    def test_allocate_fixed_ip_cfg_not_fake_network_and_not_use_ipv6(self):
         """
         driver.update_dhcp is called
         """
@@ -3840,7 +3840,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertEqual(network, self._network_ref)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_flags_not_fake_network_and_use_ipv6(self):
+    def test_allocate_fixed_ip_cfg_not_fake_network_and_use_ipv6(self):
         """
         db.network_update is called
         """
@@ -3898,7 +3898,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertEqual(gateway, self._values['gateway_v6'])
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_plug(self):
+    def test_allocate_fixed_ip_ex_driver_plug(self):
         """
         ProcessExecutionError is raised
         """
@@ -3970,7 +3970,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                           self.context, 1, network, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_update_dhcp(self):
+    def test_allocate_fixed_ip_ex_driver_update_dhcp(self):
         """
         ProcessExecutionError is raised
         """
@@ -4010,7 +4010,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                           self.context, 1, network, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_driver_update_ra(self):
+    def test_allocate_fixed_ip_ex_driver_update_ra(self):
         """
         ProcessExecutionError is raised
         """
@@ -4053,7 +4053,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                           self.context, 1, network, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_fixed_ip_exception_utils_get_my_linklocal(self):
+    def test_allocate_fixed_ip_ex_utils_get_my_linklocal(self):
         """
         ProcessExecutionError is raised
         """
