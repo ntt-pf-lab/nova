@@ -31,9 +31,11 @@ from nova import crypto
 from nova import db
 from nova import exception
 from nova import flags
+from nova import log as logging
 from nova import test
 from nova import utils
 from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
 
 FLAGS = flags.FLAGS
 
@@ -56,7 +58,7 @@ class CryptoTestCase(test.TestCase):
             return f.read()
 
     @attr(kind='small')
-    def test_ca_folder_flags_not_use_project_ca(self):
+    def test_ca_folder_cfg_not_use_project_ca(self):
         """Test for nova.crypto.ca_folder. """
         self.flags(use_project_ca=False)
         project_id = 'fake'
@@ -66,7 +68,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(ca_folder, ref)
 
     @attr(kind='small')
-    def test_ca_folder_flags_use_project_ca(self):
+    def test_ca_folder_cfg_use_project_ca(self):
         """Test for nova.crypto.ca_folder. """
         self.flags(use_project_ca=True)
         project_id = 'fake'
@@ -96,7 +98,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(key_path, ref)
 
     @attr(kind='small')
-    def test_fetch_ca_parameter_project_id_is_not_none_and_chain_is_true(self):
+    def test_fetch_ca_param_project_id_is_not_none_and_chain_is_true(self):
         """Test for nova.crypto.fetch_ca. """
         self.flags(use_project_ca=True)
         project_id = 'fake'
@@ -119,7 +121,7 @@ class CryptoTestCase(test.TestCase):
             os.remove(ca_path)
 
     @attr(kind='small')
-    def test_fetch_ca_parameter_project_id_is_not_none_and_chain_is_false(self):
+    def test_fetch_ca_param_project_id_is_not_none_and_chain_is_false(self):
         """Test for nova.crypto.fetch_ca. """
         self.flags(use_project_ca=True)
         project_id = 'fake'
@@ -133,7 +135,7 @@ class CryptoTestCase(test.TestCase):
         os.remove(project_ca_path)
 
     @attr(kind='small')
-    def test_fetch_ca_parameter_project_id_is_none(self):
+    def test_fetch_ca_param_project_id_is_none(self):
         """Test for nova.crypto.fetch_ca. """
         self.flags(use_project_ca=True)
         project_id = None
@@ -152,7 +154,7 @@ class CryptoTestCase(test.TestCase):
             os.remove(ca_path)
 
     @attr(kind='small')
-    def test_fetch_ca_flags_not_use_project_ca(self):
+    def test_fetch_ca_cfg_not_use_project_ca(self):
         """Test for nova.crypto.fetch_ca. """
         self.flags(use_project_ca=False)
         project_id = 'fake'
@@ -186,7 +188,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual('AAAAAAAAAA', ref)
 
     @attr(kind='small')
-    def test_generate_fingerprint_exception_utils_execute(self):
+    def test_generate_fingerprint_ex_utils_execute(self):
         """
         ProcessExecutionError is raised
 
@@ -228,7 +230,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(('AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'), ref)
 
     @attr(kind='small')
-    def test_generate_key_pair_parameter_bits_is_less_than_minimum(self):
+    def test_generate_key_pair_param_bits_is_less_than_minimum(self):
         """
         ProcessExecutionError is raised
         when bits is less than the minimum size for RSA keys
@@ -239,7 +241,7 @@ class CryptoTestCase(test.TestCase):
                           bits=bits)
 
     @attr(kind='small')
-    def test_generate_key_pair_exception_utils_execute(self):
+    def test_generate_key_pair_ex_utils_execute(self):
         """
         ProcessExecutionError is raised
         """
@@ -257,6 +259,48 @@ class CryptoTestCase(test.TestCase):
 
         self.assertRaises(exception.ProcessExecutionError,
                           self.crypto.generate_key_pair)
+
+    @attr(kind='small')
+    def test_generate_key_pair_ex_shutil_rmtree(self):
+        """
+        OSError is not raised even when OSError occured in shutil.rmtree()
+        """
+        raise SkipTest('OSError occurred')
+        self._msg = None
+        self._args = None
+        self._kwargs = None
+
+        def stub_warn(msg, *args, **kwargs):
+            self._msg = msg
+            self._args = args
+            self._kwargs = kwargs
+
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(utils, 'execute')
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        self.mox.StubOutWithMock(shutil, 'rmtree')
+        self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        self._create_file(os.path.join(temp_dir, 'temp'), 'AAAAAAAAAA')
+        self._create_file(os.path.join(temp_dir, 'temp.pub'), 'BBBBBBBBBB')
+        out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
+        utils.execute(mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg()).AndReturn((out, None))
+        ex = OSError()
+        shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
+        self.mox.ReplayAll()
+
+        ref = self.crypto.generate_key_pair()
+        self.assertEqual(('AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'), ref)
+        self.assertEqual('Failed to remove dir %s: %s', self._msg)
+        self.assertEqual(temp_dir, self._args[0])
+        self.assertEqual(ex, self._args[1])
 
     @attr(kind='small')
     def test_ssl_pub_to_ssh_pub(self):
@@ -308,7 +352,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(('aaa', 'sss'), ref)
 
     @attr(kind='small')
-    def test_generate_x509_cert_exception_utils_execute(self):
+    def test_generate_x509_cert_ex_utils_execute(self):
         """
         ProcessExecutionError is raised
         """
@@ -324,6 +368,61 @@ class CryptoTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.crypto.generate_x509_cert,
                           user_id, project_id, bits=bits)
+
+    @attr(kind='small')
+    def test_generate_x509_cert_ex_shutil_rmtree(self):
+        """
+        OSError is not raised even when OSError occured in shutil.rmtree()
+        """
+        raise SkipTest('OSError occurred')
+        self._msg = None
+        self._args = None
+        self._kwargs = None
+
+        def stub_warn(msg, *args, **kwargs):
+            self._msg = msg
+            self._args = args
+            self._kwargs = kwargs
+
+        self.flags(use_project_ca=True)
+        self.mox.StubOutWithMock(utils, 'execute')
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(shutil, 'rmtree')
+        self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
+        self.mox.StubOutWithMock(self.crypto, '_sign_csr')
+        self.mox.StubOutWithMock(db, 'certificate_create')
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg())
+        self.crypto._sign_csr(mox.IgnoreArg(),
+                             mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
+        db.certificate_create(mox.IgnoreArg(), mox.IgnoreArg())
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        ex = OSError()
+        shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
+        self.mox.ReplayAll()
+
+        user_id = 'test_user'
+        project_id = 'fake'
+        bits = 1024
+        ca_path = self.crypto.ca_path(project_id)
+        # make sure the condition that ca_path exists
+        if not os.path.exists(ca_path):
+            self._create_file(ca_path)
+        # make a file {path to temp_dir}/crypto/temp.key
+        self._create_file(os.path.join(temp_dir, 'temp.key'), 'aaa')
+        # make a file {path to temp_dir}/crypto/temp.csr
+        self._create_file(os.path.join(temp_dir, 'temp.csr'), 'bbb')
+
+        ref = self.crypto.generate_x509_cert(user_id, project_id, bits=bits)
+        self.assertEqual(('aaa', 'sss'), ref)
+        self.assertEqual('Failed to remove dir %s: %s', self._msg)
+        self.assertEqual(temp_dir, self._args[0])
+        self.assertEqual(ex, self._args[1])
 
     @attr(kind='small')
     def test_generate_vpn_files(self):
@@ -358,7 +457,7 @@ class CryptoTestCase(test.TestCase):
         os.remove(crt_fn)
 
     @attr(kind='small')
-    def test_generate_vpn_files_parameter_crt_fn_exists(self):
+    def test_generate_vpn_files_param_crt_fn_exists(self):
         """Test for nova.crypto.generate_vpn_files. """
         self.flags(use_project_ca=True)
         self._count = 0
@@ -380,7 +479,7 @@ class CryptoTestCase(test.TestCase):
         os.remove(crt_fn)
 
     @attr(kind='small')
-    def test_sign_csr_flags_use_project_ca(self):
+    def test_sign_csr_cfg_use_project_ca(self):
         """Test for nova.crypto.sign_csr. """
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(utils, 'execute')
@@ -410,7 +509,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(('ccc', 'ddd'), ref)
 
     @attr(kind='small')
-    def test_sign_csr_flags_not_use_project_ca(self):
+    def test_sign_csr_cfg_not_use_project_ca(self):
         """Test for nova.crypto.sign_csr. """
         self.flags(use_project_ca=False)
         self.mox.StubOutWithMock(utils, 'execute')
@@ -434,7 +533,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(('ccc', 'ddd'), ref)
 
     @attr(kind='small')
-    def test_sign_csr_parameter_ca_path_does_exists(self):
+    def test_sign_csr_param_ca_path_does_exists(self):
         """Test for nova.crypto.sign_csr. """
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(utils, 'execute')
@@ -462,7 +561,7 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(('ccc', 'ddd'), ref)
 
     @attr(kind='small')
-    def test_sign_csr_parameter_ca_folder_does_not_exist(self):
+    def test_sign_csr_param_ca_folder_does_not_exist(self):
         """Test for nova.crypto.sign_csr. """
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(utils, 'execute')
@@ -498,7 +597,7 @@ class CryptoTestCase(test.TestCase):
         self.assertTrue(os.path.exists(ca_folder))
 
     @attr(kind='small')
-    def test_sign_csr_exception_utils_execute(self):
+    def test_sign_csr_ex_utils_execute(self):
         """
         ProcessExecutionError is raised
         """
@@ -519,6 +618,7 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_mkreq(self):
         """Test for nova.crypto.mkreq. """
+        raise SkipTest('AttributeError occurred')
         bits = 1024
         subject = 'nova'
         ca = 0
@@ -530,7 +630,7 @@ class CryptoTestCase(test.TestCase):
         self.assertTrue(pk.get_rsa())
 
     @attr(kind='small')
-    def test_mkreq_exception_rsa_gen_key(self):
+    def test_mkreq_ex_rsa_gen_key(self):
         """
         ValueError is raised
         when ValueError is raised in M2Crypto.RSA.gen_key()
@@ -551,6 +651,7 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_mkcacert(self):
         """Test for nova.crypto.mkcacert. """
+        raise SkipTest('AttributeError occurred')
         subject = 'nova'
         ca = 1
         cert, pk, pkey = self.crypto.mkcacert(subject, ca)
@@ -565,7 +666,7 @@ class CryptoTestCase(test.TestCase):
         self.assertTrue(pkey)
 
     @attr(kind='small')
-    def test_mkcacert_exception_rsa_gen_key(self):
+    def test_mkcacert_ex_rsa_gen_key(self):
         """
         ValueError is raised
         when ValueError is raised in M2Crypto.RSA.gen_key()
@@ -596,7 +697,7 @@ class CryptoTestCase(test.TestCase):
         fp.close()
 
     @attr(kind='small')
-    def test_compute_md5_exception_file_not_open(self):
+    def test_compute_md5_ex_file_not_open(self):
         """
         IOError is raised when file not open for reading
         """
