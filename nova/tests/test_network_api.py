@@ -506,13 +506,13 @@ class APITestCase(test.TestCase):
                                     fake_floating_ip_get_by_address)
         self.stubs.Set(self.api.db, "queue_get_for", fake_queue_get_for)
 
-        def cast(topic, content):
+        def call(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('disassociate_floating_ip', content['method'])
             self.assertEqual(floating_ip_ref['address'],
                              content['args']['floating_address'])
 
-        self.cast = cast
+        self.call = call
 
         address = '192.168.0.1'
         affect_auto_assigned = True
@@ -578,13 +578,13 @@ class APITestCase(test.TestCase):
                                     fake_floating_ip_get_by_address)
         self.stubs.Set(self.api.db, "queue_get_for", fake_queue_get_for)
 
-        def cast(topic, content):
+        def call(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('disassociate_floating_ip', content['method'])
             self.assertEqual(floating_ip_ref['address'],
                              content['args']['floating_address'])
 
-        self.cast = cast
+        self.call = call
 
         address = '192.168.0.1'
         affect_auto_assigned = True
@@ -657,14 +657,14 @@ class APITestCase(test.TestCase):
     @attr(kind='small')
     def test_deallocate_for_instance(self):
         """Test for nova.network.api.API.deallocate_for_instance. """
-        def cast(topic, content):
+        def call(topic, content):
             self.assertEqual(FLAGS.network_topic, topic)
             self.assertEqual('deallocate_for_instance', content['method'])
             args = content['args']
             self.assertEqual(instance['id'], args['instance_id'])
             self.assertEqual(instance['project_id'], args['project_id'])
 
-        self.cast = cast
+        self.call = call
 
         instance = instances[0]
         kwargs = {}
