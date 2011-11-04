@@ -18,6 +18,7 @@
 Tests For nova.scheduler.base_scheduler
 """
 
+from nova import exception
 from nova import flags
 from nova import test
 from nova.scheduler import base_scheduler
@@ -85,7 +86,7 @@ class BaseSchedulerTestCase(test.TestCase):
         self.assertEqual(hostlist, ref)
 
     @attr(kind='small')
-    def test_filter_hosts_parameter_filter_name_is_none(self):
+    def test_filter_hosts_param_filter_name_is_none(self):
         """
         SchedulerHostFilterNotFound is not raised when filter is None
         """
@@ -110,7 +111,33 @@ class BaseSchedulerTestCase(test.TestCase):
         self.assertEqual(hostlist, ref)
 
     @attr(kind='small')
-    def test_filter_hosts_parameter_instance_type_is_none(self):
+    def test_filter_hosts_param_filter_name_is_not_acceptable(self):
+        """
+        SchedulerHostFilterNotFound is raised
+        when filter name is not acceptable
+        """
+        topic = 'compute'
+        request_spec = {}
+        request_spec['filter'] = 'unexpected_filter_name'
+        instance_type = dict(name='tiny',
+                             memory_mb=50,
+                             vcpus=10,
+                             local_gb=500,
+                             flavorid=1,
+                             swap=500,
+                             rxtx_quota=30000,
+                             rxtx_cap=200,
+                             extra_specs={})
+        request_spec['instance_type'] = instance_type
+        hosts = 'testhost'
+        zm = FakeZoneManager()
+        self.basescheduler.set_zone_manager(zm)
+        self.assertRaises(exception.SchedulerHostFilterNotFound,
+                          self.basescheduler.filter_hosts,
+                          topic, request_spec, hosts)
+
+    @attr(kind='small')
+    def test_filter_hosts_param_instance_type_is_none(self):
         """
         hosts or [] is returned when instance_type is None
         """
@@ -145,7 +172,7 @@ class BaseSchedulerTestCase(test.TestCase):
         self.assertEqual(len(instlist), num_instances)
 
     @attr(kind='small')
-    def test_weigh_hosts_parameter_num_instances_is_zero(self):
+    def test_weigh_hosts_param_num_instances_is_zero(self):
         """
         [] is returned when num_instances is zero
         """
@@ -161,7 +188,7 @@ class BaseSchedulerTestCase(test.TestCase):
         self.assertEqual(0, len(instlist))
 
     @attr(kind='small')
-    def test_weigh_hosts_parameter_hosts_is_empty(self):
+    def test_weigh_hosts_param_hosts_is_empty(self):
         """
         Test for nova.scheduler.base_scheduler.BaseScheduler.weigh_hosts.
         """
