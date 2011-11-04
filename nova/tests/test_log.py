@@ -411,7 +411,7 @@ class NovaLoggerTestCase(test.TestCase):
                 if args == (10, 'fake_message', None) \
                 and kwargs == {'exc_info': 1,
                                'extra': {'environment':
-                                         {'test1': '111', 
+                                         {'test1': '111',
                                           'test2': '2222'}}}:
                     self.fake_num += 1
 
@@ -420,7 +420,7 @@ class NovaLoggerTestCase(test.TestCase):
                             '{"test1": "111", "test2": "2222"}',) \
                 and kwargs == {'extra':
                                {'environment':
-                                {'test1': '111', 
+                                {'test1': '111',
                                  'test2': '2222'}}}:
                     self.stub_flg = True
 
