@@ -184,6 +184,10 @@ class API(base.Base):
         if not metadata:
             metadata = {}
 
+        if not isinstance(max_count, int):
+            raise exception.ApiError(_("Invalid max_count specified: %s. "
+                                     "must be a numeric value") % max_count)
+
         num_instances = quota.allowed_instances(context, max_count,
                                                 instance_type)
         if num_instances < min_count:
