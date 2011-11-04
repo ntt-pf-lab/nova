@@ -470,7 +470,7 @@ class ComputeTestCase(test.TestCase):
         """Ensure failure when running an instance that already exists"""
         instance_id = self._create_instance()
         self.compute.run_instance(self.context, instance_id)
-        self.assertRaises(exception.Error,
+        self.assertRaises(exception.InstanceExists,
                           self.compute.run_instance,
                           self.context,
                           instance_id)
@@ -1263,7 +1263,7 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
-    def test_snapshot_instance_when_image_type_is_not_snapshot_and_backup(self):
+    def test_snapshot_instance_when_not_snapshot_and_backup(self):
         """ Ensure raise exception
             when image_type is not snapshot and backup."""
         instance_id = self._create_instance()
@@ -1273,13 +1273,13 @@ class ComputeTestCase(test.TestCase):
 
         # condition
         #  image_type:not snapshot and backup
-        self.assertRaises(Exception,
+        self.assertRaises(exception.InvalidInput,
                           self.compute.snapshot_instance,
                           self.context, instance_id, name, image_type='bkup')
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
-    def test_snapshot_instance_when_image_type_is_snapshot_and_rotation(self):
+    def test_snapshot_instance_when_snapshot_and_rotation(self):
         """ Ensure raise exception(ImageRotationNotAllowed)
             when image_type is snapshot and rotation
         """
@@ -2332,7 +2332,7 @@ class ComputeTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_terminate_instance_power_state_shutoff(self):
-        """ Ensure raise exception.Error when power_state is shutoff."""
+        """ Ensure raise exception when power_state is shutoff."""
         c = context.get_admin_context()
         instance_id = self._create_instance()
         self.compute.run_instance(c, instance_id)
@@ -2344,7 +2344,22 @@ class ComputeTestCase(test.TestCase):
         # pre-condition
         self.assertEquals(power_state.SHUTOFF, instance['power_state'])
 
-        self.assertRaises(exception.Error,
+        self.assertRaises(exception.InstanceNotRunning,
+                          self.compute.terminate_instance, c, instance_id)
+
+    @attr(kind='small')
+    def test_terminate_instance_when_instance_not_exist(self):
+        """ Ensure raise exception when instance is not exist."""
+        c = context.get_admin_context()
+        instance_id = self._create_instance()
+        self.compute.run_instance(c, instance_id)
+        instances = db.instance_get_all(c)
+        self.assertEqual(len(instances), 1)
+        self.compute.terminate_instance(c, instance_id)
+        instances = db.instance_get_all(c)
+        self.assertEqual(len(instances), 0)
+
+        self.assertRaises(exception.InstanceNotFound,
                           self.compute.terminate_instance, c, instance_id)
 
     @attr(kind='small')
@@ -2870,6 +2885,21 @@ class ComputeTestCase(test.TestCase):
                                         block_migration=True, disk=disk)
         self.assertEquals(instance_id, self.instance_id)
         self.assertEquals(disk, self.disk_info)
+
+    @attr(kind='small')
+    def test_pre_live_migration_when_instance_not_exist(self):
+        """ Ensure raise exception when instance is not exist"""
+        c = context.get_admin_context()
+        instance_id = self._create_instance()
+        self.compute.run_instance(c, instance_id)
+        instances = db.instance_get_all(c)
+        self.assertEqual(len(instances), 1)
+        self.compute.terminate_instance(c, instance_id)
+        instances = db.instance_get_all(c)
+        self.assertEqual(len(instances), 0)
+
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.pre_live_migration, c, instance_id)
 
     @attr(kind='small')
     def test_get_lock_by_instance_id(self):
