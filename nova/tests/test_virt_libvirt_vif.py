@@ -273,9 +273,12 @@ class LibvirtOpenVswitchDriverTestCase(test.TestCase):
     def test_plug(self):
         """Test for nova.virt.libvirt.vif.LibvirtOpenVswitchDriver.plug. """
         self.stub_flg = False
+        self.stub_num = 1
 
         def fake_utils_execute(*args, **kwargs):
-            self.stub_flg = True
+            self.stub_num += 1
+            if self.stub_num == 2:
+                self.stub_flg = True
 
         self.stubs.Set(utils, 'execute', fake_utils_execute)
         ref = self.libvirtopenvswitchdriver.plug(instance=instances[0],
