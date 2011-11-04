@@ -120,7 +120,7 @@ class APITestCase(test.TestCase):
         self.assertEqual(floating_ips[0]['id'], ref['id'])
 
     @attr(kind='small')
-    def test_get_floating_ip_parameter_floating_ip_not_found(self):
+    def test_get_floating_ip_param_floating_ip_not_found(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -176,7 +176,7 @@ class APITestCase(test.TestCase):
         self.assertEqual(virtual_interfaces, ref)
 
     @attr(kind='small')
-    def test_get_vifs_by_instance_parameter_instance_not_found(self):
+    def test_get_vifs_by_instance_param_instance_not_found(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -233,7 +233,7 @@ class APITestCase(test.TestCase):
                                      affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_release_floating_ip_parameter_fixed_ip_is_not_none(self):
+    def test_release_floating_ip_param_fixed_ip_is_not_none(self):
         """
         ApiError is raised when floating_ip['fixed_ip'] is not None.
         """
@@ -254,7 +254,7 @@ class APITestCase(test.TestCase):
                           affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_release_floating_ip_parameter_not_affect_auto_assigned_and_auto_assigned(self):
+    def test_release_floating_ip_param_not_affect_and_auto_assigned(self):
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['fixed_ip'] = None
         floating_ip_ref['auto_assigned'] = True
@@ -308,7 +308,7 @@ class APITestCase(test.TestCase):
                     affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_associate_floating_ip_parameter_fixed_ip_isinstance_of_basestring(self):
+    def test_associate_floating_ip_param_fixed_ip_isinstance_basestring(self):
         """Test for nova.network.api.API.associate_floating_ip. """
         fixed_ip_ref = dict(fixed_ips[0])
         fixed_ip_ref['network'] = networks[0]
@@ -349,7 +349,7 @@ class APITestCase(test.TestCase):
                         affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_associate_floating_ip_parameter_not_affect_auto_assigned_and_auto_assigned(self):
+    def test_associate_floating_ip_param_not_affect_and_auto_assigned(self):
         """Test for nova.network.api.API.associate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['auto_assigned'] = True
@@ -368,7 +368,7 @@ class APITestCase(test.TestCase):
         self.assertEqual(None, ref)
 
     @attr(kind='small')
-    def test_associate_floating_ip_database_floating_ip_project_id_is_none(self):
+    def test_associate_floating_ip_db_floating_ip_project_id_is_none(self):
         """Test for nova.network.api.API.associate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['project_id'] = None
@@ -388,7 +388,7 @@ class APITestCase(test.TestCase):
                           affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_associate_floating_ip_database_floating_ip_project_id_is_not_equal_to_context_project_id(self):
+    def test_associate_floating_ip_db_proj_id_not_equal_to_ctx_proj_id(self):
         """Test for nova.network.api.API.associate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['fixed_ip'] = None
@@ -408,7 +408,7 @@ class APITestCase(test.TestCase):
                           affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_associate_floating_ip_database_floating_ip_fixed_ip_is_not_fixed_ip(self):
+    def test_associate_floating_ip_db_float_ip_fixed_ip_is_not_fixed_ip(self):
         """Test for nova.network.api.API.associate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['fixed_ip'] = fixed_ips[1]
@@ -451,7 +451,7 @@ class APITestCase(test.TestCase):
                             affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_associate_floating_ip_database_fixed_ip_network_multi_host_is_true(self):
+    def test_associate_floating_ip_db_fixed_ip_network_multi_host(self):
         """Test for nova.network.api.API.associate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['fixed_ip'] = None
@@ -521,7 +521,7 @@ class APITestCase(test.TestCase):
                             affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_disassociate_floating_ip_parameter_not_affect_auto_assigned_and_auto_assigned(self):
+    def test_disassociate_floating_ip_param_not_affect_and_auto_assigned(self):
         """Test for nova.network.api.API.disassociate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['auto_assigned'] = True
@@ -539,7 +539,7 @@ class APITestCase(test.TestCase):
                             affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_disassociate_floating_ip_database_floating_ip_fixed_ip_is_none(self):
+    def test_disassociate_floating_ip_db_floating_ip_fixed_ip_is_none(self):
         """Test for nova.network.api.API.disassociate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['fixed_ip'] = None
@@ -558,7 +558,7 @@ class APITestCase(test.TestCase):
                           affect_auto_assigned=affect_auto_assigned)
 
     @attr(kind='small')
-    def test_disassociate_floating_ip_database_floating_ip_fixed_ip_network_multi_host_is_true(self):
+    def test_disassociate_floating_ip_db_floating_ip_fixed_ip_multi_host(self):
         """Test for nova.network.api.API.disassociate_floating_ip. """
         floating_ip_ref = dict(floating_ips[0])
         floating_ip_ref['fixed_ip'] = dict(fixed_ips[0])
@@ -619,7 +619,7 @@ class APITestCase(test.TestCase):
         self.assertEqual(network_info, ref)
 
     @attr(kind='small')
-    def test_allocate_for_instance_parameter_instance_is_none(self):
+    def test_allocate_for_instance_param_instance_is_none(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -634,7 +634,7 @@ class APITestCase(test.TestCase):
                           self.context, instance, **kwargs)
 
     @attr(kind='small')
-    def test_allocate_for_instance_parameter_instance_not_found(self):
+    def test_allocate_for_instance_param_instance_not_found(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -673,7 +673,7 @@ class APITestCase(test.TestCase):
         self.api.deallocate_for_instance(self.context, instance, **kwargs)
 
     @attr(kind='small')
-    def test_deallocate_for_instance_parameter_instance_is_none(self):
+    def test_deallocate_for_instance_param_instance_is_none(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -687,7 +687,7 @@ class APITestCase(test.TestCase):
                           self.context, instance, **kwargs)
 
     @attr(kind='small')
-    def test_deallocate_for_instance_parameter_instance_not_found(self):
+    def test_deallocate_for_instance_param_instance_not_found(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -744,7 +744,7 @@ class APITestCase(test.TestCase):
                             self.context, instance_id, address)
 
     @attr(kind='small')
-    def test_remove_fixed_ip_from_instance_parameter_instance_not_found(self):
+    def test_remove_fixed_ip_from_instance_param_instance_not_found(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -796,7 +796,7 @@ class APITestCase(test.TestCase):
         self.assertEqual(network_info, ref)
 
     @attr(kind='small')
-    def test_get_instance_nw_info_parameter_instance_is_none(self):
+    def test_get_instance_nw_info_param_instance_is_none(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
@@ -807,7 +807,7 @@ class APITestCase(test.TestCase):
                           self.context, instance)
 
     @attr(kind='small')
-    def test_get_instance_nw_info_parameter_instance_not_found(self):
+    def test_get_instance_nw_info_param_instance_not_found(self):
         raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
