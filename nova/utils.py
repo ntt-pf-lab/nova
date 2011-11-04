@@ -833,6 +833,12 @@ def is_uuid_like(val):
     """
     if not isinstance(val, basestring):
         return False
+
+    uuid_fmt = '[0-9A-Fa-f]{8}\-[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{4}\-' \
+                '[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{12}'
+    if not re.search(uuid_fmt, val):
+        return False
+
     return (len(val) == 36) and (val.count('-') == 4)
 
 
