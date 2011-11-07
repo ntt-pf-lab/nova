@@ -329,17 +329,6 @@ class SchedulerTestCase(test.TestCase):
         self.assert_(self.stub_flg)
 
     @attr(kind='small')
-    def test_get_scheduler_rules(self):
-        """Test for nova.scheduler.manager.SchedulerManager
-        .get_scheduler_rules. """
-        self.flags(scheduler_driver='nova.scheduler.simple.SimpleScheduler')
-        scheduler = manager.SchedulerManager()
-        ctxt = context.get_admin_context()
-        self.assertRaises(AttributeError,
-                         scheduler.get_scheduler_rules,
-                         ctxt)
-
-    @attr(kind='small')
     def test_schedule_parameter_host_is_none(self):
         """Test for nova.scheduler.manager.SchedulerManager._schedule. """
         self.stub_flg = False
