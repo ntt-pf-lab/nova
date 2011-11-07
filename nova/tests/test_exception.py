@@ -22,7 +22,6 @@ from nova import test
 from nova import exception
 from nova.exception import NovaException
 
-from nose.plugins.skip import SkipTest
 from nose.plugins.attrib import attr
 
 
@@ -379,7 +378,6 @@ class NovaExceptionTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_VolumeIsBusy(self):
-        raise SkipTest
         ex = exception.VolumeIsBusy(volume_name="vol")
         self.assertEqual("deleting volume vol that has snapshot", str(ex))
 
