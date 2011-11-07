@@ -18,6 +18,7 @@
 
 from nova import test
 from nova import exception
+from nose.plugins.attrib import attr
 
 
 class ApiErrorTestCase(test.TestCase):
@@ -95,3 +96,18 @@ class WrapExceptionTestCase(test.TestCase):
         self.assertEquals(notifier.provided_publisher, None)
         self.assertEquals(notifier.provided_event, "bad_function_exception")
         self.assertEquals(notifier.provided_priority, notifier.ERROR)
+
+
+class LinkIpNotFoundTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_linkipnotfound(self):
+        ex = exception.LinkIpNotFound()
+
+        self.assertEqual(
+            'Local link IP not found for %(interface)s. %(reason)s', str(ex))
+
+        ex = exception.LinkIpNotFound(interface='eth0', reason='device error')
+
+        self.assertEqual(
+            'Local link IP not found for eth0. device error', str(ex))
