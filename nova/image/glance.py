@@ -2,6 +2,8 @@
 
 # Copyright 2010 OpenStack LLC.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -231,7 +233,7 @@ class GlanceImageService(service.BaseImageService):
         """Returns a dict containing image data for the given name."""
         # TODO(vish): replace this with more efficient call when glance
         #             supports it.
-        image_metas = self.detail(context)
+        image_metas = self.detail(context, filters={'name': name})
         for image_meta in image_metas:
             if name == image_meta.get('name'):
                 return image_meta
