@@ -321,8 +321,8 @@ class SchedulerTestCase(test.TestCase):
                        'select',
                        fake_select)
 
-        self.flags(scheduler_driver='nova.scheduler.\
-            abstract_scheduler.AbstractScheduler')
+        self.flags(
+        scheduler_driver='nova.scheduler.abstract_scheduler.AbstractScheduler')
         scheduler = manager.SchedulerManager()
         ctxt = context.get_admin_context()
         scheduler.select(ctxt)
@@ -362,8 +362,9 @@ class SchedulerTestCase(test.TestCase):
         scheduler = manager.SchedulerManager()
         ctxt = context.get_admin_context()
         topic = 'fake_topic'
-        scheduler._schedule(method=method, context=ctxt, topic=topic)
+        result = scheduler._schedule(method=method, context=ctxt, topic=topic)
         self.assert_(self.stub_flg)
+        self.assertEqual(result, None)
 
 
 class ZoneSchedulerTestCase(test.TestCase):
