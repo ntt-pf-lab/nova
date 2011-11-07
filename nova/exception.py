@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -833,3 +835,7 @@ class ZoneRequestError(Error):
 
 class InsufficientFreeMemory(NovaException):
     message = _("Insufficient free memory on compute node to start %(uuid)s.")
+
+
+class InvalidRPCConnectionReuse(NovaException):
+    message = _("It is not allowed to use that RPC Connection once again.")

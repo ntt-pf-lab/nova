@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -20,10 +22,12 @@ Unit Tests for remote procedure calls using kombu
 """
 
 from nova import context
+from nova import exception
 from nova import log as logging
 from nova import test
 from nova.rpc import impl_kombu
 from nova.tests import test_rpc_common
+from nose.plugins.attrib import attr
 
 
 LOG = logging.getLogger('nova.tests.rpc')
@@ -108,3 +112,12 @@ class RpcKombuTestCase(test_rpc_common._BaseRpcTestCase):
         conn2.consume(limit=1)
         conn2.close()
         self.assertEqual(self.received_message, message)
+
+    @attr(kind='small')
+    def test_close_parameter_connection_is_none(self):
+        """Test for nova.rpc.impl_kombu.ConnectionContext.close. """
+        self.connectioncontext = impl_kombu.ConnectionContext()
+        self.connectioncontext.close()
+        self.assertRaises(exception.InvalidRPCConnectionReuse,
+                          self.connectioncontext.__getattr__,
+                          'key')
