@@ -100,9 +100,9 @@ class DbApiTestCase(test.TestCase):
     def test_instance_get_all_by_filters_parameter_ipv6(self):
         def fake_to_global(prefix, mac, project_id):
             return prefix
-        
+
         self.stubs.Set(ipv6.api.IMPL, 'to_global', fake_to_global)
-        
+
         args1 = {'id': 1, 'image_ref': 1, 'host': 'host1'}
         args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
         inst1 = self.db.instance_create(self.context, args1)
@@ -120,9 +120,9 @@ class DbApiTestCase(test.TestCase):
     def test_instance_get_all_by_filters_parameter_ip(self):
         def fake_to_global(prefix, mac, project_id):
             return prefix
-        
+
         self.stubs.Set(ipv6.api.IMPL, 'to_global', fake_to_global)
-        
+
         args1 = {'id': 1, 'image_ref': 1, 'host': 'host1'}
         args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
         inst1 = self.db.instance_create(self.context, args1)
@@ -148,7 +148,6 @@ class DbApiTestCase(test.TestCase):
         args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
         inst1 = self.db.instance_create(self.context, args1)
         inst2 = self.db.instance_create(self.context, args2)
-
 
         meta = [dict(key1='value1')]
         filter = {'metadata': meta}
@@ -1666,9 +1665,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_virtual_interface_update_db_not_found(self):
-        raise SkipTest("No checks in db, so AttributeError occured in api")
         # test and assert
-        # FIXME VirtualInterfaceNotFound does not exist.
         self.assertRaises(exception.NotFound,
                           self.db.api.virtual_interface_update,
                           self.context, 1, {'uuid': 'uuid1'})
@@ -1691,9 +1688,10 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_virtual_interface_get_db_not_found(self):
         # test and assert
-        # FIXME VirtualInterfaceNotFound does not exist.
-        result = self.db.api.virtual_interface_get(self.context, 1)
-        self.assertTrue(result is None)
+        self.assertRaises(exception.NotFound,
+                          self.db.api.virtual_interface_get,
+                          self.context,
+                                                    1)
 
     @attr(kind='small')
     def test_virtual_interface_get_by_address(self):
@@ -1880,9 +1878,10 @@ class DbApiTestCase(test.TestCase):
         result = self.db.api.virtual_interface_delete(self.context, 1)
         self.assertTrue(result is None)
 
-        # FIXME VirtualInterfaceNotFound does not exist.
-        result = self.db.api.virtual_interface_get(self.context, 1)
-        self.assertTrue(result is None)
+        self.assertRaises(exception.NotFound,
+                          self.db.api.virtual_interface_get,
+                          self.context,
+                                                    1)
 
     @attr(kind='small')
     def test_virtual_interface_delete_db_not_found(self):
@@ -1909,9 +1908,10 @@ class DbApiTestCase(test.TestCase):
                                                     self.context, 1)
         self.assertTrue(result is None)
 
-        # FIXME VirtualInterfaceNotFound does not exist.
-        result = self.db.api.virtual_interface_get(self.context, 1)
-        self.assertTrue(result is None)
+        self.assertRaises(exception.NotFound,
+                          self.db.api.virtual_interface_get,
+                          self.context,
+                                                    1)
 
     @attr(kind='small')
     def test_virtual_interface_delete_by_instance_db_not_found(self):
@@ -7954,7 +7954,7 @@ class DbApiTestCase(test.TestCase):
         self.db.api.instance_type_destroy(self.context, 'm1.tiny')
         self.db.api.instance_type_destroy(self.context, 'm1.large')
         self.db.api.instance_type_destroy(self.context, 'm1.small')
-        
+
         results = self.db.api.instance_type_get_all(self.context)
 
         self.assertEqual({}, results)
