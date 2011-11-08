@@ -37,6 +37,9 @@ import lockfile
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_string('test_backend', 'DumyBackend',
+                    'The backend to use for test')
+
 
 class ExecuteTestCase(test.TestCase):
     def test_retry_on_failure(self):
@@ -874,14 +877,14 @@ class UtilsTestCase(test.TestCase):
         def _fake_debug(msg, arg):
             self.assertEqual(True, arg.startswith('sudo'))
             # exit without execute command
-            raise exception.Error
+            raise exception.ProcessExecutionError
 
         self.stubs.Set(utils.LOG, 'debug', _fake_debug)
 
         cmd = 'dir'
         kwargs = dict(run_as_root=True)
 
-        self.assertRaises(exception.Error,
+        self.assertRaises(exception.ProcessExecutionError,
                          self.utils.execute, cmd, **kwargs)
 
     @attr(kind='small')
@@ -2116,7 +2119,7 @@ class LoopingCallTestCase(test.TestCase):
     def test_wait_exception(self):
         """Test for nova.utils.LoopingCall.wait.
         A raised exception in called method will be pass to
-        main thread if in  waiting state"""
+        main thread if in waiting state"""
 
         def _fake_f():
             self.counter += 1
@@ -2137,3 +2140,26 @@ class LoopingCallTestCase(test.TestCase):
 
         # clear
         self.loopingcall.stop()
+
+
+def dumy_method(name):
+    return name
+
+
+class LazyPluggableTestCase(test.TestCase):
+    """Test for nova.utils.LazyPluggable."""
+
+    def setUp(self):
+        super(LazyPluggableTestCase, self).setUp()
+        self.utils = utils
+
+    @attr(kind='small')
+    def test_lazypluggable(self):
+        """Test for nova.utils.LazyPluggable"""
+
+        backends = dict(DumyBackend='nova.tests.test_utils')
+        back = self.lazypluggable = self.utils.LazyPluggable(
+                                        FLAGS['test_backend'], **backends)
+
+        ref = back.dumy_method('test')
+        self.assertEqual('test', ref)
