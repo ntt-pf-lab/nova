@@ -189,7 +189,12 @@ def destroy_container(target, instance, nbd=False):
 
     LXC does not support qcow2 images yet.
     """
-    out, err = utils.execute('mount', run_as_root=True)
+    try:
+        out, err = utils.execute('mount', run_as_root=True)
+    except Exception, exn:
+        LOG.exception(_('Failed to remove container: %s'), exn)
+        return
+
     for loop in out.splitlines():
         if instance['name'] in loop:
             device = loop.split()[0]
