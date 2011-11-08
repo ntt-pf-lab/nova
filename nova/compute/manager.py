@@ -4,6 +4,8 @@
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2011 Justin Santa Barbara
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -1557,6 +1559,10 @@ class ComputeManager(manager.SchedulerDependentManager):
             else:
                 floating_ip_ref = self.db.floating_ip_get_by_address(ctxt,
                                                               floating_ip)
+                if not floating_ip_ref:
+                    raise exception.FloatingIpNotFoundForAddress(
+                                                    address=floating_ip)
+
                 self.db.floating_ip_update(ctxt,
                                            floating_ip_ref['address'],
                                            {'host': dest})
