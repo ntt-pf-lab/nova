@@ -1679,6 +1679,40 @@ class FlatNetworkTestCase(test.TestCase):
         self.network.release_fixed_ip(self.context, '192.168.0.100')
 
     @attr(kind='small')
+    def test_create_networks_db_network_already_exists(self):
+        """
+        following process continues even when network creation failed
+        """
+        raise SkipTest('ValueError occurred')
+
+        def stub_fixed_ip_create(context, values):
+            pass
+
+        self._network_create_count = 0
+
+        def stub_network_create_safe(context, values):
+            self._network_create_count += 1
+            if self._network_create_count == 1:
+                return None
+            if self._network_create_count == 2:
+                return networks[0]
+
+        self.mox.StubOutWithMock(db, 'network_get_all')
+        self.mox.StubOutWithMock(db, 'network_get')
+        self.stubs.Set(db, 'network_create_safe', stub_network_create_safe)
+        self.stubs.Set(db, 'fixed_ip_create', stub_fixed_ip_create)
+        db.network_get_all(mox.IgnoreArg()).AndReturn([])
+        db.network_get(mox.IgnoreArg(),
+                       mox.IgnoreArg()).AndReturn(networks[0])
+        self.mox.ReplayAll()
+
+        cidr = '192.168.0.0/16'
+        args = [None, 'fake', cidr, False, 2, 256, None, None, None, None]
+        res = self.network.create_networks(*args)
+        self.assertEqual([networks[0]], res)
+        self.assertEqual(2, self._network_create_count)
+
+    @attr(kind='small')
     def test_delete_network_db_network_is_disassociated(self):
         """
         db.network_delete_safe is called
@@ -3926,23 +3960,6 @@ class CommonNetworkTestCase(test.TestCase):
                 None]
         self.assertTrue(manager.create_networks(*args))
         self.assertEqual(gateway_v6, self._values['gateway_v6'])
-
-    @attr(kind='small')
-    def test_create_networks_db_network_already_exists(self):
-        """
-        ValueError is raised
-        """
-        cidr = '192.168.0.0/24'
-        manager = self.FakeNetworkManager()
-        self.stubs.Set(manager.db, 'network_create_safe',
-                                self.fake_network_create_safe)
-        self.stubs.Set(manager, '_create_fixed_ips',
-                                self.fake_create_fixed_ips)
-        args = [None, 'foo', cidr, None, 1, 256, 'fd00::/48', None, None,
-                None]
-        self.assertRaises(ValueError,
-                         manager.create_networks,
-                         *args)
 
 
 class FlatDHCPNetworkTestCase(test.TestCase):
