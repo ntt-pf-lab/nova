@@ -43,20 +43,15 @@ class ApiTestCase(test.TestCase):
     def setUp(self):
         super(ApiTestCase, self).setUp()
 
-    @attr('small')
+    @attr(kind='small')
     def test_notify_decorator(self):
         """Test for nova.notifier.api.publisher_id. """
         self._notify_decorator_called = False
 
         def dummy_fn(*args):
             self._notify_decorator_called = True
-            return dummy_fn
 
-        @api.notify_decorator("compute", dummy_fn)
-        def foo(*args):
-            pass
-
-        foo()
+        api.notify_decorator("compute", dummy_fn)()
 
         self.assertEqual(self._notify_decorator_called, True)
 
@@ -106,11 +101,9 @@ class ApiTestCase(test.TestCase):
                 'event_type', 'bad priority', dict(a=3))
 
     @attr(kind='small')
-    def test_notify_payload_parameter(self):
+    def test_notify_payload_parameter_empty_string(self):
         """Test for nova.notifier.api.notify#payload """
         self.payload = None
-        self.mock_exception_called = False
-        self.exception_count = 0
 
         def mock_notify(message):
             self.payload = message['payload']
@@ -119,32 +112,59 @@ class ApiTestCase(test.TestCase):
 
         # empty string
         api.notify(api.publisher_id("compute"), 'event_type', 'DEBUG', '')
-        self.assertEqual(self.payload, '')
+        self.assertEqual('', self.payload)
+
+    @attr(kind='small')
+    def test_notify_payload_parameter_normal_string(self):
+        """Test for nova.notifier.api.notify#payload """
+        self.payload = None
+
+        def mock_notify(message):
+            self.payload = message['payload']
+        self.stubs.Set(utils.import_object(FLAGS.notification_driver),
+        'notify', mock_notify)
 
         # string
         api.notify(api.publisher_id("compute"), 'event_type', 'DEBUG', 'str')
-        self.assertEqual(self.payload, 'str')
+        self.assertEqual('str', self.payload)
+
+    @attr(kind='small')
+    def test_notify_payload_parameter_number(self):
+        """Test for nova.notifier.api.notify#payload """
+        self.payload = None
+
+        def mock_notify(message):
+            self.payload = message['payload']
+        self.stubs.Set(utils.import_object(FLAGS.notification_driver),
+        'notify', mock_notify)
+
+        # number
+        api.notify(api.publisher_id("compute"), 'event_type', 'DEBUG', 123)
+        self.assertEqual(123, self.payload)
+
+    @attr(kind='small')
+    def test_notify_payload_parameter_class(self):
+        """Test for nova.notifier.api.notify#payload """
+        self.payload = None
+        self.exception_count = 0
+
+        def mock_notify(message):
+            self.payload = message['payload']
+        self.stubs.Set(utils.import_object(FLAGS.notification_driver),
+        'notify', mock_notify)
 
         def mock_notify_exception(message):
             self.payload = message['payload']
             self.exception_count = self.exception_count + 1
             raise exception.Error()
         self.stubs.Set(utils.import_object(FLAGS.notification_driver),
-        'notify', mock_notify_exception)
-
-        def mock_exception(msg):
-            pass
-        self.stubs.Set(LOG, 'exception', mock_exception)
-
-        # number
-        api.notify(api.publisher_id("compute"), 'event_type', 'DEBUG', 123)
-        self.assertEqual(self.payload, 123)
+                    'notify', mock_notify_exception)
 
         # class
         class Mock(object):
             pass
         api.notify(api.publisher_id("compute"), 'event_type', 'DEBUG', Mock)
         self.assertEqual(self.payload,
-        "<class 'nova.tests.notifier.test_notifier_api.Mock'>")
+                    "<class 'nova.tests.notifier.test_notifier_api.Mock'>")
 
-        self.assertEqual(self.exception_count, 2)
+        self.assertEqual(1, self.exception_count)
