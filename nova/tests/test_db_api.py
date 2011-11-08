@@ -32,6 +32,7 @@ from nova import flags
 from nova.compute import vm_states
 from nose.plugins.attrib import attr
 from nose.plugins.skip import SkipTest
+from nova import ipv6
 
 FLAGS = flags.FLAGS
 
@@ -95,6 +96,88 @@ class DbApiTestCase(test.TestCase):
         inst2 = self.db.instance_create(self.context, args)
         result = self.db.instance_get_all_by_filters(self.context, {})
         self.assertTrue(2, len(result))
+
+    def test_instance_get_all_by_filters_parameter_ipv6(self):
+        def fake_to_global(prefix, mac, project_id):
+            return prefix
+        
+        self.stubs.Set(ipv6.api.IMPL, 'to_global', fake_to_global)
+        
+        args1 = {'id': 1, 'image_ref': 1, 'host': 'host1'}
+        args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
+        inst1 = self.db.instance_create(self.context, args1)
+        inst2 = self.db.instance_create(self.context, args2)
+
+        self.db.api.network_create_safe(self.context,
+            {'id': 100, 'host': 'host1', 'cidr_v6': '2001:db8::/16'})
+        self.db.api.virtual_interface_create(self.context,
+            {'id': 1, 'instance_id': 1, 'network_id': 100})
+
+        filter = {'ip6': '2001:db8::'}
+        result = self.db.instance_get_all_by_filters(self.context, filter)
+        self.assertEqual(1, len(result))
+
+    def test_instance_get_all_by_filters_parameter_ip(self):
+        def fake_to_global(prefix, mac, project_id):
+            return prefix
+        
+        self.stubs.Set(ipv6.api.IMPL, 'to_global', fake_to_global)
+        
+        args1 = {'id': 1, 'image_ref': 1, 'host': 'host1'}
+        args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
+        inst1 = self.db.instance_create(self.context, args1)
+        inst2 = self.db.instance_create(self.context, args2)
+
+        self.db.api.network_create_safe(self.context,
+            {'id': 100, 'host': 'host1', 'cidr': '192.168.0.1'})
+        self.db.api.virtual_interface_create(self.context,
+            {'id': 1, 'instance_id': 1, 'network_id': 100,
+             'address': '192.168.0.1'})
+        self.db.api.fixed_ip_create(self.context,
+            {'id': 200, 'instance_id': 1, 'virtual_interface_id': 1,
+             'address': '192.168.0.1'})
+
+        filter = {'ip': '192.168.0.1'}
+        result = self.db.instance_get_all_by_filters(self.context, filter)
+
+        self.assertEqual(1, len(result))
+
+    def test_instance_get_all_by_filters_parameter_meta(self):
+        args1 = {'id': 1, 'image_ref': 1, 'host': 'host1',
+                    'metadata': {'key1': 'value1'}}
+        args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
+        inst1 = self.db.instance_create(self.context, args1)
+        inst2 = self.db.instance_create(self.context, args2)
+
+
+        meta = [dict(key1='value1')]
+        filter = {'metadata': meta}
+        result = self.db.instance_get_all_by_filters(self.context, filter)
+
+        self.assertEqual(1, len(result))
+
+        meta = dict(key1='value1')
+        filter = {'metadata': meta}
+        result = self.db.instance_get_all_by_filters(self.context, filter)
+
+        self.assertEqual(1, len(result))
+
+    def test_instance_get_all_by_filters_parameter_column(self):
+        args1 = {'id': 1, 'image_ref': 1, 'host': 'host1',
+                    'metadata': {'key1': 'value1'}}
+        args2 = {'id': 2, 'image_ref': 1, 'host': 'host2'}
+        inst1 = self.db.instance_create(self.context, args1)
+        inst2 = self.db.instance_create(self.context, args2)
+
+        filter = {'host': 'host*'}
+        result = self.db.instance_get_all_by_filters(self.context, filter)
+
+        self.assertEqual(2, len(result))
+
+        filter = {'host': 'host2'}
+        result = self.db.instance_get_all_by_filters(self.context, filter)
+
+        self.assertEqual(1, len(result))
 
     def test_instance_get_all_by_filters_deleted(self):
         args1 = {'reservation_id': 'a', 'image_ref': 1, 'host': 'host1'}
@@ -1215,6 +1298,20 @@ class DbApiTestCase(test.TestCase):
                           self.context, '2.0.0.0', 1)
 
     @attr(kind='small')
+    def test_fixed_ip_associate_exception_ip_used(self):
+        """fixed_ip_associate"""
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        self.db.api.network_create_safe(self.context, {'id': 100})
+        self.db.api.fixed_ip_create(self.context, {'address': '10.1.1.1',
+                                                   'instance_id': 1})
+
+        # test and assert
+        self.assertRaises(exception.FixedIpAlreadyInUse,
+                    self.db.api.fixed_ip_associate,
+                                    self.context, '10.1.1.1', 1, 100)
+
+    @attr(kind='small')
     def test_fixed_ip_associate_pool(self):
         """
         fixed_ip_associate_pool
@@ -1377,6 +1474,24 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.fixed_ip_get_by_address(self.context, '10.1.1.1')
+        self.assertTrue(result is not None)
+        self.assertEqual('10.1.1.1', result.address)
+
+    @attr(kind='small')
+    def test_fixed_ip_get_by_address_parameter_context(self):
+        """
+        fixed_ip_get_by_address
+        """
+        # setup
+        normal_ctx = context.RequestContext(self.user_id, self.project_id,
+                                              is_admin=False)
+        self.db.api.instance_create(self.context, {'id': 1,
+                                        'project_id': self.project_id})
+        self.db.api.fixed_ip_create(self.context, {'address': '10.1.1.1',
+                                                   'instance_id': 1})
+
+        # test and assert
+        result = self.db.api.fixed_ip_get_by_address(normal_ctx, '10.1.1.1')
         self.assertTrue(result is not None)
         self.assertEqual('10.1.1.1', result.address)
 
@@ -1823,6 +1938,25 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, instance.id)
 
     @attr(kind='small')
+    def test_instance_create_parameter_meta(self):
+        """
+        instance_create
+        """
+        # test and assert
+        meta = dict(key1='value1', key2='value2')
+        result = self.db.api.instance_create(self.context, {'id': 1,
+                                                            'metadata': meta})
+        self.assertTrue(result is not None)
+        self.assertEqual(1, result.id)
+
+        instance = db.api.instance_get(self.context, result.id)
+        self.assertTrue(instance is not None)
+        self.assertEqual(1, instance.id)
+
+        self.assertEqual(True, instance['metadata'][0].key in ('key1', 'key2'))
+        self.assertEqual(True, instance['metadata'][1].key in ('key1', 'key2'))
+
+    @attr(kind='small')
     def test_instance_create_db_duplicate(self):
         raise SkipTest("DBError occured")
         # setup
@@ -1961,6 +2095,22 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result.id)
 
     @attr(kind='small')
+    def test_instance_get_parameter_context(self):
+        """
+        instance_get
+        """
+        # setup
+        normal_ctx = context.RequestContext(self.user_id, self.project_id,
+                                              is_admin=False)
+        self.db.api.instance_create(self.context, {'id': 1,
+                                            'project_id': self.project_id})
+
+        # test and assert
+        result = self.db.api.instance_get(normal_ctx, 1)
+        self.assertTrue(result is not None)
+        self.assertEqual(1, result.id)
+
+    @attr(kind='small')
     def test_instance_get_db_not_found(self):
         # test and assert
         self.assertRaises(exception.InstanceNotFound,
@@ -2021,6 +2171,28 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual(1, result[0].id)
 
     @attr(kind='small')
+    def test_instance_get_active_by_window_parameter_end(self):
+        """
+        instance_get_active_by_window
+        """
+        # setup
+        self.db.api.instance_create(
+                            self.context,
+                            {'id': 1,
+                             'launched_at': datetime.datetime(2011, 1, 1)})
+
+        # test and assert
+        result = self.db.api.instance_get_active_by_window(
+                                    self.context,
+                                    datetime.datetime(2011, 1, 2),
+                                    None,
+                                    None)
+        self.assertTrue(result is not None)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(1, len(result))
+        self.assertEqual(1, result[0].id)
+
+    @attr(kind='small')
     def test_instance_get_active_by_window_db_not_found(self):
         # setup
         self.db.api.instance_create(
@@ -2058,6 +2230,28 @@ class DbApiTestCase(test.TestCase):
                                     datetime.datetime(2011, 1, 2),
                                     datetime.datetime(2011, 1, 3),
                                     'project1')
+        self.assertTrue(result is not None)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(1, len(result))
+        self.assertEqual(1, result[0].id)
+
+    @attr(kind='small')
+    def test_instance_get_active_by_window_joined_parameter_end(self):
+        """
+        instance_get_active_by_window_joined
+        """
+        # setup
+        self.db.api.instance_create(
+                            self.context,
+                            {'id': 1,
+                             'launched_at': datetime.datetime(2011, 1, 1)})
+
+        # test and assert
+        result = self.db.api.instance_get_active_by_window_joined(
+                                    self.context,
+                                    datetime.datetime(2011, 1, 2),
+                                    None,
+                                    None)
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -2186,6 +2380,28 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('reservation1', result[0].reservation_id)
 
     @attr(kind='small')
+    def test_instance_get_all_by_reservation_parameter_context(self):
+        """
+        instance_get_all_by_reservation
+        """
+        # setup
+        normal_ctx = context.RequestContext(self.user_id, self.project_id,
+                                              is_admin=False)
+        self.db.api.instance_create(self.context,
+                                    {'id': 1,
+                                     'reservation_id': 'reservation1',
+                                     'project_id': self.project_id})
+
+        # test and assert
+        result = db.api.instance_get_all_by_reservation(
+                                    normal_ctx, 'reservation1')
+        self.assertTrue(result is not None)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(1, len(result))
+        self.assertEqual(1, result[0].id)
+        self.assertEqual('reservation1', result[0].reservation_id)
+
+    @attr(kind='small')
     def test_instance_get_all_by_reservation_db_not_found(self):
         # setup
         self.db.api.instance_create(self.context,
@@ -2291,6 +2507,17 @@ class DbApiTestCase(test.TestCase):
                           self.context, 2)
 
     @attr(kind='small')
+    def test_instance_get_fixed_addresses_db_not_found_ip(self):
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        self.db.api.fixed_ip_create(self.context,
+                                    {'address': '10.1.1.1', 'instance_id': 2})
+
+        # test and assert
+        ref = db.api.instance_get_fixed_addresses(self.context, 1)
+        self.assertEqual([], ref)
+
+    @attr(kind='small')
     def test_instance_get_fixed_addresses_v6(self):
         """
         instance_get_fixed_addresses_v6
@@ -2382,6 +2609,21 @@ class DbApiTestCase(test.TestCase):
                           self.context, 2)
 
     @attr(kind='small')
+    def test_instance_get_floating_address_db_not_found_ip(self):
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        self.db.api.fixed_ip_create(self.context,
+                                    {'id': 100, 'instance_id': 1})
+        self.db.api.floating_ip_create(self.context,
+                                       {'id': 1,
+                                        'fixed_ip_id': 200,
+                                        'address': '1.0.0.0'})
+
+        # test and assert
+        ref = db.api.instance_get_floating_address(self.context, 1)
+        self.assertEqual(None, ref)
+
+    @attr(kind='small')
     def test_instance_get_project_vpn_db_not_found(self):
         # mock
         self.mox.StubOutWithMock(db.api.IMPL, 'instance_get_project_vpn')
@@ -2414,6 +2656,65 @@ class DbApiTestCase(test.TestCase):
         # test and assert
         result = self.db.api.instance_update(self.context, 1,
                                              {'host': 'host1'})
+        self.assertTrue(result is not None)
+        self.assertEqual(1, result.id)
+
+        instance = self.db.api.instance_get(self.context, 1)
+        self.assertTrue(instance is not None)
+        self.assertEqual('host1', instance.host)
+
+    @attr(kind='small')
+    def test_instance_update_meta(self):
+        """
+        instance_update
+        """
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+
+        # test and assert
+        meta = dict(key1='value1')
+        result = self.db.api.instance_update(self.context, 1,
+                                        {'host': 'host1', 'metadata': meta})
+        self.assertTrue(result is not None)
+        self.assertEqual(1, result.id)
+
+        instance = self.db.api.instance_get(self.context, 1)
+        self.assertTrue(instance is not None)
+        self.assertEqual('host1', instance.host)
+        self.assertEqual('key1', instance['metadata'][0].key)
+
+    @attr(kind='small')
+    def test_instance_update_parameter_uuid(self):
+        """
+        instance_update
+        """
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        instance = self.db.api.instance_get(self.context, 1)
+
+        # test and assert
+        result = self.db.api.instance_update(self.context, instance['uuid'],
+                                             {'host': 'host1'})
+        self.assertTrue(result is not None)
+        self.assertEqual(1, result.id)
+
+        instance = self.db.api.instance_get(self.context, 1)
+        self.assertTrue(instance is not None)
+        self.assertEqual('host1', instance.host)
+
+    @attr(kind='small')
+    def test_instance_update_parameter_uuid_meta(self):
+        """
+        instance_update
+        """
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        instance = self.db.api.instance_get(self.context, 1)
+
+        # test and assert
+        meta = dict(key1='value1')
+        result = self.db.api.instance_update(self.context, instance['uuid'],
+                                        {'host': 'host1', 'metadata': meta})
         self.assertTrue(result is not None)
         self.assertEqual(1, result.id)
 
@@ -2492,6 +2793,21 @@ class DbApiTestCase(test.TestCase):
         self.assertTrue(result is None)
 
     @attr(kind='small')
+    def test_instance_remove_security_group_db_not_found_ins(self):
+        """
+        should be raise exception.
+        """
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        self.db.api.security_group_create(self.context, {'id': 1})
+        self.db.api.instance_add_security_group(self.context, 1, 1)
+
+        # test and assert
+        result = self.db.api.instance_remove_security_group(
+                                            self.context, 2, 1)
+        self.assertTrue(result is None)
+
+    @attr(kind='small')
     def test_instance_action_create(self):
         """
         instance_action_create
@@ -2532,6 +2848,26 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         result = self.db.api.instance_get_actions(self.context, 1)
+        self.assertTrue(result is not None)
+        self.assertTrue(isinstance(result, list))
+        self.assertEqual(1, len(result))
+        self.assertEqual(1, result[0].id)
+        self.assertEqual(1, result[0].instance_id)
+
+    @attr(kind='small')
+    def test_instance_get_actions_parameter_uuid(self):
+        """
+        instance_get_actions
+        """
+        # setup
+        self.db.api.instance_create(self.context, {'id': 1})
+        ref = self.db.api.instance_action_create(self.context,
+                                           {'id': 1, 'instance_id': 1})
+
+        instance = self.db.api.instance_get(self.context, ref['instance_id'])
+        # test and assert
+        result = self.db.api.instance_get_actions(self.context,
+                                                  instance['uuid'])
         self.assertTrue(result is not None)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(1, len(result))
@@ -3363,6 +3699,17 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('host2', nw.host)
 
     @attr(kind='small')
+    def test_network_set_host_parameter_host(self):
+
+        # setup
+        self.db.network_create_safe(self.context, {'id': 100})
+        # test and assert
+        host = self.db.api.network_set_host(self.context, 100, 'host2')
+        self.assertEqual('host2', host)
+        nw = self.db.api.network_get(self.context, 100)
+        self.assertEqual('host2', nw.host)
+
+    @attr(kind='small')
     def test_network_set_host_db_not_found(self):
         # setup
         self.db.network_create_safe(self.context, {'id': 100, 'host': 'host'})
@@ -3833,7 +4180,7 @@ class DbApiTestCase(test.TestCase):
     def test_volume_create_with_metadata(self):
         # setup
         vol = {}
-        vol['size'] = '1g'
+        vol['size'] = '1'
         vol['snapshot_id'] = None
         vol['user_id'] = 'fake'
         vol['project_id'] = 'fake'
@@ -4566,6 +4913,27 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test2', meta['type'])
 
     @attr(kind='small')
+    def test_volume_metadata_update_with_delete_multi(self):
+        # setup
+        vol = {}
+        vol['id'] = 1
+        vol['size'] = '1g'
+        vol['snapshot_id'] = None
+        vol['user_id'] = 'fake'
+        vol['project_id'] = 'fake'
+        vol['availability_zone'] = FLAGS.storage_availability_zone
+        vol['status'] = "creating"
+        vol['attach_status'] = "detached"
+        vol['instance_id'] = 1
+        vol['metadata'] = {'type': 'test', 'key1': 'value1'}
+        self.db.api.volume_create(self.context, vol)
+        self.db.api.volume_metadata_update(self.context, 1,
+                                           {'type': 'test2'}, True)
+        meta = self.db.api.volume_metadata_get(self.context, 1)
+        self.assertEqual('test2', meta['type'])
+        self.assertTrue('key1' not in meta)
+
+    @attr(kind='small')
     def test_volume_metadata_update_new_item(self):
         # setup
         vol = {}
@@ -4885,6 +5253,7 @@ class DbApiTestCase(test.TestCase):
         bdm['volume_id'] = 1
         bdm['no_device'] = False
 
+        self.db.api.block_device_mapping_create(self.context, bdm)
         self.db.api.block_device_mapping_create(self.context, bdm)
 
     @attr(kind='small')
@@ -5552,6 +5921,34 @@ class DbApiTestCase(test.TestCase):
         self.db.api.security_group_rule_create(self.context, rule)
 
         result = self.db.api.security_group_rule_get(self.context, 1)
+        self.assertEqual('tcp', result.protocol)
+        self.assertEqual(0, result.from_port)
+        self.assertEqual(8080, result.to_port)
+        self.assertEqual('0.0.0.0', result.cidr)
+
+    @attr(kind='small')
+    def test_security_group_rule_get_parameter_context(self):
+        group = {}
+        group['id'] = 1
+        group['name'] = 'default'
+        group['description'] = 'test'
+        group['user_id'] = 'fake'
+        group['project_id'] = 'fake'
+        self.db.api.security_group_create(self.context, group)
+
+        rule = {}
+        rule['id'] = 1
+        rule['parent_group_id'] = 1
+        rule['group_id'] = 1
+        rule['protocol'] = 'tcp'
+        rule['from_port'] = 0
+        rule['to_port'] = 8080
+        rule['cidr'] = '0.0.0.0'
+        self.db.api.security_group_rule_create(self.context, rule)
+        normal_ctx = context.RequestContext(self.user_id, self.project_id,
+                                              is_admin=False)
+
+        result = self.db.api.security_group_rule_get(normal_ctx, 1)
         self.assertEqual('tcp', result.protocol)
         self.assertEqual(0, result.from_port)
         self.assertEqual(8080, result.to_port)
@@ -7538,6 +7935,31 @@ class DbApiTestCase(test.TestCase):
         self.assertNotEqual([], results)
 
     @attr(kind='small')
+    def test_instance_type_get_all_parameter_notfound(self):
+        """
+        return {} if instance type not exist
+        """
+        # setup
+        values = {}
+        values['id'] = 100
+        values['name'] = 'test'
+        values['memory_mb'] = 100
+        values['vcpus'] = 2
+        values['local_gb'] = 10
+        values['flavorid'] = 100
+
+        # test and assert
+        self.db.api.instance_type_destroy(self.context, 'm1.medium')
+        self.db.api.instance_type_destroy(self.context, 'm1.xlarge')
+        self.db.api.instance_type_destroy(self.context, 'm1.tiny')
+        self.db.api.instance_type_destroy(self.context, 'm1.large')
+        self.db.api.instance_type_destroy(self.context, 'm1.small')
+        
+        results = self.db.api.instance_type_get_all(self.context)
+
+        self.assertEqual({}, results)
+
+    @attr(kind='small')
     def test_instance_type_get_all_with_inactive(self):
         """
         default instance type avaluesdy stored in database.
@@ -8017,6 +8439,23 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', metadata.value)
 
     @attr(kind='small')
+    def test_instance_metadata_get_item_exception_notfound(self):
+        """
+        Not found in db.api.
+        """
+        raise SkipTest("Not found in API")
+        # setup
+        i = {}
+        i['id'] = 1
+        i['metadata'] = {'type': 'test'}
+
+        self.db.api.instance_create(self.context, i)
+        # test and assert
+        self.assertRaises(exception.InstanceMetadataNotFound,
+                    self.db.api.instance_metadata_get_item,
+                                    self.context, 1, 'type1')
+
+    @attr(kind='small')
     def test_instance_metadata_update(self):
         # setup
         i = {}
@@ -8045,6 +8484,22 @@ class DbApiTestCase(test.TestCase):
                                     {'type': 'new_type'}, True)
         metadata = self.db.api.instance_metadata_get(self.context, 1)
         self.assertEqual('new_type', metadata['type'])
+
+    @attr(kind='small')
+    def test_instance_metadata_update_with_delete_otherkey(self):
+        # setup
+        i = {}
+        i['id'] = 1
+        i['metadata'] = {'type': 'test', 'key1': 'value1'}
+
+        self.db.api.instance_create(self.context, i)
+        # test and assert
+        self.db.api.instance_metadata_update(
+                                    self.context, 1,
+                                    {'type': 'new_type'}, True)
+        metadata = self.db.api.instance_metadata_get(self.context, 1)
+        self.assertEqual('new_type', metadata['type'])
+        self.assertTrue('key1' not in metadata)
 
     @attr(kind='small')
     def test_instance_metadata_update_with_new_value(self):
@@ -8616,6 +9071,42 @@ class DbApiTestCase(test.TestCase):
         result = self.db.api.volume_type_extra_specs_get(self.context, 1)
         self.assertEqual('value1', result['key1'])
         self.assertEqual('new_value', result['key2'])
+
+    @attr(kind='small')
+    def test_volume_type_extra_specs_get_item(self):
+        raise SkipTest("not defined in api interface")
+        values = {}
+        values['id'] = 1
+        values['name'] = 'test'
+        values['extra_specs'] = {'key1': 'value1'}
+
+        self.db.api.volume_type_create(self.context, values)
+        self.db.api.volume_type_extra_specs_update_or_create(
+                                    self.context, 1, {'key1': 'new_value'})
+        result = self.db.api.volume_type_extra_specs_get(self.context, 1)
+        self.assertEqual('new_value', result['key1'])
+
+        result = self.db.api.volume_type_extra_specs_get_item(self.context,
+                                        volume_type_id=1, key='key1')
+        self.assertEqual('new_value', result['key1'])
+
+    @attr(kind='small')
+    def test_volume_type_extra_specs_get_item_exception(self):
+        raise SkipTest("not defined in api interface")
+        values = {}
+        values['id'] = 1
+        values['name'] = 'test'
+        values['extra_specs'] = {'key1': 'value1'}
+
+        self.db.api.volume_type_create(self.context, values)
+        self.db.api.volume_type_extra_specs_update_or_create(
+                                    self.context, 1, {'key1': 'new_value'})
+        result = self.db.api.volume_type_extra_specs_get(self.context, 1)
+        self.assertEqual('new_value', result['key1'])
+
+        self.assertRaises(exception.VolumeTypeExtraSpecsNotFound,
+                self.db.api.volume_type_extra_specs_get_item,
+                        self.context, volume_type_id=1, key='key2')
 
     @attr(kind='small')
     def test_vsa_create(self):
