@@ -940,6 +940,7 @@ def virtual_interface_get(context, vif_id, session=None):
         raise exception.NotFound
     return vif_ref
 
+
 @require_context
 def virtual_interface_get_by_address(context, address):
     """Gets a virtual interface from the table.
