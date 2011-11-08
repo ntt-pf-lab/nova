@@ -212,7 +212,7 @@ class NotifierTestCase(test.TestCase):
         self.flags(default_notification_level=nova.notifier.api.ERROR)
 
         payout = dict(key1=123)
-        notify(None, 'testtype',  priority, payout)
+        notify(None, 'testtype', priority, payout)
 
         self.assertEqual('testtype', self.msgs['event_type'])
         self.assertEqual(priority, self.msgs['priority'])
