@@ -4,6 +4,8 @@
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2011 Justin Santa Barbara
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -281,8 +283,8 @@ class ComputeManager(manager.SchedulerDependentManager):
             if not ((bdm['snapshot_id'] is None) or
                     (bdm['volume_id'] is not None)):
                 LOG.error(_('corrupted state of block device mapping '
-                            'id: %(id)s '
-                            'snapshot: %(snapshot_id) volume: %(vollume_id)') %
+                        'id: %(id)s '
+                        'snapshot: %(snapshot_id)s volume: %(volume_id)s') %
                           {'id': bdm['id'],
                            'snapshot_id': bdm['snapshot'],
                            'volume_id': bdm['volume_id']})
