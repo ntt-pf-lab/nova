@@ -2158,8 +2158,20 @@ class LazyPluggableTestCase(test.TestCase):
         """Test for nova.utils.LazyPluggable"""
 
         backends = dict(DumyBackend='nova.tests.test_utils')
-        back = self.lazypluggable = self.utils.LazyPluggable(
-                                        FLAGS['test_backend'], **backends)
+        back = self.utils.LazyPluggable(FLAGS['test_backend'], **backends)
 
         ref = back.dumy_method('test')
         self.assertEqual('test', ref)
+
+    @attr(kind='small')
+    def test_lazypluggable_exception(self):
+        """Test for nova.utils.LazyPluggable"""
+
+        backends = dict(NotBeDumyBackend='nova.tests.test_utils')
+        back = self.utils.LazyPluggable(FLAGS['test_backend'], **backends)
+
+        try:
+            ref = back.dumy_method('test')
+            self.assertNotEquals('test', ref, 'should raise InvalidInput')
+        except exception.InvalidInput, e:
+            self.assertTrue(str(e).find('Invalid backend'))
