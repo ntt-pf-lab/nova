@@ -33,7 +33,7 @@ def terminate_volumes(db, context, instance_id):
         LOG.error(_('Parameter is invalid. instance_id=%s'), instance_id)
         raise
 
-    ex_list = []
+    ex_flag = False
     volume_api = volume.API()
     for bdm in db.block_device_mapping_get_all_by_instance(context,
                                                            instance_id):
@@ -42,16 +42,16 @@ def terminate_volumes(db, context, instance_id):
             try:
                 volume_api.delete(context, bdm['volume_id'])
             except exception.ApiError as ex:
-                ex_list.append(ex)
+                ex_flag = True
                 LOG.error(_('Exception occurred in deleting volume|%s|: %s'),
                           bdm['volume_id'], ex)
 
         try:
             db.block_device_mapping_destroy(context, bdm['id'])
         except exception.DBError as ex:
-            ex_list.append(ex)
+            ex_flag = True
             LOG.error(_('Exception occurred in destroying '\
                         'block device mapping|%s|: %s'), bdm['id'], ex)
 
-    if ex_list:
+    if ex_flag:
         raise exception.TerminateVolumeException()
