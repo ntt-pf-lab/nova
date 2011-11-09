@@ -1178,7 +1178,6 @@ ddd
     @attr(kind='small')
     def test_destroy_container_ex_execute_mount(self):
         """Test for nova.virt.disk.destroy_container."""
-        raise SkipTest("ProcessExecutionError should not be raised.")
         self._execute_mount_count = 0
         self._exeption_count = 0
 
