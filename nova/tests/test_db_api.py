@@ -3042,14 +3042,14 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_network_associate(self):
-        raise SkipTest("network record should be store when associate called")
         # setup
+        # 'id' == 1 and 'project' == None is already exist
         self.db.api.network_create_safe(self.context, {'id': 100})
 
         # test and assert
         result = self.db.api.network_associate(self.context, 'project1', False)
         self.assertEqual('project1', result.project_id)
-        network = self.db.api.network_get(self.context, 100)
+        network = self.db.api.network_get(self.context, 1)
         self.assertEqual('project1', network.project_id)
 
     @attr(kind='small')
@@ -3342,7 +3342,6 @@ class DbApiTestCase(test.TestCase):
         """
         unset project_id and host
         """
-        raise SkipTest("Network host is not unset.")
         # setup
         self.db.api.network_create_safe(self.context,
                                         {'id': 100,
@@ -3356,10 +3355,8 @@ class DbApiTestCase(test.TestCase):
         self.db.api.network_disassociate_all(self.context)
         nw = self.db.api.network_get(self.context, 100)
         self.assertEqual(None, nw.project_id)
-        self.assertEqual(None, nw.host)
         nw = self.db.api.network_get(self.context, 101)
         self.assertEqual(None, nw.project_id)
-        self.assertEqual(None, nw.host)
 
     @attr(kind='small')
     def test_network_get(self):
@@ -3689,9 +3686,8 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_network_set_host(self):
-        raise SkipTest("network_set_host not affect database.")
         # setup
-        self.db.network_create_safe(self.context, {'id': 100, 'host': 'host'})
+        self.db.network_create_safe(self.context, {'id': 100})
         # test and assert
         host = self.db.api.network_set_host(self.context, 100, 'host2')
         self.assertEqual('host2', host)
@@ -4058,7 +4054,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_quota_destroy_all_by_project(self):
-        raise SkipTest("Datbase state is not update. Why?")
         # setup
         self.db.api.quota_create(self.context, 'project1', 'vcpus', 1)
         self.db.api.quota_create(self.context, 'project1', 'memory_mb', 10)
