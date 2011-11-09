@@ -1153,26 +1153,18 @@ ddd
         """
         No exception occurred even when instance is invalid.
         """
-        raise SkipTest("TypeError occurred.")
         self._execute_mount_count = 0
         self._exeption_count = 0
 
-        def stub_execute(*cmd, **kwargs):
-            if cmd[0] == 'mount':
-                self._execute_mount_count += 1
-                return 'aaa', None
-
-        def stub_exception(caller, msg, *args):
+        def stub_exception(msg, *args):
             self._exeption_count += 1
 
-        self.stubs.Set(utils, 'execute', stub_execute)
         self.stubs.Set(self.disk.LOG, 'exception', stub_exception)
 
         target = 'target'
         instance = None
         nbd = False
         self.disk.destroy_container(target, instance, nbd)
-        self.assertEqual(1, self._execute_mount_count)
         self.assertEqual(1, self._exeption_count)
 
     @attr(kind='small')
