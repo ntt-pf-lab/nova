@@ -7,6 +7,9 @@
 #
 # All Rights Reserved.
 #
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -189,6 +192,10 @@ def destroy_container(target, instance, nbd=False):
 
     LXC does not support qcow2 images yet.
     """
+    if not instance:
+        LOG.exception(_('instance is invalid'))
+        return
+
     out, err = utils.execute('mount', run_as_root=True)
     for loop in out.splitlines():
         if instance['name'] in loop:
