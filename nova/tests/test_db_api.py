@@ -2518,61 +2518,6 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual([], ref)
 
     @attr(kind='small')
-    def test_instance_get_fixed_addresses_v6(self):
-        """
-        instance_get_fixed_addresses_v6
-        """
-        # mock
-        self.mox.StubOutWithMock(db.api.IMPL, 'instance_create')
-        self.db.api.IMPL.instance_create(mox.IgnoreArg(), mox.IgnoreArg())
-        self.mox.StubOutWithMock(db.api.IMPL, 'network_create_safe')
-        self.db.api.IMPL.network_create_safe(mox.IgnoreArg(), mox.IgnoreArg())
-        self.mox.StubOutWithMock(db.api.IMPL, 'virtual_interface_create')
-        self.db.api.IMPL.virtual_interface_create(
-                                    mox.IgnoreArg(), mox.IgnoreArg())
-        self.mox.StubOutWithMock(db.api.IMPL,
-                                 'instance_get_fixed_addresses_v6')
-        self.db.api.IMPL.instance_get_fixed_addresses_v6(
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(['::ff:ff00:0'])
-        self.mox.ReplayAll()
-
-        # setup
-        self.db.api.instance_create(self.context, {'id': 1})
-        self.db.api.network_create_safe(self.context,
-                                        {'cidr_v6': '3.0.0.0/29'})
-        self.db.api.virtual_interface_create(self.context,
-                                             {'id': 1,
-                                              'network_id': 1,
-                                              'instance_id': 1,
-                                              'address': '02:00:00:00:00:00'})
-
-        # test and assert
-        result = self.db.api.instance_get_fixed_addresses_v6(self.context, 1)
-        self.assertTrue(result is not None)
-        self.assertTrue(isinstance(result, list))
-        self.assertEqual(1, len(result))
-        self.assertEqual('::ff:ff00:0', result[0])
-
-    @attr(kind='small')
-    def test_instance_get_fixed_addresses_v6_db_not_found(self):
-        # mock
-        self.mox.StubOutWithMock(self.db.api.IMPL, 'instance_create')
-        self.db.api.IMPL.instance_create(mox.IgnoreArg(), mox.IgnoreArg())
-        self.mox.StubOutWithMock(self.db.api.IMPL,
-                                 'instance_get_fixed_addresses_v6')
-        self.db.api.IMPL.instance_get_fixed_addresses_v6(
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn([])
-        self.mox.ReplayAll()
-
-        # setup
-        self.db.api.instance_create(self.context, {'id': 1})
-
-        # test and assert
-        result = self.db.api.instance_get_fixed_addresses_v6(self.context, 1)
-        self.assertTrue(result is not None)
-        self.assertEqual([], result)
-
-    @attr(kind='small')
     def test_instance_get_floating_address(self):
         """
         instance_get_floating_address
