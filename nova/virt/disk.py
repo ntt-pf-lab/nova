@@ -32,6 +32,7 @@ import json
 import os
 import tempfile
 import time
+import shutil
 
 from nova import context
 from nova import db
@@ -99,7 +100,6 @@ def mkfs(os_type, fs_label, target):
 
 def extend(image, size):
     """Increase image to size"""
-#    file_size = os.path.getsize(image)
     try:
         file_size = os.path.getsize(image)
     except OSError, e:
@@ -109,13 +109,21 @@ def extend(image, size):
 
     if file_size >= size:
         return
+
+    # backup image
+    image_org = image + '.org'
+    shutil.copyfile(image, image_org)
+
     try:
         utils.execute('qemu-img', 'resize', image, size)
         # NOTE(vish): attempts to resize filesystem
         utils.execute('e2fsck', '-fp', image, check_exit_code=False)
         utils.execute('resize2fs', image, check_exit_code=False)
+        os.remove(image_org)
     except exception.ProcessExecutionError, e:
-        LOG.error("Failed to resize image: %s") % image
+        # rollback
+        os.remove(image)
+        os.rename(image_org, image)
         raise e
 
 def inject_data(image, key=None, net=None, metadata=None,
