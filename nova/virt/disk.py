@@ -7,6 +7,9 @@
 #
 # All Rights Reserved.
 #
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -259,12 +262,13 @@ def inject_data_into_fs(fs, key, net, metadata, execute):
     Virt connections can call this directly if they mount their fs
     in a different way to inject_data
     """
-    if key:
-        _inject_key_into_fs(key, fs, execute=execute)
-    if net:
-        _inject_net_into_fs(net, fs, execute=execute)
-    if metadata:
-        _inject_metadata_into_fs(metadata, fs, execute=execute)
+    if fs:
+        if key:
+            _inject_key_into_fs(key, fs, execute=execute)
+        if net:
+            _inject_net_into_fs(net, fs, execute=execute)
+        if metadata:
+            _inject_metadata_into_fs(metadata, fs, execute=execute)
 
 
 def _inject_metadata_into_fs(metadata, fs, execute=None):
