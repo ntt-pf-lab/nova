@@ -1505,10 +1505,8 @@ class FlatNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_lease_fixed_ip_db_fixed_ip_instance_not_found(self):
         """
-        InstanceNotFound is raised
+        NotFound is raised
         """
-        raise SkipTest('exception.Error occurred '\
-                       'but InstanceNotFound is expected')
         self.mox.StubOutWithMock(db, 'fixed_ip_get_by_address')
         fixed_ip = dict(fixed_ips[0])
         fixed_ip['instance'] = None
@@ -1516,7 +1514,7 @@ class FlatNetworkTestCase(test.TestCase):
                                    mox.IgnoreArg()).AndReturn(fixed_ip)
         self.mox.ReplayAll()
 
-        self.assertRaises(exception.InstanceNotFound,
+        self.assertRaises(exception.NotFound,
                           self.network.lease_fixed_ip,
                           self.context, '192.168.0.100')
 
@@ -1582,10 +1580,8 @@ class FlatNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_release_fixed_ip_db_fixed_ip_instance_not_found(self):
         """
-        InstanceNotFound is raised
+        NotFound is raised
         """
-        raise SkipTest('exception.Error occurred '\
-                       'but InstanceNotFound is expected')
         self.mox.StubOutWithMock(db, 'fixed_ip_get_by_address')
         fixed_ip = dict(fixed_ips[0])
         fixed_ip['instance'] = None
@@ -1593,7 +1589,7 @@ class FlatNetworkTestCase(test.TestCase):
                                    mox.IgnoreArg()).AndReturn(fixed_ip)
         self.mox.ReplayAll()
 
-        self.assertRaises(exception.InstanceNotFound,
+        self.assertRaises(exception.NotFound,
                           self.network.release_fixed_ip,
                           self.context, '192.168.0.100')
 
