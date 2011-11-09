@@ -4,6 +4,8 @@
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2011 Justin Santa Barbara
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -286,8 +288,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                           {'id': bdm['id'],
                            'snapshot_id': bdm['snapshot'],
                            'volume_id': bdm['volume_id']})
-                raise exception.ApiError(_('broken block device mapping %d') %
-                                         bdm['id'])
+                raise exception.RebuildRequiresActiveInstance(
+                        _('broken block device mapping %d') % bdm['id'])
 
             if bdm['volume_id'] is not None:
                 volume_api.check_attach(context,
@@ -402,7 +404,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         requested_networks = kwargs.get('requested_networks', None)
 
         if instance['name'] in self.driver.list_instances():
-            raise exception.Error(_("Instance has already been created"))
+            raise exception.InstanceExists(name=instance_id)
 
         _check_image_size()
 
@@ -505,8 +507,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
         if instance['power_state'] == power_state.SHUTOFF:
             self.db.instance_destroy(context, instance_id)
-            raise exception.Error(_('trying to destroy already destroyed'
-                                    ' instance: %s') % instance_id)
+            raise exception.InstanceNotRunning(instance_id=instance_id)
         self.driver.destroy(instance, network_info)
 
         if action_str == 'Terminating':
@@ -656,7 +657,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         elif image_type == "backup":
             task_state = task_states.IMAGE_BACKUP
         else:
-            raise Exception(_('Image type not recognized %s') % image_type)
+            raise exception.InvalidInput(reason=image_type)
 
         context = context.elevated()
         instance_ref = self.db.instance_get(context, instance_id)
@@ -761,7 +762,7 @@ class ComputeManager(manager.SchedulerDependentManager):
             expected_state = power_state.RUNNING
 
             if instance_state != expected_state:
-                raise exception.Error(_('Instance is not running'))
+                raise exception.InstanceNotRunning(instance_id=instance_id)
             else:
                 try:
                     self.driver.set_admin_password(instance_ref, new_pass)
@@ -953,8 +954,8 @@ class ComputeManager(manager.SchedulerDependentManager):
             self._instance_update(context,
                                   instance_id,
                                   vm_state=vm_states.ERROR)
-            msg = _('Migration error: destination same as source!')
-            raise exception.Error(msg)
+            msg = _('destination same as source!')
+            raise exception.MigrationError(reason=msg)
 
         old_instance_type = self.db.instance_type_get(context,
                 instance_ref['instance_type_id'])
