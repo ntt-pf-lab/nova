@@ -2989,8 +2989,6 @@ class DbApiTestCase(test.TestCase):
     def test_network_associate(self):
         # setup
         # 'id' == 1 and 'project' == None is already exist
-        self.db.api.network_create_safe(self.context, {'id': 100})
-
         # test and assert
         result = self.db.api.network_associate(self.context, 'project1', False)
         self.assertEqual('project1', result.project_id)
