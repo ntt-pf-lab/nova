@@ -228,7 +228,8 @@ class QuantumManager(manager.FlatManager):
                     'dns': [],
                     'ips': []}
                 network_info.append(({}, info))
-                return network_info
+#                return network_info
+                continue
 
             (v4_subnet, v6_subnet) = self.ipam.get_subnets_by_net_id(context,
                                         ipam_tenant_id, net_id)

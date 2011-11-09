@@ -947,6 +947,7 @@ class LibvirtConnection(driver.ComputeDriver):
         for (network_ref, mapping) in network_info:
             ifc_num += 1
 
+            continue
             if not network_ref['injected']:
                 continue
 
