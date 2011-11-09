@@ -168,8 +168,7 @@ class DiskTestCase(test.TestCase):
     @attr(kind='small')
     def test_extend_ex_os_path_getsize(self):
         """Test for nova.virt.disk.extend."""
-        raise SkipTest("OSError is raised,\
-                        but ProcessExecutionError should be raised.")
+
         temp_dir = os.path.join(os.getcwd(), 'virt_disk')
         image_path = os.path.join(temp_dir, 'image.iso')
         size = 10
@@ -381,8 +380,6 @@ class DiskTestCase(test.TestCase):
     @attr(kind='small')
     def test_inject_data_cfg_mapped_device_does_not_exist(self):
         """Test for nova.virt.disk.inject_data."""
-        raise SkipTest("Error is raised,\
-                        but ProcessExecutionError should be raised.")
         temp_dir = os.path.join(os.getcwd(), 'virt_disk')
         link_device = os.path.join(temp_dir, 'dev/nbd0')
         self._execute_kpartx_count = 0
@@ -438,8 +435,6 @@ class DiskTestCase(test.TestCase):
     @attr(kind='small')
     def test_inject_data_ex_execute_kpartx_stderr(self):
         """Test for nova.virt.disk.inject_data."""
-        raise SkipTest("Error is raised,\
-                        but ProcessExecutionError should be raised.")
         temp_dir = os.path.join(os.getcwd(), 'virt_disk')
         link_device = os.path.join(temp_dir, 'dev/nbd0')
         self._execute_kpartx_count = 0
@@ -510,8 +505,6 @@ class DiskTestCase(test.TestCase):
     @attr(kind='small')
     def test_inject_data_ex_execute_tune2fs_stderr(self):
         """Test for nova.virt.disk.inject_data."""
-        raise SkipTest("Exception is not raised,\
-                        when err is out by utils.execute('mount', ...).")
         temp_dir = os.path.join(os.getcwd(), 'virt_disk')
         link_device = os.path.join(temp_dir, 'dev/nbd0')
         self._execute_tune2fs_count = 0
@@ -592,8 +585,6 @@ class DiskTestCase(test.TestCase):
     @attr(kind='small')
     def test_inject_data_ex_execute_mount_stderr(self):
         """Test for nova.virt.disk.inject_data."""
-        raise SkipTest("Error is raised,\
-                        but ProcessExecutionError should be raised.")
         temp_dir = os.path.join(os.getcwd(), 'virt_disk')
         link_device = os.path.join(temp_dir, 'dev/nbd0')
         self._execute_mount_count = 0
@@ -1148,24 +1139,24 @@ ddd
         self.disk.destroy_container(target, instance, nbd)
         self.assertEqual(1, self._execute_mount_count)
 
-    @attr(kind='small')
-    def test_destroy_container_param_instance_is_none(self):
-        """
-        No exception occurred even when instance is invalid.
-        """
-        self._execute_mount_count = 0
-        self._exeption_count = 0
-
-        def stub_exception(msg, *args):
-            self._exeption_count += 1
-
-        self.stubs.Set(self.disk.LOG, 'exception', stub_exception)
-
-        target = 'target'
-        instance = None
-        nbd = False
-        self.disk.destroy_container(target, instance, nbd)
-        self.assertEqual(1, self._exeption_count)
+#    @attr(kind='small')
+#    def test_destroy_container_param_instance_is_none(self):
+#        """
+#        No exception occurred even when instance is invalid.
+#        """
+#        self._execute_mount_count = 0
+#        self._exeption_count = 0
+#
+#        def stub_exception(msg, *args):
+#            self._exeption_count += 1
+#
+#        self.stubs.Set(self.disk.LOG, 'exception', stub_exception)
+#
+#        target = 'target'
+#        instance = None
+#        nbd = False
+#        self.disk.destroy_container(target, instance, nbd)
+#        self.assertEqual(1, self._exeption_count)
 
     @attr(kind='small')
     def test_destroy_container_ex_execute_mount(self):
@@ -1394,7 +1385,7 @@ ddd
         image = '/image/test'
         nbd = True
 
-        self.assertRaises(exception.Error,
+        self.assertRaises(exception.InvalidDevicePath,
                           self.disk._link_device,
                                 image, nbd)
 
@@ -1450,7 +1441,7 @@ ddd
         image = '/image/test'
         nbd = False
 
-        self.assertRaises(exception.Error,
+        self.assertRaises(exception.ProcessExecutionError,
                           self.disk._link_device,
                             image, nbd)
 
