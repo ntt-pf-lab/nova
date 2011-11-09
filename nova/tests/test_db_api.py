@@ -4792,46 +4792,6 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('test', result['type'])
 
     @attr(kind='small')
-    def test_volume_metadata_delete_all(self):
-        raise SkipTest("No method found in db.api")
-        # setup
-        vol = {}
-        vol['id'] = 1
-        vol['size'] = '1g'
-        vol['snapshot_id'] = None
-        vol['user_id'] = 'fake'
-        vol['project_id'] = 'fake'
-        vol['availability_zone'] = FLAGS.storage_availability_zone
-        vol['status'] = "creating"
-        vol['attach_status'] = "detached"
-        vol['instance_id'] = 1
-        vol['metadata'] = {'type': 'test'}
-        self.db.api.volume_create(self.context, vol)
-        self.db.api.volume_metadata_delete_all(self.context, 1)
-        meta = self.db.api.volume_metadata_get(self.context, 1)
-        self.assertEqual({}, meta)
-
-    @attr(kind='small')
-    def test_volume_metadata_delete_all_db_not_found(self):
-        raise SkipTest("No method found in db.api")
-        # setup
-        vol = {}
-        vol['id'] = 1
-        vol['size'] = '1g'
-        vol['snapshot_id'] = None
-        vol['user_id'] = 'fake'
-        vol['project_id'] = 'fake'
-        vol['availability_zone'] = FLAGS.storage_availability_zone
-        vol['status'] = "creating"
-        vol['attach_status'] = "detached"
-        vol['instance_id'] = 1
-        vol['metadata'] = {'type': 'test'}
-        self.db.api.volume_create(self.context, vol)
-        self.db.api.volume_metadata_delete_all(self.context, 2)
-        meta = self.db.api.volume_metadata_get(self.context, 1)
-        self.assertEqual('test', meta['type'])
-
-    @attr(kind='small')
     def test_volume_metadata_get_item(self):
         raise SkipTest("No method found in db.api")
         # setup
@@ -8386,40 +8346,6 @@ class DbApiTestCase(test.TestCase):
         self.assertRaises(exception.InstanceNotFound,
                           self.db.api.instance_metadata_delete,
                           self.context, 2, 'type')
-
-    @attr(kind='small')
-    def test_instance_metadata_delete_all(self):
-        """
-        No method found in db.api
-        """
-        raise SkipTest("No method found in db.api ")
-        # setup
-        i = {}
-        i['id'] = 1
-        i['metadata'] = {'type': 'test'}
-
-        self.db.api.instance_create(self.context, i)
-        # test and assert
-        self.db.api.instance_metadata_delete_all(self.context, 1)
-        metadata = self.db.api.instance_metadata_get(self.context, 1)
-        self.assertEqual({}, metadata)
-
-    @attr(kind='small')
-    def test_instance_metadata_delete_all_db_not_found(self):
-        """
-        No method found in db.api
-        """
-        raise SkipTest("No method found in db.api ")
-        # setup
-        i = {}
-        i['id'] = 1
-        i['metadata'] = {'type': 'test'}
-
-        self.db.api.instance_create(self.context, i)
-        # test and assert
-        self.assertRaises(exception.InstanceNotFound,
-                          self.db.api.instance_metadata_delete_all,
-                          self.context, 2)
 
     @attr(kind='small')
     def test_instance_metadata_get_item(self):
