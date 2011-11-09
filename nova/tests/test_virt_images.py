@@ -165,7 +165,7 @@ class VirtImagesTestCase(test.TestCase):
         path = ''
 
         # No such file or directory
-        self.assertRaises(IOError,
+        self.assertRaises(exception.InvalidDevicePath,
                           virt_images.fetch,
                           self.context, image_href, path,
                           self.user_id, self.project_id)
