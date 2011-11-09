@@ -992,7 +992,6 @@ class DiskTestCase(test.TestCase):
     @attr(kind='small')
     def test_setup_container_ex_link_device(self):
         """Test for nova.virt.disk.setup_container."""
-        raise SkipTest("UnboundLocalError occurred.")
         self._execute_losetup_count = 0
 
         def stub_execute(*cmd, **kwargs):
