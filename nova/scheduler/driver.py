@@ -2,6 +2,10 @@
 
 # Copyright (c) 2010 Openstack, LLC.
 # Copyright 2010 United States Government as represented by the
+#
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 #
@@ -354,6 +358,8 @@ class Scheduler(object):
         dst_t = db.queue_get_for(context, FLAGS.compute_topic, dest)
         src_t = db.queue_get_for(context, FLAGS.compute_topic, src)
 
+        filename = None
+
         try:
             # create tmpfile at dest host
             filename = rpc.call(context, dst_t,
@@ -370,6 +376,8 @@ class Scheduler(object):
             raise
 
         finally:
-            rpc.call(context, dst_t,
-                     {"method": 'cleanup_shared_storage_test_file',
-                      "args": {'filename': filename}})
+            # Should only be None for tests?
+            if filename is not None:
+                rpc.call(context, dst_t,
+                         {"method": 'cleanup_shared_storage_test_file',
+                          "args": {'filename': filename}})
