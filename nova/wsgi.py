@@ -372,8 +372,10 @@ class Loader(object):
 
         :param config_path: Full or relative path to the paste config.
         :returns: None
-
+        :raises: 'nova.exception.PasteConfigNotFound'
         """
+        if not config_path and not FLAGS.api_paste_config:
+            raise exception.PasteConfigNotFound
         config_path = config_path or FLAGS.api_paste_config
         self.config_path = self._find_config(config_path)
 
