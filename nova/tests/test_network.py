@@ -2532,8 +2532,6 @@ class VlanNetworkTestCase(test.TestCase):
         driver.unbind_floating_ip() is called
         when exception occurred in driver.ensure_floating_forward()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkInitHostException'")
         self._ensure_count = 0
         self._unbind_count = 0
         self._floating_ip = []
@@ -2952,7 +2950,6 @@ class VlanNetworkTestCase(test.TestCase):
         driver.unbind_floating_ip() is called
         when exception occurred in driver.ensure_floating_forward()
         """
-        raise SkipTest('AssertionError')
         self._floating_ip = None
 
         def stub_ensure_floating_forward(floating_ip, fixed_ip):
@@ -3376,7 +3373,6 @@ class VlanNetworkTestCase(test.TestCase):
         """
         driver.unbind_floating_ip() is called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
@@ -3423,7 +3419,6 @@ class VlanNetworkTestCase(test.TestCase):
         """
         driver.unbind_floating_ip() is called for cleanup
         """
-        raise SkipTest('AssertionError')
         self._network = None
 
         def stub_ensure_vpn_forward(public_ip, port, private_ip):
@@ -3472,7 +3467,6 @@ class VlanNetworkTestCase(test.TestCase):
         """
         driver.unbind_floating_ip() is called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
@@ -3523,7 +3517,6 @@ class VlanNetworkTestCase(test.TestCase):
         driver.release_dhcp() and
         driver.unbind_floating_ip() are called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
@@ -4279,7 +4272,6 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         """
         driver.unbind_floating_ip() is called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
@@ -4325,7 +4317,6 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         """
         driver.unbind_floating_ip() is called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
@@ -4374,7 +4365,6 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         driver.release_dhcp() and
         driver.unbind_floating_ip() are called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
@@ -4443,7 +4433,6 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         driver.release_dhcp() and
         driver.unbind_floating_ip() are called for cleanup
         """
-        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
