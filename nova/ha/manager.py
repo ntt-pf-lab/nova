@@ -32,6 +32,7 @@ from nova import rpc
 from nova import utils
 from nova.compute import instance_types
 from nova.scheduler import zone_manager
+from nova.notifier import api
 
 
 LOG = logging.getLogger('ha.manager')
@@ -45,19 +46,17 @@ EVENTLOG_STATUS_SUCCESS = 'Success'
 EVENTLOG_STATUS_FAILD = 'Faild'
 EVENTLOG_STATUS_TIMEOUT = 'Timeout'
 EVENTLOG_STATUS_CLEANUP = 'Cleanup'
+EVENTLOG_NOTIFY_EVENT_TYPE = 'nova.ha.manager.NotificatinManager.notify'
+
 
 class NotificatinManager(manager.Manager):
-    """Manages  billing_notify notify. """
+    """Manages  HA notifier. """
 
     def notify(self, message, context=None):
-        """Register the database notifications billing_notify. """
+        """Register the database notifications HA notifier. """
 
-        event_type = message['event_type'].replace('.','_')
-        if hasattr(self,event_type):
-            method = getattr(self,event_type)
-            method(message)
+        event_type = message['event_type'].replace('.', '_')
         LOG.debug(json.dumps(message))
-
 
         status = None
         request_id = 0
@@ -76,12 +75,12 @@ class NotificatinManager(manager.Manager):
                 pass
 
             try:
-                 tenant_id = message['payload']['project_id']
+                tenant_id = message['payload']['project_id']
             except:
                 pass
 
             try:
-                 tenant_id = message['payload']['context']['project_id']
+                tenant_id = message['payload']['context']['project_id']
             except:
                 pass
 
@@ -121,12 +120,12 @@ class NotificatinManager(manager.Manager):
 
             db.eventlog_create(context, values)
 
-
         # API fails when calling API, all of the  API, API to get any error.
-        if status == EVENTLOG_STATUS_FAILD or status == EVENTLOG_STATUS_TIMEOUT:
+        if status in (EVENTLOG_STATUS_FAILD, EVENTLOG_STATUS_TIMEOUT):
             # Get the information you want to cleanup the request_ID.
-            msg = Message(db.eventlog_get_all_by_request_id(context, request_id, session=None))
-            
+            msg = Message(db.eventlog_get_all_by_request_id(context,
+                          request_id, session=None))
+
             # If you can get the API for Cleanup is to run cleaupu.
             if msg.first:
 
@@ -136,15 +135,15 @@ class NotificatinManager(manager.Manager):
                 if cleanup_msg:
                     LOG.debug('start cleanup cast')
                     cleanup_values = dict(message=json.dumps(cleanup_msg),
-                          message_id=uuid.uuid4(),
-                          event_type='nova.ha.manager.NotificatinManager.notify',
+                          message_id=uuid.uuid4().hex,
+                          event_type=EVENTLOG_NOTIFY_EVENT_TYPE,
                           status=EVENTLOG_STATUS_CLEANUP,
                           request_id=request_id,
                           user_id=DEFAULT_USER_ID,
                           tenant_id=DEFAULT_TENANT_ID,
                           publisher_id=cleanup_msg['topic'],
-                          priority=FLAGS.default_notification_level)
-                    
+                          priority=api.INFO)
+
                     db.eventlog_create(context, cleanup_values)
                     # cast a message to the cleanup
                     cleanup.cleanup_cast(context, cleanup_msg)
@@ -154,27 +153,25 @@ class Message(object):
     """ Get the Message from the EventLog. """
 
     def __init__(self, logs):
-       self.logs = logs
-
+        self.logs = logs
 
     def first(self):
-       """ Eventlog to return the first API information. """
-       return self.logs[0]
-
+        """ Eventlog to return the first API information. """
+        return self.logs[0]
 
     def cause(self):
-       """ Eventlog to return the error API information."""
-       eventlog_ref = []
-       for log in self.logs:
-           if EVENTLOG_STATUS_FAILD == log['status'] or EVENTLOG_STATUS_TIMEOUT == log['status']:
-               eventlog_ref.append(log)
-       return eventlog_ref
+        """ Eventlog to return the error API information."""
+        eventlog_ref = []
+        for log in self.logs:
+            if log['status'] in (EVENTLOG_STATUS_FAILD,
+                                 EVENTLOG_STATUS_TIMEOUT):
+                eventlog_ref.append(log)
 
- 
+        return eventlog_ref
+
     def all(self):
-       """ Eventlog to return the all API information."""
-       return self.logs
-
+        """ Eventlog to return the all API information."""
+        return self.logs
 
     def get_topic(self, topicType):
         """ Get the topic from eventlog. """
@@ -190,8 +187,8 @@ class Message(object):
         """ Get the incatance_id from eventlog message. """
         instance_id = None
         for log in self.logs:
-           msg = json.loads(log['message'])
-           if 'args' in msg:
+            msg = json.loads(log['message'])
+            if 'args' in msg:
                 if 'instance_id' in msg['args']:
                     instance_id = msg['args']['instance_id']
                     break
@@ -205,28 +202,37 @@ class CleanupManager(object):
     def __init__(self, message):
         self.message = message
 
-
     def getCleanupMessage(self):
         """ Cleanup methods to get the API that failed."""
         message = self.message.first()
+        message_rec = self.message.all()
         first_api = message['event_type']
+        cleanup_api = {'nova.compute.api.API.create': 'terminate_instance',
+                       'nova.compute.api.API.delete': 'terminate_instance',
+                       'nova.compute.api.API.reboot': 'reboot_instance'}
 
-        #TODO How to mapping of API
-        cleanup_api = {'nova.compute.api.API.create':'terminate_instance',
-                       'nova.compute.api.API.delete':'terminate_instance'}
-
-        #TODO How to create Messae
-        #TODO The combination of API and Message
         cleanup_value = {}
         if first_api in cleanup_api:
+
             method = cleanup_api[first_api]
             if self.message.get_instanceId() is None:
                 return
             instance_id = self.message.get_instanceId()
-            if self.message.get_topic('run_instance') is None:
-                return
-            cleanup_value['topic'] = self.message.get_topic('run_instance')
-            cleanup_value['message'] = {'args':{'instance_id': instance_id},
+            topic = None
+            if 'nova.compute.api.API.create' in first_api:
+                if self.message.get_topic('run_instance') is None:
+                    return
+                topic = self.message.get_topic('run_instance')
+            elif 'nova.compute.api.API.delete' in first_api:
+                if self.message.get_topic('terminate_instance') is None:
+                    return
+                topic = self.message.get_topic('terminate_instance')
+            elif 'nova.compute.api.API.reboot' in first_api:
+                if self.message.get_topic('reboot_instance') is None:
+                    return
+                topic = self.message.get_topic('reboot_instance')
+            cleanup_value['topic'] = topic
+            cleanup_value['message'] = {'args': {'instance_id': instance_id},
                                         'method': method}
 
         return cleanup_value
@@ -234,4 +240,3 @@ class CleanupManager(object):
     def cleanup_cast(self, context, message):
         """ Cast to run the cleanup. """
         rpc.cast(context, message['topic'], message['message'])
-

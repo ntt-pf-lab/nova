@@ -39,13 +39,14 @@ def api_decorator(name, fn):
 
     """
     def wrapped_func(*args, **kwarg):
+        LOG.debug(args)
+        LOG.debug(kwarg)
         body = {}
         body['args'] = []
         body['kwarg'] = {}
         original_args = args
         if len(args) >= 2:
             body['context'] = args[1]
-            args = args[3:]
         for arg in args[3:]:
             body['args'].append(arg)
         for key in kwarg:
@@ -81,7 +82,8 @@ def notify(message):
     priority = message.get('priority',
                            FLAGS.default_notification_level)
     priority = priority.lower()
-    rpc.cast(context, FLAGS.notification_topic, {'method':'notify','args':{'message':message}})
+    rpc.cast(context, FLAGS.notification_topic, {'method': 'notify',
+                                                 'args': {'message': message}})
 
 
 #Patching Emit function

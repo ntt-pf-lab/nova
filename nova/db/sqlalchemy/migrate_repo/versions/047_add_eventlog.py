@@ -62,6 +62,7 @@ eventlog = Table('eventlog', meta,
                      unicode_error=None, _warn_on_bytestring=False)),
        )
 
+
 def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine;
     # bind migrate_engine to your metadata

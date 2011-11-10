@@ -30,10 +30,11 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer('message_timeout', 5,
                     'Check the timeout EventLog')
 
-EVENTLOG_STATUS_RUNNUNG = 'Runnning'
+EVENTLOG_STATUS_RUNNUNG = 'Running'
 EVENTLOG_STATUS_SUCCESS = 'Success'
 EVENTLOG_STATUS_TIMEOUT = 'Timeout'
 EVENTLOG_STATUS_FAILD = 'Faild'
+
 
 def rpc_decorator(name, fn):
     """ decorator for rpc notify which is used from utils.monkey_patch()
@@ -48,6 +49,7 @@ def rpc_decorator(name, fn):
     elif name[-4:] == "cast":
         return cast
     return fn
+
 
 def cast(context, topic, msg):
     """Sends a message on a topic without waiting for a response.
@@ -70,11 +72,17 @@ def cast(context, topic, msg):
                       user_id=msg['_context_user_id'],
                       tenant_id=msg['_context_project_id'],
                       publisher_id=topic,
-                      priority=FLAGS.default_notification_level)
+                      priority="INFO")
 
         db.eventlog_create(context, values)
 
-        eventlet.greenthread.spawn_n(check_timeout, context, msg_id, topic, msg['method'], msg['_context_request_id'], msg)
+        eventlet.greenthread.spawn_n(check_timeout,
+                                     context,
+                                     msg_id,
+                                     topic,
+                                     msg['method'],
+                                     msg['_context_request_id'],
+                                     msg)
 
     conn = rpc.ConnectionContext()
     conn.topic_send(topic, msg)
@@ -100,27 +108,33 @@ def call(context, topic, msg):
                   user_id=msg['_context_user_id'],
                   tenant_id=msg['_context_project_id'],
                   publisher_id=topic,
-                  priority=FLAGS.default_notification_level)
+                  priority="INFO")
 
     db.eventlog_create(context, values)
 
     conn = rpc.ConnectionContext()
     wait_msg = rpc.MulticallWaiter(conn)
     conn.declare_direct_consumer(msg_id, wait_msg)
-
-    eventlet.greenthread.spawn_n(check_timeout, context, msg_id, topic, msg['method'], msg['_context_request_id'], msg)
+    eventlet.greenthread.spawn_n(check_timeout,
+                                 context,
+                                 msg_id,
+                                 topic,
+                                 msg['method'],
+                                 msg['_context_request_id'],
+                                 msg)
     conn.topic_send(topic, msg)
 
     rv = list(wait_msg)
+
     if not rv:
-       return
+        return
     return rv[-1]
 
 
 class DatetimeEncoder(json.JSONEncoder):
     """ To convert a datetime date type. """
     def default(self, obj):
-        if isinstance(obj, datetime ):
+        if isinstance(obj, datetime):
             return obj.strftime("%Y-%m-%d %H:%M:%S")
         return json.JSONEncoder.default(self, obj)
 
@@ -151,23 +165,19 @@ def check_timeout(context, msg_id, topic, event_type, request_id, message):
     """Determines whether call/cast is timeout."""
     start_time = int(time.time())
     while True:
-        eventlog =  db.eventlog_get(context, msg_id, session=None)
+        eventlog = db.eventlog_get(context, msg_id, session=None)
         if eventlog['status'] != EVENTLOG_STATUS_RUNNUNG:
             break
-
         if int(time.time()) - start_time > FLAGS.message_timeout:
             new_message = dict(message_id=msg_id,
                                publisher_id=topic,
                                event_type=event_type,
-                               priority=FLAGS.default_notification_level,
+                               priority="INFO",
                                request_id=request_id,
                                payload=message)
             new_message['status'] = EVENTLOG_STATUS_TIMEOUT
             notifier.notify(new_message)
-            #db.eventlog_update(context, msg_id, {'status':
-                                #EVENTLOG_STATUS_TIMEOUT})
             break
         eventlet.sleep(0.1)
-
 
 rpc.ConsumerBase.consume = consume
