@@ -177,13 +177,9 @@ class ServerTestCase(test.TestCase):
             self.sock_host, self.sock_port = sock.getsockname()[:2]
 
         self.stubs.Set(gsocket, 'accept', fake_accept)
-
-        self.server.start(backlog=-1)
-
-        # switch to server greenthread
-        greenthread.sleep(0)
-        self.assertEqual('127.0.0.1', self.sock_host)
-        self.assertEqual(1234, self.sock_port)
+        self.assertRaises(exception.InvalidInput,
+                          self.server.start,
+                          backlog=-1)
 
     @attr(kind='small')
     def test_start_exception(self):
