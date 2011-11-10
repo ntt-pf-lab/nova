@@ -4,6 +4,8 @@
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2010 OpenStack LLC.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -103,7 +105,9 @@ class Server(object):
 
         """
         LOG.info(_("Stopping WSGI server."))
-        self._server.kill()
+
+        if self._server is not None:
+            self._server.kill()
         if self._tcp_server is not None:
             LOG.info(_("Stopping raw TCP server."))
             self._tcp_server.kill()
