@@ -183,8 +183,9 @@ class DbApiTestCase(test.TestCase):
 
         db.api.eventlog_create(self.context, con)
         self.assertRaises(exception.EventLogNotFound,
-                          db.api.eventlog_update(self.context,
-                                                 '2', {'status': 'Timeout'}))
+                          db.api.eventlog_update,
+                          self.context,
+                          '2', {'status': 'Timeout'})
 
     def test_eventlog_get(self):
         con = {}
@@ -229,8 +230,9 @@ class DbApiTestCase(test.TestCase):
         con['tenant_id'] = 'fake'
 
         db.api.eventlog_create(self.context, con)
-        self.assertRaises(exception.EventLogNotFound, db.api.eventlog_get,
-                          self.context, '2', 1)
+        self.assertRaises(exception.EventLogNotFound,
+                          db.api.eventlog_get,
+                          self.context, '2', session=None)
 
     def test_eventlog_get_all_by_request_id(self):
         con = {}
@@ -277,3 +279,22 @@ class DbApiTestCase(test.TestCase):
         self.assertEqual('Success', result[0].status)
         self.assertEqual('fake', result[0].user_id)
         self.assertEqual('fake', result[0].tenant_id)
+
+    def test_eventlog_get_all_by_request_id_not_found(self):
+        con = {}
+        con['id'] = 1
+        con['request_id'] = '1'
+        con['message_id'] = '1'
+        con['event_type'] = 'event_type'
+        con['publisher_id'] = 'compute'
+        con['priority'] = 'INFO'
+        con['message'] = "{'args': {'instance_id': '1'},\
+                           'method': 'run_instance'}"
+        con['status'] = 'Success'
+        con['user_id'] = 'fake'
+        con['tenant_id'] = 'fake'
+
+        db.api.eventlog_create(self.context, con)
+        self.assertRaises(exception.EventLogNotFound,
+                          db.api.eventlog_get_all_by_request_id,
+                          self.context, '2', session=None)

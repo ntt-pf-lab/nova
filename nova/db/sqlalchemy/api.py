@@ -4003,8 +4003,6 @@ def eventlog_update(context, message_id, values):
     session = get_session()
     with session.begin():
         eventlog_ref = eventlog_get(context, message_id, session=session)
-        if not eventlog_ref:
-            raise exception.EventLogNotFound(message_id=message_id)
         eventlog_ref.update(values)
         eventlog_ref.save(session=session)
         return eventlog_ref

@@ -123,6 +123,8 @@ class NotificatinManager(manager.Manager):
         # API fails when calling API, all of the  API, API to get any error.
         if status in (EVENTLOG_STATUS_FAILD, EVENTLOG_STATUS_TIMEOUT):
             # Get the information you want to cleanup the request_ID.
+            LOG.error(_('Communication failure, error was detected: %s')
+                      % (request_id))
             msg = Message(db.eventlog_get_all_by_request_id(context,
                           request_id, session=None))
 
