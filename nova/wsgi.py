@@ -104,9 +104,9 @@ class Server(object):
         :returns: None
 
         """
-        LOG.info(_("Stopping WSGI server."))
 
         if self._server is not None:
+            LOG.info(_("Stopping WSGI server."))
             self._server.kill()
         if self._tcp_server is not None:
             LOG.info(_("Stopping raw TCP server."))
