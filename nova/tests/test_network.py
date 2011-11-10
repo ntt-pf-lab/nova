@@ -2529,18 +2529,31 @@ class VlanNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_init_host_floating_ips_ex_driver_ensure_floating_forward(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called
+        when exception occurred in driver.ensure_floating_forward()
         """
-        raise SkipTest('AssertionError: 2 != 1')
-        self._count = 0
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkInitHostException'")
+        self._ensure_count = 0
+        self._unbind_count = 0
+        self._floating_ip = []
 
         def stub_ensure_floating_forward(floating_ip, fixed_ip):
-            self._count += 1
-            raise exception.ProcessExecutionError()
+            self._ensure_count += 1
+            if self._ensure_count == 1:
+                raise exception.ProcessExecutionError()
+            if self._ensure_count == 2:
+                return
+
+        def stub_unbind_floating_ip(floating_ip):
+            self._unbind_count += 1
+            self._floating_ip.append(floating_ip)
 
         self.mox.StubOutWithMock(db, 'floating_ip_get_all_by_host')
         self.stubs.Set(self.network.driver, 'ensure_floating_forward',
                        stub_ensure_floating_forward)
+        self.stubs.Set(self.network.driver, 'unbind_floating_ip',
+                       stub_unbind_floating_ip)
         floating_ips = [floating_ip_fields, floating_ip_fields]
         floating_ips[0]['fixed_ip'] = {'address': '192.168.0.100'}
         floating_ips[1]['fixed_ip'] = {'address': '192.168.0.200'}
@@ -2548,9 +2561,11 @@ class VlanNetworkTestCase(test.TestCase):
                                        mox.IgnoreArg()).AndReturn(floating_ips)
         self.mox.ReplayAll()
 
-        self.assertRaises(exception.ProcessExecutionError,
+        self.assertRaises(exception.NetworkInitHostException,
                           self.network.init_host_floating_ips)
-        self.assertEqual(2, self._count)
+        self.assertEqual(2, self._ensure_count)
+        self.assertEqual(1, self._unbind_count)
+        self.assertEqual('192.168.0.100', self._floating_ip[0])
 
     @attr(kind='small')
     def test_allocate_for_instance(self):
@@ -2934,15 +2949,24 @@ class VlanNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_associate_floating_ip_ex_driver_ensure_floating_forward(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called
+        when exception occurred in driver.ensure_floating_forward()
         """
+        raise SkipTest('AssertionError')
+        self._floating_ip = None
+
         def stub_ensure_floating_forward(floating_ip, fixed_ip):
             raise exception.ProcessExecutionError()
+
+        def stub_unbind_floating_ip(floating_ip):
+            self._floating_ip = floating_ip
 
         self.mox.StubOutWithMock(db, 'floating_ip_get_by_address')
         self.mox.StubOutWithMock(db, 'floating_ip_fixed_ip_associate')
         self.stubs.Set(self.network.driver, 'ensure_floating_forward',
                        stub_ensure_floating_forward)
+        self.stubs.Set(self.network.driver, 'unbind_floating_ip',
+                       stub_unbind_floating_ip)
         floating_ip = {'address': '10.10.10.10',
                        'fixed_ip': None}
         db.floating_ip_get_by_address(mox.IgnoreArg(),
@@ -2958,6 +2982,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.associate_floating_ip,
                           self.context, floating_ip_address, fixed_ip_address)
+        self.assertEqual(floating_ip_address, self._floating_ip)
 
     @attr(kind='small')
     def test_disassociate_floating_ip(self):
@@ -3349,13 +3374,19 @@ class VlanNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_initialize_gateway_device(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+
         def stub_initialize_gateway_device(dev, network_ref):
             raise exception.ProcessExecutionError()
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate')
         self.mox.StubOutWithMock(db, 'instance_get')
@@ -3365,6 +3396,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(self.network.driver, 'plug')
         self.stubs.Set(self.network.driver, 'initialize_gateway_device',
                        stub_initialize_gateway_device)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate(mox.IgnoreArg(),
                               mox.IgnoreArg(),
                               mox.IgnoreArg(),
@@ -3384,14 +3416,21 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_ensure_vpn_forward(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called for cleanup
         """
+        raise SkipTest('AssertionError')
+        self._network = None
+
         def stub_ensure_vpn_forward(public_ip, port, private_ip):
             raise exception.ProcessExecutionError()
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate')
         self.mox.StubOutWithMock(db, 'instance_get')
@@ -3401,6 +3440,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(db, 'network_update')
         self.stubs.Set(self.network.driver, 'ensure_vpn_forward',
                        stub_ensure_vpn_forward)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate(mox.IgnoreArg(),
                               mox.IgnoreArg(),
                               mox.IgnoreArg(),
@@ -3425,17 +3465,24 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_update_dhcp(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+
         def stub_update_dhcp(context, dev, network_ref):
             raise exception.ProcessExecutionError()
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate')
         self.mox.StubOutWithMock(db, 'instance_get')
@@ -3446,6 +3493,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(self.network.driver,
                                  'initialize_gateway_device')
         self.stubs.Set(self.network.driver, 'update_dhcp', stub_update_dhcp)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate(mox.IgnoreArg(),
                               mox.IgnoreArg(),
                               mox.IgnoreArg(),
@@ -3467,28 +3515,47 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_update_ra(self):
         """
-        ProcessExecutionError is raised
+        driver.release_dhcp() and
+        driver.unbind_floating_ip() are called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+        self._dev = None
+        self._address = None
+        self._mac_address = None
+
         def stub_update_ra(context, dev, network_ref):
             raise exception.ProcessExecutionError()
+
+        def stub_release_dhcp(dev, address, mac_address):
+            self._dev = dev
+            self._address = address
+            self._mac_address = mac_address
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate')
         self.mox.StubOutWithMock(db, 'instance_get')
         self.mox.StubOutWithMock(
                         db, 'virtual_interface_get_by_instance_and_network')
         self.mox.StubOutWithMock(db, 'fixed_ip_update')
+        self.mox.StubOutWithMock(self.network, 'generate_mac_address')
         self.mox.StubOutWithMock(self.network.driver, 'plug')
         self.mox.StubOutWithMock(self.network.driver,
                                  'initialize_gateway_device')
         self.mox.StubOutWithMock(self.network.driver, 'update_dhcp')
         self.stubs.Set(self.network.driver, 'update_ra', stub_update_ra)
+        self.stubs.Set(self.network.driver, 'release_dhcp', stub_release_dhcp)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate(mox.IgnoreArg(),
                               mox.IgnoreArg(),
                               mox.IgnoreArg(),
@@ -3499,7 +3566,11 @@ class VlanNetworkTestCase(test.TestCase):
                         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                         AndReturn({'id': 0})
         db.fixed_ip_update(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-        self.network.driver.plug(mox.IgnoreArg(), mox.IgnoreArg())
+        mac_address = '00-00-00-00-00-00-00-00'
+        self.network.generate_mac_address().AndReturn(mac_address)
+        dev = 'dev'
+        self.network.driver.plug(mox.IgnoreArg(),
+                                 mox.IgnoreArg()).AndReturn(dev)
         self.network.driver.initialize_gateway_device(
                                         mox.IgnoreArg(), mox.IgnoreArg())
         self.network.driver.update_dhcp(
@@ -3512,6 +3583,10 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(dev, self._dev)
+        self.assertEqual(network['dhcp_server'], self._address)
+        self.assertEqual(mac_address, self._mac_address)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_add_network_to_project(self):
@@ -4202,13 +4277,19 @@ class FlatDHCPNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_initialize_gateway_device(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+
         def stub_initialize_gateway_device(dev, network_ref):
             raise exception.ProcessExecutionError()
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate_pool')
         self.mox.StubOutWithMock(db, 'instance_get')
@@ -4219,6 +4300,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.stubs.Set(self.network.driver,
                        'initialize_gateway_device',
                        stub_initialize_gateway_device)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate_pool(mox.IgnoreArg(),
                                    mox.IgnoreArg(),
                                    mox.IgnoreArg()).AndReturn('192.168.0.101')
@@ -4236,17 +4318,24 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_update_dhcp(self):
         """
-        ProcessExecutionError is raised
+        driver.unbind_floating_ip() is called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+
         def stub_update_dhcp(context, dev, network_ref):
             raise exception.ProcessExecutionError()
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate_pool')
         self.mox.StubOutWithMock(db, 'instance_get')
@@ -4257,6 +4346,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(self.network.driver,
                                  'initialize_gateway_device')
         self.stubs.Set(self.network.driver, 'update_dhcp', stub_update_dhcp)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate_pool(mox.IgnoreArg(),
                                    mox.IgnoreArg(),
                                    mox.IgnoreArg()).AndReturn('192.168.0.101')
@@ -4276,28 +4366,47 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_driver_update_ra(self):
         """
-        ProcessExecutionError is raised
+        driver.release_dhcp() and
+        driver.unbind_floating_ip() are called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+        self._dev = None
+        self._address = None
+        self._mac_address = None
+
         def stub_update_ra(context, dev, network_ref):
             raise exception.ProcessExecutionError()
+
+        def stub_release_dhcp(dev, address, mac_address):
+            self._dev = dev
+            self._address = address
+            self._mac_address = mac_address
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate_pool')
         self.mox.StubOutWithMock(db, 'instance_get')
         self.mox.StubOutWithMock(
                         db, 'virtual_interface_get_by_instance_and_network')
         self.mox.StubOutWithMock(db, 'fixed_ip_update')
+        self.mox.StubOutWithMock(self.network, 'generate_mac_address')
         self.mox.StubOutWithMock(self.network.driver, 'plug')
         self.mox.StubOutWithMock(self.network.driver,
                                  'initialize_gateway_device')
         self.mox.StubOutWithMock(self.network.driver, 'update_dhcp')
         self.stubs.Set(self.network.driver, 'update_ra', stub_update_ra)
+        self.stubs.Set(self.network.driver, 'release_dhcp', stub_release_dhcp)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate_pool(mox.IgnoreArg(),
                                    mox.IgnoreArg(),
                                    mox.IgnoreArg()).AndReturn('192.168.0.101')
@@ -4307,7 +4416,11 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                         AndReturn({'id': 0})
         db.fixed_ip_update(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-        self.network.driver.plug(mox.IgnoreArg(), mox.IgnoreArg())
+        mac_address = '00-00-00-00-00-00-00-00'
+        self.network.generate_mac_address().AndReturn(mac_address)
+        dev = 'dev'
+        self.network.driver.plug(mox.IgnoreArg(),
+                                 mox.IgnoreArg()).AndReturn(dev)
         self.network.driver.initialize_gateway_device(
                                         mox.IgnoreArg(), mox.IgnoreArg())
         self.network.driver.update_dhcp(
@@ -4319,29 +4432,51 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(dev, self._dev)
+        self.assertEqual(network['dhcp_server'], self._address)
+        self.assertEqual(mac_address, self._mac_address)
+        self.assertEqual(network, self._network)
 
     @attr(kind='small')
     def test_allocate_fixed_ip_ex_utils_get_my_linklocal(self):
         """
-        ProcessExecutionError is raised
+        driver.release_dhcp() and
+        driver.unbind_floating_ip() are called for cleanup
         """
+        raise SkipTest('AssertionError')
         self.flags(fake_network=False)
         self.flags(use_ipv6=True)
 
+        self._network = None
+        self._dev = None
+        self._address = None
+        self._mac_address = None
+
         def stub_get_my_linklocal(interface):
             raise exception.ProcessExecutionError()
+
+        def stub_release_dhcp(dev, address, mac_address):
+            self._dev = dev
+            self._address = address
+            self._mac_address = mac_address
+
+        def stub_unplug(network):
+            self._network = network
 
         self.mox.StubOutWithMock(db, 'fixed_ip_associate_pool')
         self.mox.StubOutWithMock(db, 'instance_get')
         self.mox.StubOutWithMock(
                         db, 'virtual_interface_get_by_instance_and_network')
         self.mox.StubOutWithMock(db, 'fixed_ip_update')
+        self.mox.StubOutWithMock(self.network, 'generate_mac_address')
         self.mox.StubOutWithMock(self.network.driver, 'plug')
         self.mox.StubOutWithMock(self.network.driver,
                                  'initialize_gateway_device')
         self.mox.StubOutWithMock(self.network.driver, 'update_dhcp')
         self.mox.StubOutWithMock(self.network.driver, 'update_ra')
         self.stubs.Set(utils, 'get_my_linklocal', stub_get_my_linklocal)
+        self.stubs.Set(self.network.driver, 'release_dhcp', stub_release_dhcp)
+        self.stubs.Set(self.network.driver, 'unplug', stub_unplug)
         db.fixed_ip_associate_pool(mox.IgnoreArg(),
                                    mox.IgnoreArg(),
                                    mox.IgnoreArg()).AndReturn('192.168.0.101')
@@ -4351,7 +4486,11 @@ class FlatDHCPNetworkTestCase(test.TestCase):
                         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                         AndReturn({'id': 0})
         db.fixed_ip_update(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
-        self.network.driver.plug(mox.IgnoreArg(), mox.IgnoreArg())
+        mac_address = '00-00-00-00-00-00-00-00'
+        self.network.generate_mac_address().AndReturn(mac_address)
+        dev = 'dev'
+        self.network.driver.plug(mox.IgnoreArg(),
+                                 mox.IgnoreArg()).AndReturn(dev)
         self.network.driver.initialize_gateway_device(
                                         mox.IgnoreArg(), mox.IgnoreArg())
         self.network.driver.update_dhcp(
@@ -4365,3 +4504,7 @@ class FlatDHCPNetworkTestCase(test.TestCase):
         self.assertRaises(exception.ProcessExecutionError,
                           self.network.allocate_fixed_ip,
                           self.context, 1, network, **kwargs)
+        self.assertEqual(dev, self._dev)
+        self.assertEqual(network['dhcp_server'], self._address)
+        self.assertEqual(mac_address, self._mac_address)
+        self.assertEqual(network, self._network)
