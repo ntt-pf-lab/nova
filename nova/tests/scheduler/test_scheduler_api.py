@@ -442,7 +442,7 @@ class Reroute_computeTestCase(test.TestCase):
         self.reroute_compute.replace_uuid_with_id(temp_args, {},
         replacement_id='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
 
-        self.assertEqual('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', temp_args[2])
+        self.assertEqual('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', temp_args[1])
 
     @attr(kind='small')
     def test_unmarshall_result_parameter(self):
