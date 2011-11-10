@@ -1,9 +1,34 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+# Copyright 2011 NTT
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 import cStringIO
 
 from nova import context
 from nova import flags
 from nova import log
 from nova import test
+from nova.notifier import api as notifier
+
+import logging
+import sys
+from nose.plugins.attrib import attr
+
+flags.DEFINE_multistring('list_notifier_drivers',
+                         ['nova.notifier.no_op_notifier'],
+                         'List of drivers to send notifications')
 
 FLAGS = flags.FLAGS
 
@@ -126,3 +151,44 @@ class NovaLoggerTestCase(test.TestCase):
     def test_child_log_has_level_of_parent_flag(self):
         l = log.getLogger('nova-test.foo')
         self.assertEqual(log.AUDIT, l.level)
+
+
+class PublishErrorsHandlerTestCase(test.TestCase):
+    """Test for nova.log.PublishErrorsHandler. """
+    @attr(kind='small')
+    def setUp(self):
+        super(PublishErrorsHandlerTestCase, self).setUp()
+        self.handler = logging.Handler()
+        self.publisherrorshandler = log.PublishErrorsHandler(logging.ERROR)
+
+    @attr(kind='small')
+    def test_emit_cfg_list_notifier_drivers_in_flags(self):
+        """Test for nova.log.PublishErrorsHandler.emit. """
+
+        self.stub_flg = False
+
+        def fake_notifier(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(notifier, 'notify', fake_notifier)
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'message', None, None)
+        self.publisherrorshandler.emit(logrecord)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_emit_cfg_log_notifier_in_list_notifier_drivers(self):
+        """Test for nova.log.PublishErrorsHandler.emit. """
+
+        self.flags(list_notifier_drivers=['nova.notifier.rabbit_notifier',
+                                          'nova.notifier.log_notifier'])
+        self.stub_flg = True
+
+        def fake_notifier(*args, **kwargs):
+            self.stub_flg = False
+
+        self.stubs.Set(notifier, 'notify', fake_notifier)
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'message', None, None)
+        self.publisherrorshandler.emit(logrecord)
+        self.assert_(self.stub_flg)
