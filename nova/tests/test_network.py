@@ -641,8 +641,6 @@ class FlatNetworkTestCase(test.TestCase):
         All networks are processed
         even when exception is raised in self.add_virtual_interface()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkAllocateException'")
         self._count = 0
 
         def stub_virtual_interface_delete_by_instance(context, instance_id):
@@ -776,8 +774,6 @@ class FlatNetworkTestCase(test.TestCase):
         All FixedIps are deallocated
         even when exception is raised in self.deallocate_fixed_ip()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkAllocateException'")
         self._count = 0
 
         def stub_deallocate_fixed_ip(context, address, **kwargs):
@@ -1207,8 +1203,6 @@ class FlatNetworkTestCase(test.TestCase):
         All VirtualInterfaces are processed
         even when exception is raised in self._get_dhcp_ip()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkAllocateException'")
         self._count = 0
 
         def stub_get_dhcp_ip(caller, context, network_ref, host=None):
@@ -1785,8 +1779,6 @@ class FlatNetworkTestCase(test.TestCase):
         """
         following process continues even when network creation failed
         """
-        raise SkipTest('ValueError occurred')
-
         def stub_fixed_ip_create(context, values):
             pass
 
@@ -1820,8 +1812,6 @@ class FlatNetworkTestCase(test.TestCase):
         NetworkCreateException is raised
         when DBError occurred in db.fixed_ip_create()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkAllocateException'")
         self._fixed_ip_create_count = 0
 
         def stub_fixed_ip_create(context, values):
@@ -2974,8 +2964,6 @@ class VlanNetworkTestCase(test.TestCase):
         All FloatingIps are disassociated and deallocated
         even when exception is raised in network_api.disassociate_floating_ip()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkAllocateException'")
         self._disassociate_floating_ip_count = 0
         self._release_floating_ip_count = 0
 
@@ -3017,8 +3005,6 @@ class VlanNetworkTestCase(test.TestCase):
         All FloatingIps are disassociated and deallocated
         even when exception is raised in network_api.release_floating_ip()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'NetworkAllocateException'")
         self._disassociate_floating_ip_count = 0
         self._release_floating_ip_count = 0
 
