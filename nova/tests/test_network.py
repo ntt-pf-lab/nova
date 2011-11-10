@@ -636,6 +636,42 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual([], res)
 
     @attr(kind='small')
+    def test_allocate_for_instance_ex_add_virtual_interface(self):
+        """
+        All networks are processed
+        even when exception is raised in self.add_virtual_interface()
+        """
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkAllocateException'")
+        self._count = 0
+
+        def stub_virtual_interface_delete_by_instance(context, instance_id):
+            self._count += 1
+
+        self.mox.StubOutWithMock(db, 'network_get_all')
+        self.mox.StubOutWithMock(db, 'virtual_interface_create')
+        db.network_get_all(mox.IgnoreArg()).AndReturn(networks)
+        for _ in range(10):
+            db.virtual_interface_create(
+                        mox.IgnoreArg(), mox.IgnoreArg()).\
+                        AndRaise(exception.VirtualInterfaceCreateException)
+        self.stubs.Set(db, 'virtual_interface_delete_by_instance',
+                            stub_virtual_interface_delete_by_instance)
+        self.mox.ReplayAll()
+
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        kwargs['host'] = HOST
+        kwargs['project_id'] = 'fake_project'
+        kwargs['instance_type_id'] = 1
+        kwargs['requested_networks'] = None
+        kwargs['vpn'] = False
+        self.assertRaises(exception.NetworkAllocateException,
+                          self.network.allocate_for_instance,
+                          self.context, **kwargs)
+        self.assertEqual(2, self._count)
+
+    @attr(kind='small')
     def test_deallocate_for_instance(self):
         """
         db.virtual_interface_delete_by_instance is called
@@ -733,6 +769,40 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertRaises(exception.InstanceNotFound,
                           self.network.get_instance_nw_info,
                           self.context, instance_id, 1, HOST)
+
+    @attr(kind='small')
+    def test_deallocate_for_instance_ex_deallocate_fixed_ip(self):
+        """
+        All FixedIps are deallocated
+        even when exception is raised in self.deallocate_fixed_ip()
+        """
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkAllocateException'")
+        self._count = 0
+
+        def stub_deallocate_fixed_ip(context, address, **kwargs):
+            self._count += 1
+            raise exception.ProcessExecutionError()
+
+        self.mox.StubOutWithMock(db, 'fixed_ip_get_by_instance')
+        _fixed_ips = list([FakeModel(**fixed_ips[0]),
+                           FakeModel(**fixed_ips[1])])
+        _fixed_ips[0].floating_ips = [
+                        {'address': '192.168.0.1', 'auto_assigned': True}]
+        _fixed_ips[1].floating_ips = [
+                        {'address': '192.168.0.2', 'auto_assigned': True}]
+        db.fixed_ip_get_by_instance(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn(_fixed_ips)
+        self.stubs.Set(self.network, 'deallocate_fixed_ip',
+                       stub_deallocate_fixed_ip)
+        self.mox.ReplayAll()
+
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        self.assertRaises(exception.NetworkDeallocateException,
+                          self.network.deallocate_for_instance,
+                          self.context, **kwargs)
+        self.assertEqual(2, self._count)
 
     @attr(kind='small')
     def test_get_instance_nw_info_ex_fixed_ip_not_found(self):
@@ -1130,6 +1200,42 @@ class FlatNetworkTestCase(test.TestCase):
         self.assertEqual(network['id'], self._network_id)
         self.assertTrue(self._instance_id is None)
         self.assertEqual(HOST, self._host)
+
+    @attr(kind='small')
+    def test_get_instance_nw_info_ex_get_dhcp_ip(self):
+        """
+        All VirtualInterfaces are processed
+        even when exception is raised in self._get_dhcp_ip()
+        """
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkAllocateException'")
+        self._count = 0
+
+        def stub_get_dhcp_ip(caller, context, network_ref, host=None):
+            self._count += 1
+            raise exception.NoMoreFixedIps()
+
+        self.mox.StubOutWithMock(db, 'fixed_ip_get_by_instance')
+        self.mox.StubOutWithMock(db, 'virtual_interface_get_by_instance')
+        self.mox.StubOutWithMock(db, 'instance_type_get')
+        self.mox.StubOutWithMock(db, 'fixed_ip_get_by_network_host')
+        self.stubs.Set(self.network, '_get_dhcp_ip', stub_get_dhcp_ip)
+        fixed_ip = dict(fixed_ips[0])
+        db.fixed_ip_get_by_instance(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn([fixed_ip])
+        _vifs = list([vifs[0], vifs[1]])
+        _vifs[0]['network']['multi_host'] = True
+        _vifs[1]['network']['multi_host'] = True
+        db.virtual_interface_get_by_instance(mox.IgnoreArg(),
+                                             mox.IgnoreArg()).AndReturn(_vifs)
+        db.instance_type_get(mox.IgnoreArg(),
+                             mox.IgnoreArg()).AndReturn(flavor)
+        self.mox.ReplayAll()
+
+        self.assertRaises(exception.NetworkGetNwInfoException,
+                          self.network.get_instance_nw_info,
+                          self.context, 1, 1, HOST)
+        self.assertEqual(2, self._count)
 
     @attr(kind='small')
     def test_add_virtual_interface(self):
@@ -1707,6 +1813,39 @@ class FlatNetworkTestCase(test.TestCase):
         res = self.network.create_networks(*args)
         self.assertEqual([networks[0]], res)
         self.assertEqual(2, self._network_create_count)
+
+    @attr(kind='small')
+    def test_create_networks_ex_db_fixed_ip_create(self):
+        """
+        NetworkCreateException is raised
+        when DBError occurred in db.fixed_ip_create()
+        """
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkAllocateException'")
+        self._fixed_ip_create_count = 0
+
+        def stub_fixed_ip_create(context, values):
+            self._fixed_ip_create_count += 1
+            if self._fixed_ip_create_count == 1:
+                raise exception.DBError('DBError occurred')
+
+        self.mox.StubOutWithMock(db, 'network_get_all')
+        self.mox.StubOutWithMock(db, 'network_create_safe')
+        self.mox.StubOutWithMock(db, 'network_get')
+        self.stubs.Set(db, 'fixed_ip_create', stub_fixed_ip_create)
+        db.network_get_all(mox.IgnoreArg()).AndReturn([])
+        db.network_create_safe(mox.IgnoreArg(),
+                               mox.IgnoreArg()).AndReturn(networks[0])
+        db.network_get(mox.IgnoreArg(),
+                       mox.IgnoreArg()).AndReturn(networks[0])
+        self.mox.ReplayAll()
+
+        cidr = '192.168.0.0/24'
+        args = [None, 'fake', cidr, False, 1, 256, None, None, None, None]
+        self.assertRaises(exception.NetworkCreateException,
+                          self.network.create_networks,
+                          *args)
+        self.assertEqual(256, self._fixed_ip_create_count)
 
     @attr(kind='small')
     def test_delete_network_db_network_is_disassociated(self):
@@ -2828,6 +2967,92 @@ class VlanNetworkTestCase(test.TestCase):
         kwargs['instance_id'] = 1
         self.network.deallocate_for_instance(self.context, **kwargs)
         self.assertFalse(self._is_called)
+
+    @attr(kind='small')
+    def test_deallocate_for_instance_ex_network_api_disassoc_floating_ip(self):
+        """
+        All FloatingIps are disassociated and deallocated
+        even when exception is raised in network_api.disassociate_floating_ip()
+        """
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkAllocateException'")
+        self._disassociate_floating_ip_count = 0
+        self._release_floating_ip_count = 0
+
+        def stub_disassociate_floating_ip(caller, context, address,
+                                          affect_auto_assigned=False):
+            self._disassociate_floating_ip_count += 1
+            raise exception.ApiError('ApiError occurred')
+
+        def stub_release_floating_ip(
+                        caller, context, address, affect_auto_assigned=False):
+            self._release_floating_ip_count += 1
+
+        self.mox.StubOutWithMock(db, 'fixed_ip_get_by_instance')
+        self.stubs.Set(network_api.API, 'disassociate_floating_ip',
+                       stub_disassociate_floating_ip)
+        self.stubs.Set(network_api.API, 'release_floating_ip',
+                       stub_release_floating_ip)
+        _fixed_ips = list([FakeModel(**fixed_ips[0]),
+                           FakeModel(**fixed_ips[1])])
+        _fixed_ips[0].floating_ips = [
+                        {'address': '192.168.0.1', 'auto_assigned': True}]
+        _fixed_ips[1].floating_ips = [
+                        {'address': '192.168.0.2', 'auto_assigned': True}]
+        db.fixed_ip_get_by_instance(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn(_fixed_ips)
+        self.mox.ReplayAll()
+
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        self.assertRaises(exception.NetworkDeallocateException,
+                          self.network.deallocate_for_instance,
+                          self.context, **kwargs)
+        self.assertEqual(2, self._disassociate_floating_ip_count)
+        self.assertEqual(2, self._release_floating_ip_count)
+
+    @attr(kind='small')
+    def test_deallocate_for_instance_ex_network_api_release_floating_ip(self):
+        """
+        All FloatingIps are disassociated and deallocated
+        even when exception is raised in network_api.release_floating_ip()
+        """
+        raise SkipTest("'module' object has no attribute "
+                       "'NetworkAllocateException'")
+        self._disassociate_floating_ip_count = 0
+        self._release_floating_ip_count = 0
+
+        def stub_disassociate_floating_ip(caller, context, address,
+                                          affect_auto_assigned=False):
+            self._disassociate_floating_ip_count += 1
+
+        def stub_release_floating_ip(
+                        caller, context, address, affect_auto_assigned=False):
+            self._release_floating_ip_count += 1
+            raise exception.ApiError('ApiError occurred')
+
+        self.mox.StubOutWithMock(db, 'fixed_ip_get_by_instance')
+        self.stubs.Set(network_api.API, 'disassociate_floating_ip',
+                       stub_disassociate_floating_ip)
+        self.stubs.Set(network_api.API, 'release_floating_ip',
+                       stub_release_floating_ip)
+        _fixed_ips = list([FakeModel(**fixed_ips[0]),
+                           FakeModel(**fixed_ips[1])])
+        _fixed_ips[0].floating_ips = [
+                        {'address': '192.168.0.1', 'auto_assigned': True}]
+        _fixed_ips[1].floating_ips = [
+                        {'address': '192.168.0.2', 'auto_assigned': True}]
+        db.fixed_ip_get_by_instance(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn(_fixed_ips)
+        self.mox.ReplayAll()
+
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        self.assertRaises(exception.NetworkDeallocateException,
+                          self.network.deallocate_for_instance,
+                          self.context, **kwargs)
+        self.assertEqual(2, self._disassociate_floating_ip_count)
+        self.assertEqual(2, self._release_floating_ip_count)
 
     @attr(kind='small')
     def test_allocate_floating_ip_db_address_quota_not_exceeded(self):
