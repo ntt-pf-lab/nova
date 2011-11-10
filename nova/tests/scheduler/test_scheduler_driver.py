@@ -1166,7 +1166,7 @@ class SchedulerTestCase(test.TestCase):
         Raise exception depended on rpc.call if invalid parameter inputed"""
 
         def fake_call(context, topic, msg):
-            raise rpc.RemoteError
+            raise rpc.RemoteError('', '', '')
 
         self.stubs.Set(rpc, 'call', fake_call)
 
