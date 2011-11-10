@@ -695,24 +695,6 @@ class GlanceImageServiceTestCase(test.TestCase):
         self.assertEqual(1, ref['id'])
 
     @attr(kind='small')
-    def test_get_parameter(self):
-        """Test for nova.image.glance.GlanceImageService.get.
-        Raise exception if data parameter without write method"""
-
-        def fake_get_image(self, image_id):
-            res = dict(id=1, limit=10)
-            return res, res.iteritems()
-
-        self.stubs.Set(client.Client, 'get_image', fake_get_image)
-
-        data = '/file1'
-
-        #AtributeError
-        ref = self.glanceimageservice_real.get(self.context,
-                                               image_id=1, data=data)
-        self.assertEqual(1, ref['id'])
-
-    @attr(kind='small')
     def test_get_exception(self):
         """Test for nova.image.glance.GlanceImageService.get.
         Raise ImageNotFound if image not exist or input invalid parameter"""
