@@ -329,13 +329,8 @@ class ServerTestCase(test.TestCase):
                                     key=None, backlog=2)
         # switch to server greenthread
         greenthread.sleep(0)
-
         self.server.stop()
-
-        self.assertEqual(True, self.server._server.dead)
-        # confirm socket be closed
-        self.server.start_tcp(self.app, 1238, host='127.0.0.1',
-                                    key=None, backlog=2)
+        self.assertEqual(None, self.server._tcp_server)
 
     @attr(kind='small')
     def test_wait(self):
