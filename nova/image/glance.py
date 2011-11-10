@@ -233,11 +233,10 @@ class GlanceImageService(service.BaseImageService):
         """Returns a dict containing image data for the given name."""
         # TODO(vish): replace this with more efficient call when glance
         #             supports it.
-        image_metas = self.detail(context, filters={'name': name})
-        for image_meta in image_metas:
-            if name == image_meta.get('name'):
-                return image_meta
-        raise exception.ImageNotFound(image_id=name)
+        image_meta = self.detail(context, filters={'name': name})
+        if not image_meta:
+            raise exception.ImageNotFound(image_id=name)
+        return image_meta[0]
 
     def get(self, context, image_id, data):
         """Calls out to Glance for metadata and data and writes data."""
