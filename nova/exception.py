@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -169,6 +171,26 @@ class VirtualInterfaceCreateException(NovaException):
 class VirtualInterfaceMacAddressException(NovaException):
     message = _("5 attempts to create virtual interface"
                 "with unique mac address failed")
+
+
+class NetworkInitHostException(NovaException):
+    message = _("Network host initialization failed")
+
+
+class NetworkAllocateException(NovaException):
+    message = _("Network resource allocation failed")
+
+
+class NetworkDeallocateException(NovaException):
+    message = _("Network resource deallocation failed")
+
+
+class NetworkGetNwInfoException(NovaException):
+    message = _("Network info get failed")
+
+
+class NetworkCreateException(NovaException):
+    message = _("Network creation failed")
 
 
 class NotAuthorized(NovaException):

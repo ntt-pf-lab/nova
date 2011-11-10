@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -18,6 +20,7 @@
 
 from nova import test
 from nova import exception
+from nose.plugins.attrib import attr
 
 
 class ApiErrorTestCase(test.TestCase):
@@ -95,3 +98,48 @@ class WrapExceptionTestCase(test.TestCase):
         self.assertEquals(notifier.provided_publisher, None)
         self.assertEquals(notifier.provided_event, "bad_function_exception")
         self.assertEquals(notifier.provided_priority, notifier.ERROR)
+
+
+class NetworkInitHostExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_init_host_exception(self):
+        ex = exception.NetworkInitHostException()
+
+        self.assertEqual('Network host initialization failed', str(ex))
+
+
+class NetworkAllocateExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_allocate_exception(self):
+        ex = exception.NetworkAllocateException()
+
+        self.assertEqual('Network resource allocation failed', str(ex))
+
+
+class NetworkDeallocateExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_deallocate_exception(self):
+        ex = exception.NetworkDeallocateException()
+
+        self.assertEqual('Network resource deallocation failed', str(ex))
+
+
+class NetworkGetNwInfoExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_get_nw_info_exception(self):
+        ex = exception.NetworkGetNwInfoException()
+
+        self.assertEqual('Network info get failed', str(ex))
+
+
+class NetworkCreateExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_create_exception(self):
+        ex = exception.NetworkCreateException()
+
+        self.assertEqual('Network creation failed', str(ex))
