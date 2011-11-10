@@ -265,7 +265,6 @@ class CryptoTestCase(test.TestCase):
         """
         OSError is not raised even when OSError occured in shutil.rmtree()
         """
-        raise SkipTest('OSError occurred')
         self._msg = None
         self._args = None
         self._kwargs = None
@@ -374,7 +373,6 @@ class CryptoTestCase(test.TestCase):
         """
         OSError is not raised even when OSError occured in shutil.rmtree()
         """
-        raise SkipTest('OSError occurred')
         self._msg = None
         self._args = None
         self._kwargs = None
