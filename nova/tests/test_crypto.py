@@ -810,7 +810,6 @@ class RevokeCertsTest(test.TestCase):
         All certificates are revoked
         even when exception is raised in revoke_cert()
         """
-        raise SkipTest('AssertionError: 2 != 1')
         self._revoke_count = 0
 
         def stub_revoke_cert(project_id, file_name):
@@ -860,7 +859,6 @@ class RevokeCertsTest(test.TestCase):
         All certificates are revoked
         even when exception is raised in revoke_cert()
         """
-        raise SkipTest('AssertionError: 2 != 1')
         self._revoke_count = 0
 
         def stub_revoke_cert(project_id, file_name):
@@ -908,7 +906,6 @@ class RevokeCertsTest(test.TestCase):
         All certificates are revoked
         even when exception is raised in revoke_cert()
         """
-        raise SkipTest('AssertionError: 2 != 1')
         self._revoke_count = 0
 
         def stub_revoke_cert(project_id, file_name):
