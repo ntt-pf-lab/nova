@@ -189,13 +189,15 @@ def destroy_container(target, instance, nbd=False):
 
     LXC does not support qcow2 images yet.
     """
+    container_dir = '%s/rootfs' % target
     out, err = utils.execute('mount', run_as_root=True)
     for loop in out.splitlines():
-        if instance['name'] in loop:
-            device = loop.split()[0]
+        for s in loop.split():
+            if container_dir == s:
+                if instance['name'] in s:
+                    device = loop.split()[0]
 
     try:
-        container_dir = '%s/rootfs' % target
         utils.execute('umount', container_dir, run_as_root=True)
         _unlink_device(device, nbd)
     except Exception, exn:
