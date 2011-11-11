@@ -57,8 +57,8 @@ class NovaBase(object):
         session.add(self)
         try:
             session.flush()
-        except IntegrityError, e:
-            if str(e).endswith('is not unique'):
+        except exception.DBError, e:
+            if 'unique' in str(e) or 'Duplicate' in str(e):
                 raise exception.Duplicate(str(e))
             else:
                 raise
