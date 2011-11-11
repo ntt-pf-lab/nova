@@ -13,17 +13,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
+import logging
+import logging.handlers
+
 import nova
-import nova.context
+from nova import context
 from nova.exception import Error
 from nova import flags
 from nova import rpc
-import logging
-import logging.handlers
 from nova import log as LOG
 from nova.notifier import api
-
+from nova import utils
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('notification_topic', 'notification',
@@ -45,12 +45,22 @@ def api_decorator(name, fn):
         body['args'] = []
         body['kwarg'] = {}
         original_args = args
-        if len(args) >= 2:
-            body['context'] = args[1]
-        for arg in args[3:]:
-            body['args'].append(arg)
+        for arg in args[1:]:
+            if isinstance(arg, context.RequestContext):
+                body['context'] = arg
+            else:
+                body['args'].append(arg)
+        try:
+            utils.dumps(body['args'])
+        except:
+            LOG.warn(_('Encode Faild arg: %s') % body['args'])
+            body['args'] = []
         for key in kwarg:
-            body['kwarg'][key] = kwarg[key]
+            try:
+                utils.dumps(kwarg[key])
+                body['kwarg'][key] = kwarg[key]
+            except:
+                LOG.warn(_('Encode Faild kwarg: %s') % kwarg[key])
         api.notify(FLAGS.default_publisher_id,
                             name,
                             FLAGS.default_notification_level,
@@ -77,12 +87,12 @@ def emit(self, record):
 def notify(message):
     """Notifies the recipient of the desired event given the model.
     Log notifications using nova's default logging system"""
-    context = nova.context.get_admin_context()
+    nova_context = context.get_admin_context()
     message['method'] = 'notify'
     priority = message.get('priority',
                            FLAGS.default_notification_level)
     priority = priority.lower()
-    rpc.cast(context, FLAGS.notification_topic, {'method': 'notify',
+    rpc.cast(nova_context, FLAGS.notification_topic, {'method': 'notify',
                                                  'args': {'message': message}})
 
 

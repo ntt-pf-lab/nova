@@ -59,7 +59,9 @@ class NotificatinManager(manager.Manager):
         LOG.debug(json.dumps(message))
 
         status = None
-        request_id = 0
+        request_id = None
+        tenant_id = None
+        user_id = None
 
         if 'status' in message:
             request_id = message['request_id']
@@ -67,41 +69,12 @@ class NotificatinManager(manager.Manager):
             db.eventlog_update(context, message['message_id'], {'status':
                                EVENTLOG_STATUS_TIMEOUT})
         else:
-            tenant_id = 0
-            user_id = 0
-            try:
-                request_id = message['payload']['context']['request_id']
-            except:
-                pass
 
-            try:
-                tenant_id = message['payload']['project_id']
-            except:
-                pass
+            request_id = self._get_value_from_message('request_id', message)
 
-            try:
-                tenant_id = message['payload']['context']['project_id']
-            except:
-                pass
+            tenant_id = self._get_value_from_message('project_id', message)
 
-            try:
-                user_id = message['payload']['user_id']
-            except:
-                pass
-
-            try:
-                user_id = message['payload']['context']['user_id']
-            except:
-                pass
-
-            if not request_id:
-                request_id = DEFAULT_REQUEST_ID
-
-            if not tenant_id:
-                tenant_id = DEFAULT_TENANT_ID
-
-            if not user_id:
-                user_id = DEFAULT_USER_ID
+            user_id = self._get_value_from_message('user_id', message)
 
             if message['priority'] == 'ERROR':
                 status = EVENTLOG_STATUS_FAILD
@@ -135,8 +108,20 @@ class NotificatinManager(manager.Manager):
                 cleanup_msg = cleanup.getCleanupMessage()
 
                 if cleanup_msg:
-                    LOG.debug('start cleanup cast')
-                    cleanup_values = dict(message=json.dumps(cleanup_msg),
+                    LOG.debug(_('start cleanup: %s') % request_id)
+                    if 'topic' in cleanup_msg:
+                        if cleanup_msg['topic'] is None:
+                            if msg.first()['event_type'] ==\
+                                'nova.compute.api.API.create':
+                                instance_id =\
+                                    cleanup_msg['message']\
+                                    ['args']['instance_id']
+                                LOG.debug(_('instance db cleanup: %s') %\
+                                             instance_id)
+                                db.instance_destroy(context, instance_id)
+
+                    cleanup_values = dict(
+                          message=json.dumps(cleanup_msg['message']),
                           message_id=uuid.uuid4().hex,
                           event_type=EVENTLOG_NOTIFY_EVENT_TYPE,
                           status=EVENTLOG_STATUS_CLEANUP,
@@ -147,8 +132,36 @@ class NotificatinManager(manager.Manager):
                           priority=api.INFO)
 
                     db.eventlog_create(context, cleanup_values)
-                    # cast a message to the cleanup
-                    cleanup.cleanup_cast(context, cleanup_msg)
+
+                    if cleanup_msg['topic']:
+                        # cast a message to the cleanup
+                        cleanup.cleanup_cast(context, cleanup_msg)
+
+    def _get_value_from_message(self, key, message):
+        """ Common get the value of the specified key from the message. """
+        value = None
+        try:
+            value = message['payload']['kwarg']['context'][key]
+        except:
+            pass
+        try:
+            value = message['payload']['context'][key]
+        except:
+            pass
+        try:
+            value = message['payload'][key]
+        except:
+            pass
+
+        if not value:
+            if 'request_id' in key:
+                value = DEFAULT_REQUEST_ID
+            if 'project_id' in key:
+                value = DEFAULT_TENANT_ID
+            if 'user_id' in key:
+                value = DEFAULT_USER_ID
+
+        return value
 
 
 class Message(object):
@@ -223,8 +236,9 @@ class CleanupManager(object):
             topic = None
             if 'nova.compute.api.API.create' in first_api:
                 if self.message.get_topic('run_instance') is None:
-                    return
-                topic = self.message.get_topic('run_instance')
+                    topic = None
+                else:
+                    topic = self.message.get_topic('run_instance')
             elif 'nova.compute.api.API.delete' in first_api:
                 if self.message.get_topic('terminate_instance') is None:
                     return

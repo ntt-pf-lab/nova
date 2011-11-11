@@ -33,7 +33,6 @@ class RpcNotifierTestCase(test.TestCase):
     """Test case for rpc notifications"""
     def setUp(self):
         super(RpcNotifierTestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
         self.conn = rpc.create_connection(True)
         self.context = context.get_admin_context()
         self.receiver = TestReceiver()
@@ -45,64 +44,92 @@ class RpcNotifierTestCase(test.TestCase):
         super(RpcNotifierTestCase, self).tearDown()
 
     def test_send_notification_by_rpc_decorator(self):
-
-        def example_api(arg1, arg2):
-            return arg1 + arg2
-
-        example_api = nova.ha.rpc_notifier.rpc_decorator(
-                            'example_api',
-                             example_api)
-
-        self.assertEqual(3, example_api(1, 2))
-
-    def test_cast_send_notification_by_rpc_decorator(self):
+        """ Test the outside rpc_decorator cast/call. """
+        self.cast_check_flag = False
 
         def cast(context, topic, message):
-            pass
+            self.cast_check_flag = True
 
-        example_api = nova.ha.rpc_notifier.rpc_decorator(
-                            'nova.rpc.impl_kombu.cast',
-                             cast)
-        value = 42
-        result = cast(self.context, 'test',
-                      {"method": "echo",
-                       "args": {"value": value}})
+        example_cast = rpc_notifier.rpc_decorator(
+                        'example',
+                         cast)
+
+        example_cast(self.context, 'test',
+                     {"method": "echo",
+                      "args": {"value": 1}})
+
+        self.assertEqual(True, self.cast_check_flag)
+
+    def test_cast_send_notification_by_rpc_decorator(self):
+        """ Test the rpc_decorator cast. """
+        self.cast_check_flag = False
+
+        def cast(context, topic, message):
+            self.cast_check_flag = True
+
+        example_cast = rpc_notifier.rpc_decorator(
+                        'nova.rpc.impl_kombu.cast',
+                         cast)
+        value = 1
+        result = example_cast(self.context, 'test',
+                          {"method": "echo",
+                           "args": {"value": value}})
 
         self.assertEqual(None, result)
+        self.assertEqual(False, self.cast_check_flag)
 
     def test_call_send_notification_by_rpc_decorator(self):
+        """ Test the rpc_decorator cast. """
+        self.call_check_flag = False
 
         def call(context, topic, message):
-            pass
+            self.cast_check_flag = True
 
-        example_api = nova.ha.rpc_notifier.rpc_decorator(
-                            'nova.rpc.impl_kombu.call',
-                             call)
+        example_call = rpc_notifier.rpc_decorator(
+                        'nova.rpc.impl_kombu.call',
+                         call)
 
-        value = 42
+        self.flags(message_timeout=0.05)
 
-        result = rpc_notifier.call(self.context, 'test',
-                                   {"method": "echo",
-                                    "args": {"value": value}})
+        value = 1
+        result = example_call(self.context, 'test',
+                               {"method": "echo",
+                                "args": {"value": value}})
 
         self.assertEqual(value, result)
-
-    def test_call_succeed(self):
-        value = 42
-        result = rpc_notifier.call(self.context, 'test', {"method": "echo",
-                                                 "args": {"value": value}})
-        self.assertEqual(value, result)
-
-    def test_cast_succeed(self):
-        value = 42
-        result = rpc_notifier.cast(self.context, 'test', {"method": "echo",
-                                                 "args": {"value": value}})
-        self.assertEqual(None, result)
+        self.assertEqual(False, self.call_check_flag)
 
     def test_cast_succeed_datetime_encoder(self):
         value = {'created_at':
                  datetime.datetime(2011, 11, 11, 11, 11, 11, 111111)}
         result = rpc_notifier.cast(self.context, 'test', {"method": "echo",
+                                                 "args": {"value": value}})
+        self.assertEqual(None, result)
+
+    def test_cast_jsonEncode_check(self):
+        """Test jsonEncode error check cast."""
+        class sample_class(object):
+            def __init__(self, args1):
+                self.args1 = args1
+
+        value = {'created_at':
+                 datetime.datetime(2011, 11, 11, 11, 11, 11, 111111),
+                 'args': sample_class('arg')}
+        result = rpc_notifier.cast(self.context, 'test', {"method": "echo",
+                                                 "args": {"value": value}})
+        self.assertEqual(None, result)
+
+    def test_call_jsonEncode_check(self):
+        """Test jsonEncode error check call."""
+
+        class sample_class(object):
+            def __init__(self, args1):
+                self.args1 = args1
+
+        value = {'created_at':
+                 datetime.datetime(2011, 11, 11, 11, 11, 11, 111111),
+                 'args': sample_class('arg')}
+        result = rpc_notifier.call(self.context, 'test', {"method": "echo",
                                                  "args": {"value": value}})
         self.assertEqual(None, result)
 
@@ -117,11 +144,11 @@ class RpcTimeOutCheckTestCase(test.TestCase):
         super(RpcTimeOutCheckTestCase, self).setUp()
         self.context = context.get_admin_context()
 
-    def test_ha_timeout(self):
-        self.mock_notifier = False
+    def test_check_timeout_success(self):
+        self.mock_notifier_flag = False
 
         def mock_notifier(*args, **kwargs):
-            self.mock_notifier = True
+            self.mock_notifier_flag = True
 
         self.stubs.Set(notifier, 'notify', mock_notifier)
 
@@ -149,9 +176,16 @@ class RpcTimeOutCheckTestCase(test.TestCase):
                                    '1',
                                    message)
 
-        self.assertEqual(True, self.mock_notifier)
+        self.assertEqual(True, self.mock_notifier_flag)
 
-    def test_ha_no_timeout(self):
+    def test_check_timeout_timout(self):
+
+        self.mock_notifier_flag = False
+
+        def mock_notifier(*args, **kwargs):
+            self.mock_notifier_flag = True
+
+        self.stubs.Set(notifier, 'notify', mock_notifier)
 
         con = {}
         con['id'] = 1
@@ -178,6 +212,7 @@ class RpcTimeOutCheckTestCase(test.TestCase):
 
         result = db.eventlog_get(self.context, '1', session=None)
 
+        self.assertEqual(False, self.mock_notifier_flag)
         self.assertEqual("Success", result['status'])
 
 

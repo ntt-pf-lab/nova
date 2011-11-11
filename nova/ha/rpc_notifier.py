@@ -25,6 +25,8 @@ import nova.log as LOG
 from nova import db
 from nova import flags
 from nova.ha import notifier
+from nova import utils
+from nova import exception
 
 FLAGS = flags.FLAGS
 flags.DEFINE_integer('message_timeout', 5,
@@ -55,8 +57,12 @@ def cast(context, topic, msg):
     """Sends a message on a topic without waiting for a response.
        Notification to register EventLog monkey patch for RPC.
     """
+    try:
+        db_message = utils.dumps(msg)
+    except:
+        LOG.error(_('Cast Faild Message: %s') % msg)
+        return
 
-    db_message = json.dumps(msg, cls=DatetimeEncoder)
     rpc._pack_context(msg, context)
 
     if msg['method'] != 'notify':
@@ -92,8 +98,12 @@ def call(context, topic, msg):
     """Sends a message on a topic and wait for a response.
        Notification to register EventLog monkey patch for RPC.
     """
+    try:
+        db_message = utils.dumps(msg)
+    except:
+        LOG.error(_('Cast Faild Message: %s') % msg)
+        return
 
-    db_message = json.dumps(msg, cls=DatetimeEncoder)
     rpc._pack_context(msg, context)
 
     msg_id = uuid.uuid4().hex
@@ -129,14 +139,6 @@ def call(context, topic, msg):
     if not rv:
         return
     return rv[-1]
-
-
-class DatetimeEncoder(json.JSONEncoder):
-    """ To convert a datetime date type. """
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.strftime("%Y-%m-%d %H:%M:%S")
-        return json.JSONEncoder.default(self, obj)
 
 
 def consume(self, *args, **kwargs):

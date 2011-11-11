@@ -30,7 +30,6 @@ class HaNotifierTestCase (test.TestCase):
     """Test case for Ha Notifications"""
     def setUp(self):
         super(HaNotifierTestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
         self.user_id = 'fake'
         self.project_id = 'fake'
         self.context = context.RequestContext(self.user_id, self.project_id)
@@ -50,6 +49,7 @@ class HaNotifierTestCase (test.TestCase):
         result = db.api.eventlog_get(self.context,
                                      '1',
                                      session=None)
+
         self.assertEqual('1', result.request_id)
         self.assertEqual('1', result.message_id)
         self.assertEqual('compute', result.publisher_id)
@@ -71,13 +71,22 @@ class HaNotifierTestCase (test.TestCase):
                                      '1',
                                      session=None)
         self.assertEqual("default_request", result.request_id)
+        self.assertEqual('1', result.message_id)
+        self.assertEqual('compute', result.publisher_id)
+        self.assertEqual('nova.compute.api.API.create', result.event_type)
+        self.assertEqual('INFO', result.priority)
+        self.assertEqual('Success', result.status)
 
     def test_notify_run_instance_cleanup(self):
 
         self.mock_cast_flag = False
+        self.topic = None
+        self.msg = {}
 
         def mock_cast(context, topic, msg):
             self.mock_cast_flag = True
+            self.topic = topic
+            self.msg = msg
 
         self.stubs.Set(nova.rpc, 'cast', mock_cast)
 
@@ -119,14 +128,34 @@ class HaNotifierTestCase (test.TestCase):
 
         self.manager.notify(message, self.context)
 
+        result = db.eventlog_get_all_by_request_id(self.context,
+                                              '1', session=None)
+
         self.assertEqual(True, self.mock_cast_flag)
+        self.assertEqual('1', result[2].request_id)
+        self.assertEqual('3', result[2].message_id)
+        self.assertEqual('compute', result[2].publisher_id)
+        self.assertEqual('run_instance', result[2].event_type)
+        self.assertEqual('ERROR', result[2].priority)
+        self.assertEqual('Faild', result[2].status)
+        self.assertEqual('Cleanup', result[3].status)
+
+        self.assertEqual(True, self.mock_cast_flag)
+        self.assertEqual('compute', self.topic)
+        self.assertEqual({'args': {'instance_id': 1},
+                            'method': 'terminate_instance'},
+                             self.msg)
 
     def test_notify_terminate_instance_cleanup(self):
 
         self.mock_cast_flag = False
+        self.topic = None
+        self.msg = {}
 
         def mock_cast(context, topic, msg):
             self.mock_cast_flag = True
+            self.topic = topic
+            self.msg = msg
 
         self.stubs.Set(nova.rpc, 'cast', mock_cast)
 
@@ -169,14 +198,34 @@ class HaNotifierTestCase (test.TestCase):
 
         self.manager.notify(message, self.context)
 
+        result = db.eventlog_get_all_by_request_id(self.context,
+                                                  '1',
+                                                   session=None)
+
+        self.assertEqual('1', result[2].request_id)
+        self.assertEqual('3', result[2].message_id)
+        self.assertEqual('compute', result[2].publisher_id)
+        self.assertEqual('terminate_instance', result[2].event_type)
+        self.assertEqual('ERROR', result[2].priority)
+        self.assertEqual('Faild', result[2].status)
+        self.assertEqual('Cleanup', result[3].status)
+
         self.assertEqual(True, self.mock_cast_flag)
+        self.assertEqual('compute', self.topic)
+        self.assertEqual({'args': {'instance_id': 1},
+                            'method': 'terminate_instance'},
+                             self.msg)
 
     def test_notify_reboot_instance_cleanup(self):
 
         self.mock_cast_flag = False
+        self.topic = None
+        self.msg = {}
 
         def mock_cast(context, topic, msg):
             self.mock_cast_flag = True
+            self.topic = topic
+            self.msg = msg
 
         self.stubs.Set(nova.rpc, 'cast', mock_cast)
 
@@ -206,7 +255,7 @@ class HaNotifierTestCase (test.TestCase):
                                     tenant_id='fake'))
 
         message = {}
-        message['request_id'] = 1
+        message['request_id'] = '1'
         message['message_id'] = '3'
         message['publisher_id'] = 'compute'
         message['event_type'] = 'reboot_instance'
@@ -218,7 +267,23 @@ class HaNotifierTestCase (test.TestCase):
 
         self.manager.notify(message, self.context)
 
+        result = db.eventlog_get_all_by_request_id(self.context,
+                                                   '1',
+                                                   session=None)
+
+        self.assertEqual('1', result[2].request_id)
+        self.assertEqual('3', result[2].message_id)
+        self.assertEqual('compute', result[2].publisher_id)
+        self.assertEqual('reboot_instance', result[2].event_type)
+        self.assertEqual('ERROR', result[2].priority)
+        self.assertEqual('Faild', result[2].status)
+        self.assertEqual('Cleanup', result[3].status)
+
         self.assertEqual(True, self.mock_cast_flag)
+        self.assertEqual('compute', self.topic)
+        self.assertEqual({'args': {'instance_id': 1},
+                            'method': 'reboot_instance'},
+                             self.msg)
 
     def test_notify_timeout_run_instance_cleanup(self):
 
@@ -266,7 +331,7 @@ class HaNotifierTestCase (test.TestCase):
                                     user_id='fake',
                                     tenant_id='fake'))
         message = {}
-        message['request_id'] = 1
+        message['request_id'] = '1'
         message['message_id'] = '3'
         message['publisher_id'] = 'compute'
         message['event_type'] = 'run_instance'
@@ -279,7 +344,18 @@ class HaNotifierTestCase (test.TestCase):
 
         self.manager.notify(message, self.context)
 
+        result = db.eventlog_get_all_by_request_id(self.context,
+                                                   '1',
+                                                   session=None)
+
         self.assertEqual(True, self.mock_cast_flag)
+        self.assertEqual('1', result[2].request_id)
+        self.assertEqual('3', result[2].message_id)
+        self.assertEqual('compute', result[2].publisher_id)
+        self.assertEqual('run_instance', result[2].event_type)
+        self.assertEqual('INFO', result[2].priority)
+        self.assertEqual('Timeout', result[2].status)
+        self.assertEqual('Cleanup', result[3].status)
 
     def test_notify_no_instance_id(self):
 
@@ -316,6 +392,17 @@ class HaNotifierTestCase (test.TestCase):
         message['priority'] = 'ERROR'
 
         self.manager.notify(message, self.context)
+
+        result = db.eventlog_get_all_by_request_id(self.context,
+                                                   '1',
+                                                   session=None)
+
+        self.assertEqual('1', result[1].request_id)
+        self.assertEqual('3', result[1].message_id)
+        self.assertEqual('compute', result[1].publisher_id)
+        self.assertEqual('run_instance', result[1].event_type)
+        self.assertEqual('ERROR', result[1].priority)
+        self.assertEqual('Faild', result[1].status)
 
         self.assertEqual(False, self.mock_cast_flag)
 
@@ -419,7 +506,7 @@ class HaNotifierTestCase (test.TestCase):
 
         message = {}
         message['request_id'] = 1
-        message['message_id'] = '3'
+        message['message_id'] = '2'
         message['publisher_id'] = 'network'
         message['event_type'] = 'reboot_instance'
         message['payload'] = {"method": "terminate_instance",
@@ -429,6 +516,17 @@ class HaNotifierTestCase (test.TestCase):
         message['priority'] = 'ERROR'
 
         self.manager.notify(message, self.context)
+
+        result = db.eventlog_get_all_by_request_id(self.context,
+                                                   '1',
+                                                    session=None)
+
+        self.assertEqual('1', result[1].request_id)
+        self.assertEqual('2', result[1].message_id)
+        self.assertEqual('network', result[1].publisher_id)
+        self.assertEqual('reboot_instance', result[1].event_type)
+        self.assertEqual('ERROR', result[1].priority)
+        self.assertEqual('Faild', result[1].status)
 
         self.assertEqual(False, self.mock_cast_flag)
 
