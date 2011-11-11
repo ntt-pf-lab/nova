@@ -179,7 +179,7 @@ class ServerTestCase(test.TestCase):
         self.stubs.Set(gsocket, 'accept', fake_accept)
         self.assertRaises(exception.InvalidInput,
                           self.server.start,
-                          backlog=-1)
+                          backlog=0)
 
     @attr(kind='small')
     def test_start_exception(self):
