@@ -493,7 +493,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_service_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.service_create(self.context, {'id': 1})
 
@@ -603,7 +602,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_compute_node_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.service_create(self.context, {'id': 1})
         self.db.api.compute_node_create(self.context,
@@ -692,7 +690,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_certificate_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.certificate_create(self.context, {'id': 1})
 
@@ -894,7 +891,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_floating_ip_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.floating_ip_create(self.context, {'id': 1})
 
@@ -1211,7 +1207,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_migration_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.migration_create(self.context, {'id': 1})
 
@@ -1356,13 +1351,14 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_fixed_ip_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
-        self.db.api.fixed_ip_create(self.context, {'address': '10.1.1.1'})
+        self.db.api.fixed_ip_create(self.context,
+                                    {'id': 100, 'address': '10.1.1.1'})
         # test and assert
         self.assertRaises(exception.Duplicate,
                           self.db.api.fixed_ip_create,
-                          self.context, {'address': '10.1.1.1'})
+                          self.context,
+                          {'id': 100, 'address': '10.1.1.1'})
 
     @attr(kind='small')
     def test_fixed_ip_disassociate(self):
@@ -1633,7 +1629,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_virtual_interface_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.virtual_interface_create(self.context,
                                              {'id': 1, 'instance_id': 1,
@@ -1958,7 +1953,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_instance_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.instance_create(self.context, {'id': 1})
 
@@ -2773,7 +2767,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_instance_action_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.instance_action_create(self.context, {'id': 1})
 
@@ -2848,7 +2841,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_key_pair_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         self.db.api.key_pair_create(self.context, {'id': 1})
 
@@ -3850,8 +3842,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_auth_token_create_db_duplicate(self):
-        raise SkipTest("DBError: (IntegrityError)\
-            column token_hash is not unique")
         # setup
         token = {}
         token['token_hash'] = 'hash'
@@ -4133,7 +4123,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_volume_create_db_duplicate(self):
-        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique ")
         # setup
         vol = {}
         vol['id'] = 1
@@ -4897,7 +4886,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_snapshot_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         snap = {}
         snap['id'] = 1
         snap['user_id'] = 'fake'
@@ -5433,7 +5421,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_security_group_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -5776,7 +5763,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_security_group_rule_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -6112,7 +6098,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_provider_fw_rule_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         rule = {}
         rule['id'] = 1
@@ -6237,7 +6222,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_user_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         user = {}
         user['id'] = 1
@@ -6246,6 +6230,7 @@ class DbApiTestCase(test.TestCase):
         user['secret_key'] = 'secret'
         user['is_admin'] = True
         # test and assert
+        self.db.api.user_create(self.context, user)
         self.assertRaises(exception.Duplicate,
                           self.db.api.user_create,
                           self.context, user)
@@ -6573,7 +6558,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_user_add_role_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         user = {}
         user['id'] = 1
@@ -6715,7 +6699,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_user_add_project_role_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         user = {}
         user['id'] = 1
@@ -6800,7 +6783,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_project_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         user = {}
         user['id'] = 1
@@ -7419,7 +7401,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_console_pool_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         con = {}
         con['id'] = 1
         con['address'] = 'localhost'
@@ -7576,7 +7557,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_console_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         con = {}
         con['id'] = 1
         con['instance_name'] = 'test'
@@ -7797,7 +7777,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_instance_type_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         values = {}
         values['id'] = 100
@@ -8104,7 +8083,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_zone_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         zone = {}
         zone['id'] = 1
@@ -8415,7 +8393,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_agent_build_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         # setup
         ab = {}
         ab['id'] = 1
@@ -9009,7 +8986,6 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_vsa_create_db_duplicate(self):
-        raise SkipTest("DBError occured")
         vsa = {}
         vsa['id'] = 1
         vsa['display_name'] = 'test'
@@ -9021,7 +8997,7 @@ class DbApiTestCase(test.TestCase):
         vsa['status'] = 'available'
 
         self.db.api.vsa_create(self.context, vsa)
-        self.assertRaises(exception.Duplicate,
+        self.assertRaises(exception.DBError,
                           self.db.api.vsa_create,
                           self.context, vsa)
 
