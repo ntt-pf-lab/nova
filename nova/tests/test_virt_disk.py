@@ -1093,12 +1093,13 @@ class DiskTestCase(test.TestCase):
         self._device = None
 
         def stub_execute(*cmd, **kwargs):
+            result = ('/dev/sda1 on / type ext4\n'
+                      '/dev/nbd1 /var/lib/foo/bar/instance0f//rootfs\n'
+                      '/dev/nbd9 /var/lib/nova/instances/instance0f//rootfs\n'
+                      'none on /dev type devtmpfs (rw,mode=0755)\n')
             if cmd[0] == 'mount':
                 self._execute_mount_count += 1
-                return """aaa
-bbb instance1 ccc
-ddd
-""", None
+                return result, None
             if cmd[0] == 'umount':
                 self._execute_umount_count += 1
 
@@ -1108,13 +1109,13 @@ ddd
         self.stubs.Set(utils, 'execute', stub_execute)
         self.stubs.Set(self.disk, '_unlink_device', stub_unlink_device)
 
-        target = 'target'
-        instance = {'name': 'instance1'}
+        target = '/var/lib/nova/instances/instance0f/'
+        instance = {'name': 'instance0'}
         nbd = False
         self.disk.destroy_container(target, instance, nbd)
         self.assertEqual(1, self._execute_mount_count)
         self.assertEqual(1, self._execute_umount_count)
-        self.assertEqual('bbb', self._device)
+        self.assertEqual('/dev/nbd9', self._device)
 
     @attr(kind='small')
     def test_destroy_container_param_instance_name_not_in_loop(self):
@@ -1123,9 +1124,13 @@ ddd
         self._device = None
 
         def stub_execute(*cmd, **kwargs):
+            result = ('/dev/sda1 on / type ext4\n'
+                      '/dev/nbd1 /var/lib/foo/bar/instance0f//rootfs\n'
+                      '/dev/nbd9 /var/lib/nova/instances/instance0f//rootfs\n'
+                      'none on /dev type devtmpfs (rw,mode=0755)\n')
             if cmd[0] == 'mount':
                 self._execute_mount_count += 1
-                return '', None
+                return result, None
 
         def stub_unlink_device(device, nbd):
             self._device = device
@@ -1133,30 +1138,30 @@ ddd
         self.stubs.Set(utils, 'execute', stub_execute)
         self.stubs.Set(self.disk, '_unlink_device', stub_unlink_device)
 
-        target = 'target'
-        instance = {'name': 'instance1'}
+        target = '/var/lib/nova/instances/instance0f/'
+        instance = {'name': 'instance00'}
         nbd = False
         self.disk.destroy_container(target, instance, nbd)
         self.assertEqual(1, self._execute_mount_count)
 
-#    @attr(kind='small')
-#    def test_destroy_container_param_instance_is_none(self):
-#        """
-#        No exception occurred even when instance is invalid.
-#        """
-#        self._execute_mount_count = 0
-#        self._exeption_count = 0
-#
-#        def stub_exception(msg, *args):
-#            self._exeption_count += 1
-#
-#        self.stubs.Set(self.disk.LOG, 'exception', stub_exception)
-#
-#        target = 'target'
-#        instance = None
-#        nbd = False
-#        self.disk.destroy_container(target, instance, nbd)
-#        self.assertEqual(1, self._exeption_count)
+    @attr(kind='small')
+    def test_destroy_container_param_instance_is_none(self):
+        """
+        No exception occurred even when instance is invalid.
+        """
+        self._execute_mount_count = 0
+        self._exeption_count = 0
+
+        def stub_exception(msg, *args):
+            self._exeption_count += 1
+
+        self.stubs.Set(self.disk.LOG, 'exception', stub_exception)
+
+        target = 'target'
+        instance = None
+        nbd = False
+        self.disk.destroy_container(target, instance, nbd)
+        self.assertEqual(1, self._exeption_count)
 
     @attr(kind='small')
     def test_destroy_container_ex_execute_mount(self):
