@@ -182,6 +182,46 @@ class CryptoTestCase(test.TestCase):
             os.remove(ca_path)
 
     @attr(kind='small')
+    def test_fetch_ca_ex_open_project_ca_path(self):
+        """
+        FileError is raised when IOError occurred
+        in open(ca_path(project_id), 'r')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+        project_id = 'fake'
+
+        def stub_ca_path(project_id=None):
+            if project_id == 'fake':
+                return ''
+
+        self.stubs.Set(self.crypto, 'ca_path', stub_ca_path)
+
+        self.assertRaises(exception.FileError,
+                          self.crypto.fetch_ca,
+                          project_id)
+
+    @attr(kind='small')
+    def test_fetch_ca_ex_open_ca_path(self):
+        """
+        FileError is raised when IOError occurred
+        in open(ca_path(None), 'r')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+        project_id = None
+
+        def stub_ca_path(project_id=None):
+            if project_id == None:
+                return ''
+
+        self.stubs.Set(self.crypto, 'ca_path', stub_ca_path)
+
+        self.assertRaises(exception.FileError,
+                          self.crypto.fetch_ca,
+                          project_id)
+
+    @attr(kind='small')
     def test_generate_fingerprint(self):
         """Test for nova.crypto.generate_fingerprint. """
         self.mox.StubOutWithMock(utils, 'execute')
@@ -250,6 +290,19 @@ class CryptoTestCase(test.TestCase):
                           bits=bits)
 
     @attr(kind='small')
+    def test_generate_key_pair_ex_tempfile_mkdtemp(self):
+        """
+        FileError is raised when OSError occurred in tempfile.mkdtemp()
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        tempfile.mkdtemp().AndRaise(OSError)
+        self.mox.ReplayAll()
+
+        self.assertRaises(exception.FileError,
+                          self.crypto.generate_key_pair)
+
+    @attr(kind='small')
     def test_generate_key_pair_ex_utils_execute(self):
         """
         ProcessExecutionError is raised
@@ -267,6 +320,55 @@ class CryptoTestCase(test.TestCase):
         self.mox.ReplayAll()
 
         self.assertRaises(exception.ProcessExecutionError,
+                          self.crypto.generate_key_pair)
+
+    @attr(kind='small')
+    def test_generate_key_pair_ex_private_key_open(self):
+        """
+        FileError is raised when IOError occurred in open(keyfile)
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(utils, 'execute')
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
+        utils.execute(mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg()).AndReturn((out, None))
+        self.mox.ReplayAll()
+
+        self.assertRaises(exception.FileError,
+                          self.crypto.generate_key_pair)
+
+    @attr(kind='small')
+    def test_generate_key_pair_ex_public_key_open(self):
+        """
+        FileError is raised when IOError occurred in open(keyfile + '.pub')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(utils, 'execute')
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        self._create_file(os.path.join(temp_dir, 'temp.pub'), 'BBBBBBBBBB')
+        out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
+        utils.execute(mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg(),
+                      mox.IgnoreArg()).AndReturn((out, None))
+        self.mox.ReplayAll()
+
+        self.assertRaises(exception.FileError,
                           self.crypto.generate_key_pair)
 
     @attr(kind='small')
@@ -360,6 +462,23 @@ class CryptoTestCase(test.TestCase):
         self.assertEqual(('aaa', 'sss'), ref)
 
     @attr(kind='small')
+    def test_generate_x509_cert_ex_tempfile_mkdtemp(self):
+        """
+        FileError is raised when OSError occurred in tempfile.mkdtemp()
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        tempfile.mkdtemp().AndRaise(OSError)
+        self.mox.ReplayAll()
+
+        user_id = 'test_user'
+        project_id = 'fake'
+        bits = 1024
+        self.assertRaises(exception.FileError,
+                          self.crypto.generate_x509_cert,
+                          user_id, project_id, bits=bits)
+
+    @attr(kind='small')
     def test_generate_x509_cert_ex_utils_execute(self):
         """
         ProcessExecutionError is raised
@@ -374,6 +493,65 @@ class CryptoTestCase(test.TestCase):
         project_id = 'fake'
         bits = 1024
         self.assertRaises(exception.ProcessExecutionError,
+                          self.crypto.generate_x509_cert,
+                          user_id, project_id, bits=bits)
+
+    @attr(kind='small')
+    def test_generate_x509_cert_ex_private_key_open(self):
+        """
+        FileError is raised when IOError occurred in open(keyfile)
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(utils, 'execute')
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        user_id = 'test_user'
+        project_id = 'fake'
+        bits = 1024
+        self.assertRaises(exception.FileError,
+                          self.crypto.generate_x509_cert,
+                          user_id, project_id, bits=bits)
+
+    @attr(kind='small')
+    def test_generate_x509_cert_ex_csr_open(self):
+        """
+        FileError is raised when IOError occurred in open(csrfile)
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(utils, 'execute')
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        user_id = 'test_user'
+        project_id = 'fake'
+        bits = 1024
+        ca_path = self.crypto.ca_path(project_id)
+        # make sure the condition that ca_path exists
+        if not os.path.exists(ca_path):
+            self._create_file(ca_path)
+        # make a file {path to temp_dir}/crypto/temp.key
+        self._create_file(os.path.join(temp_dir, 'temp.key'), 'aaa')
+
+        self.assertRaises(exception.FileError,
                           self.crypto.generate_x509_cert,
                           user_id, project_id, bits=bits)
 
@@ -396,17 +574,12 @@ class CryptoTestCase(test.TestCase):
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(shutil, 'rmtree')
         self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
-        self.mox.StubOutWithMock(self.crypto, '_sign_csr')
-        self.mox.StubOutWithMock(db, 'certificate_create')
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg())
-        self.crypto._sign_csr(mox.IgnoreArg(),
-                             mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
-        db.certificate_create(mox.IgnoreArg(), mox.IgnoreArg())
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         ex = OSError()
@@ -486,6 +659,61 @@ class CryptoTestCase(test.TestCase):
         os.remove(crt_fn)
 
     @attr(kind='small')
+    def test_generate_vpn_files_ex_csr_open(self):
+        """
+        FileError is raised when IOError occurred in open(csr_fn, 'r')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+
+        def stub_execute(*cmd, **kwargs):
+            pass
+
+        self.stubs.Set(utils, 'execute', stub_execute)
+
+        project_id = 'fake'
+        self.assertRaises(exception.FileError,
+                          self.crypto.generate_vpn_files,
+                          project_id)
+
+    @attr(kind='small')
+    def test_generate_vpn_files_ex_crt_open(self):
+        """
+        FileError is raised when IOError occurred in open(crt_fn, 'w')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+
+        def stub_execute(*cmd, **kwargs):
+            self._create_file(csr_fn, 'sss')
+
+        def stub_sign_csr(csr_text, ca_folder):
+            self._create_file(crt_fn)
+            os.chmod(crt_fn, int('000', 8))
+            return ('ccc', 'sss')
+
+        self.stubs.Set(utils, 'execute', stub_execute)
+        self.stubs.Set(self.crypto, '_sign_csr', stub_sign_csr)
+
+        project_id = 'fake'
+        project_folder = self.crypto.ca_folder(project_id)
+        csr_fn = os.path.join(project_folder, 'server.csr')
+        crt_fn = os.path.join(project_folder, 'server.crt')
+        if os.path.exists(crt_fn):
+            os.remove(crt_fn)
+        ca_path = self.crypto.ca_path(project_id)
+        # make sure the condition that ca_path exists
+        if not os.path.exists(ca_path):
+            self._create_file(ca_path)
+
+        self.assertRaises(exception.FileError,
+                          self.crypto.generate_vpn_files,
+                          project_id)
+
+        os.remove(csr_fn)
+        os.remove(crt_fn)
+
+    @attr(kind='small')
     def test_sign_csr_cfg_use_project_ca(self):
         """Test for nova.crypto.sign_csr. """
         self.flags(use_project_ca=True)
@@ -510,10 +738,13 @@ class CryptoTestCase(test.TestCase):
         if os.path.exists(ca_path):
             os.remove(ca_path)
         # make a file {path to temp_dir}/crypto/outbound.csr
-        self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
+        outbound = os.path.join(temp_dir, 'outbound.csr')
+        self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
+
+        os.remove(outbound)
 
     @attr(kind='small')
     def test_sign_csr_cfg_not_use_project_ca(self):
@@ -534,10 +765,13 @@ class CryptoTestCase(test.TestCase):
         csr_text = 'test'
         project_id = 'fake'
         # make a file {path to temp_dir}/crypto/outbound.csr
-        self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
+        outbound = os.path.join(temp_dir, 'outbound.csr')
+        self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
+
+        os.remove(outbound)
 
     @attr(kind='small')
     def test_sign_csr_param_ca_path_does_exists(self):
@@ -562,10 +796,13 @@ class CryptoTestCase(test.TestCase):
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
         # make a file {path to temp_dir}/crypto/outbound.csr
-        self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
+        outbound = os.path.join(temp_dir, 'outbound.csr')
+        self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
+
+        os.remove(outbound)
 
     @attr(kind='small')
     def test_sign_csr_param_ca_folder_does_not_exist(self):
@@ -597,11 +834,83 @@ class CryptoTestCase(test.TestCase):
             shutil.rmtree(ca_folder)
         self.assertFalse(os.path.exists(ca_folder))
         # make a file {path to temp_dir}/crypto/outbound.csr
-        self._create_file(os.path.join(temp_dir, 'outbound.csr'), 'ddd')
+        outbound = os.path.join(temp_dir, 'outbound.csr')
+        self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
         self.assertTrue(os.path.exists(ca_folder))
+
+        os.remove(outbound)
+
+    @attr(kind='small')
+    def test_sign_csr_ex_tempfile_mkdtemp(self):
+        """
+        FileError is raised when OSError occurred in tempfile.mkdtemp()
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=False)
+
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        tempfile.mkdtemp().AndRaise(OSError)
+        self.mox.ReplayAll()
+
+        csr_text = 'test'
+        project_id = 'fake'
+        self.assertRaises(exception.FileError,
+                          self.crypto.sign_csr,
+                          csr_text, project_id)
+
+    @attr(kind='small')
+    def test_sign_csr_ex_inbound_open(self):
+        """
+        FileError is raised when IOError occurred in open(inbound, 'w')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=False)
+
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        tempfile.mkdtemp().AndReturn('/')
+        self.mox.ReplayAll()
+
+        csr_text = 'test'
+        project_id = 'fake'
+        self.assertRaises(exception.FileError,
+                          self.crypto.sign_csr,
+                          csr_text, project_id)
+
+    @attr(kind='small')
+    def test_sign_csr_ex_os_makedirs(self):
+        """
+        FileError is raised when OSError occurred in os.makedirs()
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=True)
+
+        self.mox.StubOutWithMock(utils, 'execute')
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(os, 'makedirs')
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg())
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        os.makedirs(mox.IgnoreArg()).AndRaise(OSError)
+        self.mox.ReplayAll()
+
+        csr_text = 'test'
+        project_id = 'fake'
+        ca_path = self.crypto.ca_path(project_id)
+        # make sure the condition that ca_path does not exist
+        if os.path.exists(ca_path):
+            os.remove(ca_path)
+        ca_folder = self.crypto.ca_folder(project_id)
+        # make sure the condition that ca_folder does not exist
+        if os.path.exists(ca_folder):
+            shutil.rmtree(ca_folder)
+
+        self.assertRaises(exception.FileError,
+                          self.crypto.sign_csr,
+                          csr_text, project_id)
 
     @attr(kind='small')
     def test_sign_csr_ex_utils_execute(self):
@@ -619,6 +928,32 @@ class CryptoTestCase(test.TestCase):
         csr_text = 'test'
         project_id = 'fake'
         self.assertRaises(exception.ProcessExecutionError,
+                          self.crypto.sign_csr,
+                          csr_text, project_id)
+
+    @attr(kind='small')
+    def test_sign_csr_ex_outbound_open(self):
+        """
+        FileError is raised when IOError occurred in open(outbound, 'r')
+        """
+        raise SkipTest("'module' object has no attribute 'FileError'")
+        self.flags(use_project_ca=False)
+
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(utils, 'execute')
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn(('aaa=bbb=ccc', None))
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        self.mox.ReplayAll()
+
+        csr_text = 'test'
+        project_id = 'fake'
+        self.assertRaises(exception.FileError,
                           self.crypto.sign_csr,
                           csr_text, project_id)
 
