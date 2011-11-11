@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -646,8 +648,8 @@ class NetworkManager(manager.SchedulerDependentManager):
         fixed_ip = self.db.fixed_ip_get_by_address(context, address)
         instance = fixed_ip['instance']
         if not instance:
-            raise exception.Error(_('IP %s leased that is not associated') %
-                                  address)
+            LOG.error(_('IP %s leased that is not associated') % address)
+            raise exception.NotFound()
         now = utils.utcnow()
         self.db.fixed_ip_update(context,
                                 fixed_ip['address'],
@@ -663,8 +665,8 @@ class NetworkManager(manager.SchedulerDependentManager):
         fixed_ip = self.db.fixed_ip_get_by_address(context, address)
         instance = fixed_ip['instance']
         if not instance:
-            raise exception.Error(_('IP %s released that is not associated') %
-                                  address)
+            LOG.error(_('IP %s released that is not associated') % address)
+            raise exception.NotFound()
         if not fixed_ip['leased']:
             LOG.warn(_('IP %s released that was not leased'), address,
                      context=context)
