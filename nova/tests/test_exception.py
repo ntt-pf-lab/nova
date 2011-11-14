@@ -1037,3 +1037,18 @@ class ExceptionTestCase(test.TestCase):
             err_flag = True
         finally:
             self.assert_(err_flag)
+
+
+class LinkIpNotFoundTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_linkipnotfound(self):
+        ex = exception.LinkIpNotFound()
+
+        self.assertEqual(
+            'Local link IP not found for %(interface)s. %(reason)s', str(ex))
+
+        ex = exception.LinkIpNotFound(interface='eth0', reason='device error')
+
+        self.assertEqual(
+            'Local link IP not found for eth0. device error', str(ex))

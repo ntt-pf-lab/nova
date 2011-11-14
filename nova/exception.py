@@ -556,6 +556,10 @@ class FloatingIpNotFoundForAddress(FloatingIpNotFound):
     message = _("Floating ip not found for address %(address)s.")
 
 
+class LinkIpNotFound(NotFound):
+    message = _("Local link IP not found for %(interface)s. %(reason)s")
+
+
 class FloatingIpNotFoundForProject(FloatingIpNotFound):
     message = _("Floating ip not found for project %(project_id)s.")
 
