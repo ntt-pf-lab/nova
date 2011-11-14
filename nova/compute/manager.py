@@ -1558,6 +1558,10 @@ class ComputeManager(manager.SchedulerDependentManager):
             else:
                 floating_ip_ref = self.db.floating_ip_get_by_address(ctxt,
                                                               floating_ip)
+                if not floating_ip_ref:
+                    raise exception.FloatingIpNotFoundForAddress(
+                                                    address=floating_ip)
+
                 self.db.floating_ip_update(ctxt,
                                            floating_ip_ref['address'],
                                            {'host': dest})
