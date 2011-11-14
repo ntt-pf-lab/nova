@@ -695,7 +695,7 @@ class API(base.Base):
                                         instance_id=instance_id)
 
         #check if the instance is in running state
-        if inst['state'] != power_state.RUNNING:
+        if inst['power_state'] != power_state.RUNNING:
             raise exception.InstanceNotRunning(instance_id=instance_id)
 
         self.db.instance_add_security_group(context.elevated(),
@@ -721,7 +721,7 @@ class API(base.Base):
                                     instance_id=instance_id)
 
         #check if the instance is in running state
-        if inst['state'] != power_state.RUNNING:
+        if inst['power_state'] != power_state.RUNNING:
             raise exception.InstanceNotRunning(instance_id=instance_id)
 
         self.db.instance_remove_security_group(context.elevated(),
