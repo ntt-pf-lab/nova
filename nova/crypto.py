@@ -167,17 +167,17 @@ def revoke_cert(project_id, file_name):
 def revoke_certs_by_user(user_id):
     """Revoke all user certs."""
     admin = context.get_admin_context()
-    ex_list = []
+    ex_flag = False
     for cert in db.certificate_get_all_by_user(admin, user_id):
         try:
             revoke_cert(cert['project_id'], cert['file_name'])
         except Exception as ex:
-            ex_list.append(ex)
+            ex_flag = True
             LOG.error(_('Exception occurred in revoking user cert '
                         '|project_id=%s, file_name=%s|: %s'),
                       cert['project_id'], cert['file_name'], ex)
-    if ex_list:
-        raise ex_list[0]
+    if ex_flag:
+        raise exception.RevokeCertException()
 
 
 def revoke_certs_by_project(project_id):
@@ -185,34 +185,34 @@ def revoke_certs_by_project(project_id):
     # NOTE(vish): This is somewhat useless because we can just shut down
     #             the vpn.
     admin = context.get_admin_context()
-    ex_list = []
+    ex_flag = False
     for cert in db.certificate_get_all_by_project(admin, project_id):
         try:
             revoke_cert(cert['project_id'], cert['file_name'])
         except Exception as ex:
-            ex_list.append(ex)
+            ex_flag = True
             LOG.error(_('Exception occurred in revoking project cert '
                         '|project_id=%s, file_name=%s|: %s'),
                       cert['project_id'], cert['file_name'], ex)
-    if ex_list:
-        raise ex_list[0]
+    if ex_flag:
+        raise exception.RevokeCertException()
 
 
 def revoke_certs_by_user_and_project(user_id, project_id):
     """Revoke certs for user in project."""
     admin = context.get_admin_context()
-    ex_list = []
+    ex_flag = False
     for cert in db.certificate_get_all_by_user_and_project(admin,
                                             user_id, project_id):
         try:
             revoke_cert(cert['project_id'], cert['file_name'])
         except Exception as ex:
-            ex_list.append(ex)
+            ex_flag = True
             LOG.error(_('Exception occurred in revoking cert '
                         'for user in project |project_id=%s, file_name=%s|: %s'),
                       cert['project_id'], cert['file_name'], ex)
-    if ex_list:
-        raise ex_list[0]
+    if ex_flag:
+        raise exception.RevokeCertException()
 
 
 def _project_cert_subject(project_id):
