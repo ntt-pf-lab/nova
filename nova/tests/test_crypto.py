@@ -34,7 +34,6 @@ from nova import flags
 from nova import test
 from nova import utils
 from nose.plugins.attrib import attr
-from nose.plugins.skip import SkipTest
 
 FLAGS = flags.FLAGS
 
@@ -1062,8 +1061,6 @@ class RevokeCertsTest(test.TestCase):
         All certificates are revoked
         even when exception is raised in revoke_cert()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'RevokeCertException'")
         self._revoke_count = 0
 
         def stub_revoke_cert(project_id, file_name):
@@ -1113,8 +1110,6 @@ class RevokeCertsTest(test.TestCase):
         All certificates are revoked
         even when exception is raised in revoke_cert()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'RevokeCertException'")
         self._revoke_count = 0
 
         def stub_revoke_cert(project_id, file_name):
@@ -1162,8 +1157,6 @@ class RevokeCertsTest(test.TestCase):
         All certificates are revoked
         even when exception is raised in revoke_cert()
         """
-        raise SkipTest("'module' object has no attribute "
-                       "'RevokeCertException'")
         self._revoke_count = 0
 
         def stub_revoke_cert(project_id, file_name):
