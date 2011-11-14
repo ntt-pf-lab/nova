@@ -2463,18 +2463,6 @@ def volume_metadata_delete(context, volume_id, key):
 
 @require_context
 @require_volume_exists
-def volume_metadata_delete_all(context, volume_id):
-    session = get_session()
-    session.query(models.VolumeMetadata).\
-        filter_by(volume_id=volume_id).\
-        filter_by(deleted=False).\
-        update({'deleted': True,
-                'deleted_at': utils.utcnow(),
-                'updated_at': literal_column('updated_at')})
-
-
-@require_context
-@require_volume_exists
 def volume_metadata_get_item(context, volume_id, key, session=None):
     if not session:
         session = get_session()
@@ -3552,18 +3540,6 @@ def instance_metadata_delete(context, instance_id, key):
     session.query(models.InstanceMetadata).\
         filter_by(instance_id=instance_id).\
         filter_by(key=key).\
-        filter_by(deleted=False).\
-        update({'deleted': True,
-                'deleted_at': utils.utcnow(),
-                'updated_at': literal_column('updated_at')})
-
-
-@require_context
-@require_instance_exists
-def instance_metadata_delete_all(context, instance_id):
-    session = get_session()
-    session.query(models.InstanceMetadata).\
-        filter_by(instance_id=instance_id).\
         filter_by(deleted=False).\
         update({'deleted': True,
                 'deleted_at': utils.utcnow(),
