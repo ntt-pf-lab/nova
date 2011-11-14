@@ -1568,12 +1568,10 @@ def instance_get_floating_address(context, instance_id):
 @require_context
 def instance_update(context, instance_id, values):
     session = get_session()
-    metadata = values.get('metadata')
-    if metadata is not None:
-        instance_metadata_update(context,
-                                 instance_id,
-                                 values.pop('metadata'),
-                                 delete=True)
+    metadata = None
+    if 'metadata' in values:
+        metadata = values.pop('metadata')
+
     with session.begin():
         if utils.is_uuid_like(instance_id):
             instance_ref = instance_get_by_uuid(context, instance_id,
@@ -1582,7 +1580,13 @@ def instance_update(context, instance_id, values):
             instance_ref = instance_get(context, instance_id, session=session)
         instance_ref.update(values)
         instance_ref.save(session=session)
-        return instance_ref
+
+    if metadata is not None:
+        instance_metadata_update(context,
+                                 instance_ref.id,
+                                 metadata,
+                                 delete=True)
+    return instance_ref
 
 
 def instance_add_security_group(context, instance_id, security_group_id):
