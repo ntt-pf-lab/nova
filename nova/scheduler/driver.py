@@ -9,6 +9,9 @@
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 #
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -295,7 +298,8 @@ class Scheduler(object):
         if avail <= mem_inst:
             instance_id = ec2utils.id_to_ec2_id(instance_ref['id'])
             reason = _("Unable to migrate %(instance_id)s to %(dest)s: "
-                       "Lack of disk(host:%(avail)s <= instance:%(mem_inst)s)")
+                       "Lack of memory(host:%(avail)s <= "
+                       "instance:%(mem_inst)s)")
             raise exception.MigrationError(reason=reason % locals())
 
     def assert_compute_node_has_enough_disk(self, context,
