@@ -933,6 +933,7 @@ class LibvirtConnection(driver.ComputeDriver):
         if config_drive_id:
             fname = '%08x' % int(config_drive_id)
             self._cache_image(fn=self._fetch_image,
+                              context=context,
                               target=basepath('disk.config'),
                               fname=fname,
                               image_id=config_drive_id,
@@ -976,7 +977,7 @@ class LibvirtConnection(driver.ComputeDriver):
                    'broadcast': mapping['broadcast'],
                    'dns': ' '.join(mapping['dns']),
                    'address_v6': address_v6,
-                   'gateway6': gateway_v6,
+                   'gateway_v6': gateway_v6,
                    'netmask_v6': netmask_v6}
             nets.append(net_info)
 
