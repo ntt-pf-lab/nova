@@ -235,6 +235,7 @@ class Instance(BASE, NovaBase):
     default_local_device = Column(String(255), nullable=True)
     default_swap_device = Column(String(255), nullable=True)
     config_drive = Column(String(255))
+    config_drive_id = Column(String(255))
 
     # User editable field meant to represent what ip should be used
     # to connect to the instance
