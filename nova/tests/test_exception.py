@@ -1052,3 +1052,48 @@ class LinkIpNotFoundTestCase(test.TestCase):
 
         self.assertEqual(
             'Local link IP not found for eth0. device error', str(ex))
+
+
+class NetworkInitHostExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_init_host_exception(self):
+        ex = exception.NetworkInitHostException()
+
+        self.assertEqual('Network host initialization failed', str(ex))
+
+
+class NetworkAllocateExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_allocate_exception(self):
+        ex = exception.NetworkAllocateException()
+
+        self.assertEqual('Network resource allocation failed', str(ex))
+
+
+class NetworkDeallocateExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_deallocate_exception(self):
+        ex = exception.NetworkDeallocateException()
+
+        self.assertEqual('Network resource deallocation failed', str(ex))
+
+
+class NetworkGetNwInfoExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_get_nw_info_exception(self):
+        ex = exception.NetworkGetNwInfoException()
+
+        self.assertEqual('Network info get failed', str(ex))
+
+
+class NetworkCreateExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_network_create_exception(self):
+        ex = exception.NetworkCreateException()
+
+        self.assertEqual('Network creation failed', str(ex))
