@@ -196,14 +196,23 @@ class FloatingIP(object):
         except exception.NotFound:
             return
 
+        ex_flag = False
         for floating_ip in floating_ips:
             if floating_ip.get('fixed_ip', None):
                 fixed_address = floating_ip['fixed_ip']['address']
                 # NOTE(vish): The False here is because we ignore the case
                 #             that the ip is already bound.
-                self.driver.bind_floating_ip(floating_ip['address'], False)
-                self.driver.ensure_floating_forward(floating_ip['address'],
-                                                    fixed_address)
+                try:
+                    self.driver.bind_floating_ip(floating_ip['address'], False)
+                    self.driver.ensure_floating_forward(floating_ip['address'],
+                                                        fixed_address)
+                except Exception as ex:
+                    ex_flag = True
+                    LOG.error(_('Exception occurred in configuring floating ip '
+                                '|address=%s|: %s'),
+                              floating_ip['address'], ex)
+        if ex_flag:
+            raise exception.NetworkInitHostException()
 
     def allocate_for_instance(self, context, **kwargs):
         """Handles allocating the floating IP resources for an instance.
@@ -257,16 +266,32 @@ class FloatingIP(object):
         fixed_ips = self.db.fixed_ip_get_by_instance(context, instance_id)
         # add to kwargs so we can pass to super to save a db lookup there
         kwargs['fixed_ips'] = fixed_ips
+        ex_flag = False
         for fixed_ip in fixed_ips:
             # disassociate floating ips related to fixed_ip
             for floating_ip in fixed_ip.floating_ips:
                 address = floating_ip['address']
-                self.network_api.disassociate_floating_ip(context, address)
+                try:
+                    self.network_api.disassociate_floating_ip(context, address)
+                except exception.ApiError as ex:
+                    ex_flag = True
+                    LOG.error(_('Exception occurred in disassociating '
+                                'floating ip |address=%s|: %s'),
+                              address, ex)
                 # deallocate if auto_assigned
                 if floating_ip['auto_assigned']:
-                    self.network_api.release_floating_ip(context,
-                                                         address,
-                                                         True)
+                    try:
+                        self.network_api.release_floating_ip(context,
+                                                             address,
+                                                             True)
+                    except exception.ApiError as ex:
+                        ex_flag = True
+                        LOG.error(_('Exception occurred in removing '
+                                    'floating ip |address=%s|: %s'),
+                                  address, ex)
+
+        if ex_flag:
+            raise exception.NetworkDeallocateException()
 
         # call the next inherited class's deallocate_for_instance()
         # which is currently the NetworkManager version
@@ -379,9 +404,17 @@ class NetworkManager(manager.SchedulerDependentManager):
         """
         # NOTE(vish): Set up networks for which this host already has
         #             an ip address.
+        ex_flag = False
         ctxt = context.get_admin_context()
         for network in self.db.network_get_all_by_host(ctxt, self.host):
-            self._setup_network(ctxt, network)
+            try:
+                self._setup_network(ctxt, network)
+            except Exception as ex:
+                ex_flag = True
+                LOG.error(_('Exception occurred in setting up network '
+                            '|%s|: %s'), network['id'], ex)
+        if ex_flag:
+            raise exception.NetworkInitHostException()
 
     def periodic_tasks(self, context=None):
         """Tasks to be run at a periodic interval."""
@@ -470,8 +503,17 @@ class NetworkManager(manager.SchedulerDependentManager):
         LOG.debug(_("network deallocation for instance |%s|"), instance_id,
                                                                context=context)
         # deallocate fixed ips
+        ex_flag = False
         for fixed_ip in fixed_ips:
-            self.deallocate_fixed_ip(context, fixed_ip['address'], **kwargs)
+            try:
+                self.deallocate_fixed_ip(context, fixed_ip['address'],
+                                         **kwargs)
+            except Exception as ex:
+                ex_flag = True
+                LOG.error(_('Exception occurred in deallocating fixed ip '
+                            '|address=%s|: %s'), fixed_ip['address'], ex)
+        if ex_flag:
+            raise exception.NetworkDeallocateException()
 
         # deallocate vifs (mac addresses)
         self.db.virtual_interface_delete_by_instance(context, instance_id)
@@ -496,6 +538,7 @@ class NetworkManager(manager.SchedulerDependentManager):
         vifs = self.db.virtual_interface_get_by_instance(context, instance_id)
         flavor = self.db.instance_type_get(context, instance_type_id)
         network_info = []
+        ex_flag = False
         # a vif has an address, instance_id, and network_id
         # it is also joined to the instance and network given by those IDs
         for vif in vifs:
@@ -532,7 +575,13 @@ class NetworkManager(manager.SchedulerDependentManager):
                 'bridge_interface': network['bridge_interface'],
                 'multi_host': network['multi_host']}
             if network['multi_host']:
-                dhcp_server = self._get_dhcp_ip(context, network, host)
+                dhcp_server = None
+                try:
+                    dhcp_server = self._get_dhcp_ip(context, network, host)
+                except Exception as ex:
+                    ex_flag = True
+                    LOG.error(_('Exception occurred in getting dhcp address: '
+                                '%s'), ex)
             else:
                 dhcp_server = self._get_dhcp_ip(context,
                                                 network,
@@ -561,12 +610,24 @@ class NetworkManager(manager.SchedulerDependentManager):
                 info['dns'].append(network['dns2'])
 
             network_info.append((network_dict, info))
+
+        if ex_flag:
+            raise exception.NetworkGetNwInfoException()
+
         return network_info
 
     def _allocate_mac_addresses(self, context, instance_id, networks):
         """Generates mac addresses and creates vif rows in db for them."""
+        ex_flag = False
         for network in networks:
-            self.add_virtual_interface(context, instance_id, network['id'])
+            try:
+                self.add_virtual_interface(context, instance_id, network['id'])
+            except Exception as ex:
+                ex_flag = True
+                LOG.error(_('Exception occurred in adding virtual interface '
+                            '|network_id=%s|: %s'), network['id'], ex)
+        if ex_flag:
+            raise exception.NetworkAllocateException()
 
     def add_virtual_interface(self, context, instance_id, network_id):
         vif = {'address': self.generate_mac_address(),
@@ -770,6 +831,7 @@ class NetworkManager(manager.SchedulerDependentManager):
                                                     'smaller': used_subnet})
 
         networks = []
+        ex_flag = False
         subnets = itertools.izip_longest(subnets_v4, subnets_v6)
         for index, (subnet_v4, subnet_v6) in enumerate(subnets):
             net = {}
@@ -820,12 +882,20 @@ class NetworkManager(manager.SchedulerDependentManager):
             network = self.db.network_create_safe(context, net)
 
             if not network:
-                raise ValueError(_('Network already exists!'))
+                LOG.warn(_('Network already exists, '\
+                           'but following process continues.'))
             else:
                 networks.append(network)
 
             if network and cidr and subnet_v4:
-                self._create_fixed_ips(context, network['id'])
+                try:
+                    self._create_fixed_ips(context, network['id'])
+                except exception.DBError:
+                    ex_flag = True
+
+        if ex_flag:
+            raise exception.NetworkCreateException()
+
         return networks
 
     def delete_network(self, context, fixed_range, require_disassociated=True):
@@ -858,15 +928,24 @@ class NetworkManager(manager.SchedulerDependentManager):
         top_reserved = self._top_reserved_ips
         project_net = netaddr.IPNetwork(network['cidr'])
         num_ips = len(project_net)
+        ex_list = []
         for index in range(num_ips):
             address = str(project_net[index])
             if index < bottom_reserved or num_ips - index < top_reserved:
                 reserved = True
             else:
                 reserved = False
-            self.db.fixed_ip_create(context, {'network_id': network_id,
-                                              'address': address,
-                                              'reserved': reserved})
+            try:
+                self.db.fixed_ip_create(context, {'network_id': network_id,
+                                                  'address': address,
+                                                  'reserved': reserved})
+            # following processes should continue even when exception occurred
+            except exception.DBError as ex:
+                ex_list.append(ex)
+                LOG.error(_('Exception occurred in creating fixed ip '
+                            '|address=%s|: %s'), address, ex)
+        if ex_list:
+            raise ex_list[0]
 
     def _allocate_fixed_ips(self, context, instance_id, host, networks,
                             **kwargs):

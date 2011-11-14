@@ -173,6 +173,26 @@ class VirtualInterfaceMacAddressException(NovaException):
                 "with unique mac address failed")
 
 
+class NetworkInitHostException(NovaException):
+    message = _("Network host initialization failed")
+
+
+class NetworkAllocateException(NovaException):
+    message = _("Network resource allocation failed")
+
+
+class NetworkDeallocateException(NovaException):
+    message = _("Network resource deallocation failed")
+
+
+class NetworkGetNwInfoException(NovaException):
+    message = _("Network info get failed")
+
+
+class NetworkCreateException(NovaException):
+    message = _("Network creation failed")
+
+
 class NotAuthorized(NovaException):
     message = _("Not authorized.")
 
