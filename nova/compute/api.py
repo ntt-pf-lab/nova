@@ -40,7 +40,7 @@ from nova.compute import vm_states
 from nova.compute.utils import terminate_volumes
 from nova.scheduler import api as scheduler_api
 from nova.db import base
-
+import functools
 
 LOG = logging.getLogger('nova.compute.api')
 
@@ -49,6 +49,29 @@ FLAGS = flags.FLAGS
 flags.DECLARE('vncproxy_topic', 'nova.vnc')
 flags.DEFINE_integer('find_host_timeout', 30,
                      'Timeout after NN seconds when looking for a host.')
+
+
+def checks_instance_lock(function):
+    """Decorator to prevent action against locked instances for non-admins."""
+    @functools.wraps(function)
+    def decorated_function(self, context, instance_id, *args, **kwargs):
+
+        locked = self.get_lock(context, instance_id)
+        admin = context.is_admin
+
+        # if admin or unlocked call function otherwise log error
+        if admin or not locked:
+            LOG.info(_("Executing: %(function)s, "
+                    "for instance %(instance_id)s ") % locals())
+            function(self, context, instance_id, *args, **kwargs)
+        else:
+            LOG.warn(_("Not executing: %(function)s, "
+                    "because instance %(instance_id)s is locked") % locals())
+            raise exception.ApiError(
+                    _("Not executing: %(function)s, "
+                    "because instance %(instance_id)s is locked") % locals())
+
+    return decorated_function
 
 
 def generate_default_hostname(instance):
@@ -759,6 +782,7 @@ class API(base.Base):
             raise
 
     @scheduler_api.reroute_compute("delete")
+    @checks_instance_lock
     def delete(self, context, instance_id):
         """Terminate an instance."""
         LOG.debug(_("Going to try to terminate %s"), instance_id)
@@ -780,6 +804,7 @@ class API(base.Base):
             self.db.instance_destroy(context, instance_id)
 
     @scheduler_api.reroute_compute("stop")
+    @checks_instance_lock
     def stop(self, context, instance_id):
         """Stop an instance."""
         LOG.debug(_("Going to try to stop %s"), instance_id)
@@ -799,6 +824,7 @@ class API(base.Base):
             self._cast_compute_message('stop_instance', context,
                     instance_id, host)
 
+    @checks_instance_lock
     def start(self, context, instance_id):
         """Start an instance."""
         LOG.debug(_("Going to try to start %s"), instance_id)
@@ -1059,6 +1085,7 @@ class API(base.Base):
         return recv_meta
 
     @scheduler_api.reroute_compute("reboot")
+    @checks_instance_lock
     def reboot(self, context, instance_id):
         """Reboot the given instance."""
         self.update(context,
@@ -1068,6 +1095,7 @@ class API(base.Base):
         self._cast_compute_message('reboot_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("rebuild")
+    @checks_instance_lock
     def rebuild(self, context, instance_id, image_href, admin_password,
                 name=None, metadata=None, files_to_inject=None):
         """Rebuild the given instance with the provided metadata."""
@@ -1103,6 +1131,7 @@ class API(base.Base):
                                    params=rebuild_params)
 
     @scheduler_api.reroute_compute("revert_resize")
+    @checks_instance_lock
     def revert_resize(self, context, instance_id):
         """Reverts a resize, deleting the 'new' instance in the process."""
         context = context.elevated()
@@ -1129,6 +1158,7 @@ class API(base.Base):
                 {'status': 'reverted'})
 
     @scheduler_api.reroute_compute("confirm_resize")
+    @checks_instance_lock
     def confirm_resize(self, context, instance_id):
         """Confirms a migration/resize and deletes the 'old' instance."""
         context = context.elevated()
@@ -1157,6 +1187,7 @@ class API(base.Base):
                 {'host': migration_ref['dest_compute'], })
 
     @scheduler_api.reroute_compute("resize")
+    @checks_instance_lock
     def resize(self, context, instance_id, flavor_id=None):
         """Resize (ie, migrate) a running instance.
 
@@ -1203,6 +1234,7 @@ class API(base.Base):
                               "instance_type_id": new_instance_type['id']}})
 
     @scheduler_api.reroute_compute("add_fixed_ip")
+    @checks_instance_lock
     def add_fixed_ip(self, context, instance_id, network_id):
         """Add fixed_ip from specified network to given instance."""
         self._cast_compute_message('add_fixed_ip_to_instance', context,
@@ -1210,6 +1242,7 @@ class API(base.Base):
                                    params=dict(network_id=network_id))
 
     @scheduler_api.reroute_compute("remove_fixed_ip")
+    @checks_instance_lock
     def remove_fixed_ip(self, context, instance_id, address):
         """Remove fixed_ip from specified network to given instance."""
         self._cast_compute_message('remove_fixed_ip_from_instance', context,
@@ -1226,6 +1259,7 @@ class API(base.Base):
         self.network_api.add_network_to_project(context, project_id)
 
     @scheduler_api.reroute_compute("pause")
+    @checks_instance_lock
     def pause(self, context, instance_id):
         """Pause the given instance."""
         self.update(context,
@@ -1235,6 +1269,7 @@ class API(base.Base):
         self._cast_compute_message('pause_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("unpause")
+    @checks_instance_lock
     def unpause(self, context, instance_id):
         """Unpause the given instance."""
         self.update(context,
@@ -1271,6 +1306,7 @@ class API(base.Base):
         return self.db.instance_get_actions(context, instance_id)
 
     @scheduler_api.reroute_compute("suspend")
+    @checks_instance_lock
     def suspend(self, context, instance_id):
         """Suspend the given instance."""
         self.update(context,
@@ -1280,6 +1316,7 @@ class API(base.Base):
         self._cast_compute_message('suspend_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("resume")
+    @checks_instance_lock
     def resume(self, context, instance_id):
         """Resume the given instance."""
         self.update(context,
@@ -1289,6 +1326,7 @@ class API(base.Base):
         self._cast_compute_message('resume_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("rescue")
+    @checks_instance_lock
     def rescue(self, context, instance_id):
         """Rescue the given instance."""
         self.update(context,
@@ -1298,6 +1336,7 @@ class API(base.Base):
         self._cast_compute_message('rescue_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("unrescue")
+    @checks_instance_lock
     def unrescue(self, context, instance_id):
         """Unrescue the given instance."""
         self.update(context,
@@ -1307,6 +1346,7 @@ class API(base.Base):
         self._cast_compute_message('unrescue_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("set_admin_password")
+    @checks_instance_lock
     def set_admin_password(self, context, instance_id, password=None):
         """Set the root/admin password for the given instance."""
         host = self._find_host(context, instance_id)
@@ -1316,6 +1356,7 @@ class API(base.Base):
                  {"method": "set_admin_password",
                   "args": {"instance_id": instance_id, "new_pass": password}})
 
+    @checks_instance_lock
     def inject_file(self, context, instance_id):
         """Write a file to the given instance."""
         self._cast_compute_message('inject_file', context, instance_id)
@@ -1370,14 +1411,17 @@ class API(base.Base):
         instance = self.get(context, instance_id)
         return instance['locked']
 
+    @checks_instance_lock
     def reset_network(self, context, instance_id):
         """Reset networking on the instance."""
         self._cast_compute_message('reset_network', context, instance_id)
 
+    @checks_instance_lock
     def inject_network_info(self, context, instance_id):
         """Inject network info for the instance."""
         self._cast_compute_message('inject_network_info', context, instance_id)
 
+    @checks_instance_lock
     def attach_volume(self, context, instance_id, volume_id, device):
         """Attach an existing volume to an existing instance."""
         if not re.match("^/dev/[a-z]d[a-z]+$", device):
@@ -1400,6 +1444,15 @@ class API(base.Base):
             raise exception.ApiError(_("Volume isn't attached to anything!"))
         self.volume_api.check_detach(context, volume_id=volume_id)
         host = instance['host']
+
+        instance_id = instance['id']
+        if not context.is_admin and instance['locked']:
+            LOG.warn(_("Not executing: detach_volume, "
+                    "because instance %(instance_id)s is locked") % locals())
+            raise exception.ApiError(
+                    _("Not executing: detach_volume, "
+                    "because instance %(instance_id)s is locked") % locals())
+
         rpc.cast(context,
                  self.db.queue_get_for(context, FLAGS.compute_topic, host),
                  {"method": "detach_volume",
