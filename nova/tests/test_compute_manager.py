@@ -2931,3 +2931,52 @@ class ComputeTestCase(test.TestCase):
         self.assertFalse(rtn)
 
         self.compute.terminate_instance(c, instance_id)
+
+    @attr(kind='small')
+    def test_setup_block_device_mapping_database_vol_id_is_none(self):
+        """ Ensure raise exception(RebuildRequiresActiveInstance)
+            when corrupted state of block device mapping """
+        def stub_bdm_get(context, instance_id):
+            return [{'volume_id': None,
+                    'snapshot_id': 1,
+                    'no_device': None,
+                    'virtual_name': None,
+                    'delete_on_termination': True,
+                    'volume_size': None,
+                    'snapshot': None,
+                    'id': 5,
+                    'device_name': '/dev/sda'}]
+
+        def stub_is_ephemeral(device_name):
+            return device_name
+
+        def stub_volume_api_create(*args, **kwargs):
+            return {'id': None}
+
+        def stub_pass(*args, **kwargs):
+            pass
+
+        def stub_setup_compute_volume(*args, **kwargs):
+            return '/test'
+
+        self.stubs.Set(self.compute.db,
+                       'block_device_mapping_get_all_by_instance',
+                       stub_bdm_get)
+        self.stubs.Set(block_device, 'is_ephemeral', stub_is_ephemeral)
+        self.stubs.Set(volume.API, 'create', stub_volume_api_create)
+        self.stubs.Set(volume.API, 'wait_creation', stub_pass)
+        self.stubs.Set(self.compute.db,
+                       'block_device_mapping_update',
+                       stub_pass)
+        self.stubs.Set(volume.API, 'check_attach', stub_pass)
+        self.stubs.Set(self.compute.volume_manager,
+                       'setup_compute_volume',
+                       stub_setup_compute_volume)
+        self.stubs.Set(self.compute.db, 'volume_attached', stub_pass)
+
+        c = context.get_admin_context()
+        instance_id = self._create_instance()
+        self.assertRaises(exception.RebuildRequiresActiveInstance,
+                          self.compute._setup_block_device_mapping,
+                          c,
+                          instance_id)
