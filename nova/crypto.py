@@ -124,7 +124,10 @@ def generate_key_pair(bits=1024):
     private_key = open(keyfile).read()
     public_key = open(keyfile + '.pub').read()
 
-    shutil.rmtree(tmpdir)
+    try:
+        shutil.rmtree(tmpdir)
+    except OSError, ex:
+        LOG.warn(_('Failed to remove dir %s: %s'), tmpdir, ex)
     # code below returns public key in pem format
     # key = M2Crypto.RSA.gen_key(bits, 65537, callback=lambda: None)
     # private_key = key.as_pem(cipher=None)
@@ -241,7 +244,10 @@ def generate_x509_cert(user_id, project_id, bits=1024):
                   '-batch', '-subj', subject)
     private_key = open(keyfile).read()
     csr = open(csrfile).read()
-    shutil.rmtree(tmpdir)
+    try:
+        shutil.rmtree(tmpdir)
+    except OSError, ex:
+        LOG.warn(_('Failed to remove dir %s: %s'), tmpdir, ex)
     (serial, signed_csr) = sign_csr(csr, project_id)
     fname = os.path.join(ca_folder(project_id), 'newcerts/%s.pem' % serial)
     cert = {'user_id': user_id,
