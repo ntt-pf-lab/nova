@@ -192,9 +192,9 @@ def destroy_container(target, instance, nbd=False):
     container_dir = '%s/rootfs' % target
     out, err = utils.execute('mount', run_as_root=True)
     for loop in out.splitlines():
-        for s in loop.split():
-            if container_dir == s:
-                if instance['name'] in s:
+        for loop_split in loop.split():
+            if container_dir == loop_split:
+                if instance['name'] in loop_split:
                     device = loop.split()[0]
 
     try:
