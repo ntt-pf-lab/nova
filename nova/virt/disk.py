@@ -212,6 +212,7 @@ def setup_container(image, container_dir=None, nbd=False):
     LXC does not support qcow2 images yet.
     """
     try:
+        device = []
         device = _link_device(image, nbd)
         utils.execute('mount', device, container_dir, run_as_root=True)
     except Exception, exn:
