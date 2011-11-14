@@ -170,7 +170,7 @@ class QuantumManager(manager.FlatManager):
                                   context, instance_id, network_ref['id'])
 
             # talk to Quantum API to create and attach port.
-            q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
+            q_tenant_id = network_ref['project_id'] or project_id or FLAGS.quantum_default_tenant_id
             self.q_conn.create_and_attach_port(q_tenant_id, quantum_net_id,
                                                vif_rec['uuid'])
             self.ipam.allocate_fixed_ip(context, project_id, quantum_net_id,
@@ -201,7 +201,8 @@ class QuantumManager(manager.FlatManager):
         vifs = db.virtual_interface_get_by_instance(admin_context,
                                                     instance_id)
         for vif in vifs:
-            q_tenant_id = project_id
+            network_ref = vif['network']
+            q_tenant_id = network_ref['project_id']
             ipam_tenant_id = project_id
             net_id, port_id = self.q_conn.get_port_by_attachment(q_tenant_id,
                                                                  vif['uuid'])
@@ -249,7 +250,7 @@ class QuantumManager(manager.FlatManager):
 
             network_dict = {
                 'cidr': v4_subnet['cidr'],
-                'injected': True,
+                'injected': network_ref['injected'],
                 'multi_host': False}
 
             info = {
@@ -293,7 +294,7 @@ class QuantumManager(manager.FlatManager):
                                                     instance_id)
         for vif_ref in vifs:
             interface_id = vif_ref['uuid']
-            q_tenant_id = project_id
+            q_tenant_id = vif_ref['network']['project_id']
             ipam_tenant_id = project_id
             (net_id, port_id) = self.q_conn.get_port_by_attachment(q_tenant_id,
                                             interface_id)
