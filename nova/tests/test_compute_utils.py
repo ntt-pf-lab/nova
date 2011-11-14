@@ -117,3 +117,39 @@ class UtilsTestCase(test.TestCase):
         self.assertRaises(exception.ApiError, self.utils.terminate_volumes,
                           db, self.context, 1)
         self.assertEqual(2, self._count)
+
+    @attr(kind='small')
+    def test_terminate_volumes_ex_db_block_device_mapping_destroy(self):
+        """
+        All BlockDeviceMappings are deleted
+        even when exception is raised in db.block_device_mapping_destroy()
+        """
+        self._volume_delete_count = 0
+        self._bdm_destroy_count = 0
+
+        def stub_delete(caller, context, volume_id):
+            self._volume_delete_count += 1
+
+        def stub_block_device_mapping_destroy(context, bdm_id):
+            self._bdm_destroy_count += 1
+            raise exception.DBError('BlockDeviceMapping destroy failed')
+
+        self.mox.StubOutWithMock(db, 'instance_get')
+        self.mox.StubOutWithMock(db,
+                            'block_device_mapping_get_all_by_instance')
+        self.stubs.Set(volume_api.API, 'delete', stub_delete)
+        self.stubs.Set(db, 'block_device_mapping_destroy',
+                       stub_block_device_mapping_destroy)
+        db.instance_get(mox.IgnoreArg(),
+                        mox.IgnoreArg()).AndReturn({'id': 1})
+        db.block_device_mapping_get_all_by_instance(
+                        mox.IgnoreArg(), mox.IgnoreArg()).\
+                        AndReturn(block_device_mappings)
+        self.mox.ReplayAll()
+
+        instance_id = 1
+        self.assertRaises(exception.TerminateVolumeException,
+                          self.utils.terminate_volumes,
+                          db, self.context, instance_id)
+        self.assertEqual(1, self._volume_delete_count)
+        self.assertEqual(2, self._bdm_destroy_count)

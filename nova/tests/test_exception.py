@@ -1097,3 +1097,12 @@ class NetworkCreateExceptionTestCase(test.TestCase):
         ex = exception.NetworkCreateException()
 
         self.assertEqual('Network creation failed', str(ex))
+
+
+class TerminateVolumeExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_terminate_volume_exception(self):
+        ex = exception.TerminateVolumeException()
+
+        self.assertEqual('Volume termination failed', str(ex))

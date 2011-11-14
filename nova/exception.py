@@ -173,6 +173,10 @@ class VirtualInterfaceMacAddressException(NovaException):
                 "with unique mac address failed")
 
 
+class TerminateVolumeException(NovaException):
+    message = _("Volume termination failed")
+
+
 class NetworkInitHostException(NovaException):
     message = _("Network host initialization failed")
 
