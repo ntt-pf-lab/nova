@@ -249,7 +249,7 @@ class Middleware(Application):
             return cls(app, **local_config)
         return _factory
 
-    def __init__(self, application):
+    def __init__(self, application, **kwargs):
         self.application = application
 
     def process_request(self, req):
