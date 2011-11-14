@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -877,7 +879,7 @@ def quota_destroy(context, project_id, resource):
 
 def quota_destroy_all_by_project(context, project_id):
     """Destroy all quotas associated with a given project."""
-    return IMPL.quota_get_all_by_project(context, project_id)
+    return IMPL.quota_destroy_all_by_project(context, project_id)
 
 
 ###################
