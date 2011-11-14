@@ -287,7 +287,12 @@ def _sign_csr(csr_text, ca_folder):
     serial = string.strip(out.rpartition('=')[2])
     os.chdir(start)
     with open(outbound, 'r') as crtfile:
-        return (serial, crtfile.read())
+        signed_csr = crtfile.read()
+    try:
+        shutil.rmtree(tmpfolder)
+    except OSError, ex:
+        LOG.warn(_('Failed to remove dir %s: %s'), tmpfolder, ex)
+    return (serial, signed_csr)
 
 
 def mkreq(bits, subject='foo', ca=0):
