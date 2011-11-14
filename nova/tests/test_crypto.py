@@ -187,7 +187,6 @@ class CryptoTestCase(test.TestCase):
         FileError is raised when IOError occurred
         in open(ca_path(project_id), 'r')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
         project_id = 'fake'
 
@@ -207,7 +206,6 @@ class CryptoTestCase(test.TestCase):
         FileError is raised when IOError occurred
         in open(ca_path(None), 'r')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
         project_id = None
 
@@ -294,7 +292,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when OSError occurred in tempfile.mkdtemp()
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         tempfile.mkdtemp().AndRaise(OSError)
         self.mox.ReplayAll()
@@ -327,7 +324,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(keyfile)
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
         temp_dir = os.path.join(os.getcwd(), 'crypto')
@@ -351,7 +347,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(keyfile + '.pub')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
         temp_dir = os.path.join(os.getcwd(), 'crypto')
@@ -466,7 +461,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when OSError occurred in tempfile.mkdtemp()
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         tempfile.mkdtemp().AndRaise(OSError)
         self.mox.ReplayAll()
@@ -501,7 +495,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(keyfile)
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
@@ -527,7 +520,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(csrfile)
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
@@ -663,7 +655,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(csr_fn, 'r')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
 
         def stub_execute(*cmd, **kwargs):
@@ -681,7 +672,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(crt_fn, 'w')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
 
         def stub_execute(*cmd, **kwargs):
@@ -848,7 +838,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when OSError occurred in tempfile.mkdtemp()
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=False)
 
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
@@ -866,7 +855,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(inbound, 'w')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=False)
 
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
@@ -884,7 +872,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when OSError occurred in os.makedirs()
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=True)
 
         self.mox.StubOutWithMock(utils, 'execute')
@@ -936,7 +923,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when IOError occurred in open(outbound, 'r')
         """
-        raise SkipTest("'module' object has no attribute 'FileError'")
         self.flags(use_project_ca=False)
 
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
