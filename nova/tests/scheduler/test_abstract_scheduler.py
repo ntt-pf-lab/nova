@@ -1,3 +1,5 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 # Copyright 2011 OpenStack LLC.
 # All Rights Reserved.
 # Copyright 2011 NTT
@@ -685,30 +687,3 @@ class AbstractSchedulerTestCase(test.TestCase):
                                           {'instance_id': 'aa'})
 
         self.assertEqual(1, self.success_count)
-
-
-class BaseSchedulerTestCase(test.TestCase):
-    """Test case for Base Scheduler."""
-
-    def test_weigh_hosts(self):
-        """
-        Try to weigh a short list of hosts and make sure enough
-        entries for a larger number instances are returned.
-        """
-
-        sched = FakeBaseScheduler()
-
-        # Fake out a list of hosts
-        zm = FakeZoneManager()
-        hostlist = [(host, services['compute'])
-                    for host, services in zm.service_states.items()
-                    if 'compute' in services]
-
-        # Call weigh_hosts()
-        num_instances = len(hostlist) * 2 + len(hostlist) / 2
-        instlist = sched.weigh_hosts('compute',
-                                     dict(num_instances=num_instances),
-                                     hostlist)
-
-        # Should be enough entries to cover all instances
-        self.assertEqual(len(instlist), num_instances)
