@@ -727,12 +727,16 @@ class FlatNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_deallocate_for_instance_ex_fixed_ip_not_found(self):
         """
-        deallocate_fixed_ip is not called
+        db.deallocate_fixed_ip() is skipped and LOG.warn is called
         """
-        self._is_called = False
+        self._msg = None
+        self._args = None
+        self._kwargs = None
 
-        def stub_deallocate_fixed_ip(self, context, address, **kwargs):
-            self._is_called = True
+        def stub_warn(msg, *args, **kwargs):
+            self._msg = msg
+            self._args = args
+            self._kwargs = kwargs
 
         self.mox.StubOutWithMock(db, 'fixed_ip_get_by_instance')
         self.mox.StubOutWithMock(db, 'virtual_interface_delete_by_instance')
@@ -743,14 +747,17 @@ class FlatNetworkTestCase(test.TestCase):
                         AndRaise(exception.FixedIpNotFoundForInstance)
         db.virtual_interface_delete_by_instance(
                                     mox.IgnoreArg(), mox.IgnoreArg())
-        self.stubs.Set(self.network, 'deallocate_fixed_ip',
-                       stub_deallocate_fixed_ip)
+        self.stubs.Set(logging.getLogger("nova.network.manager"),
+                       'warn', stub_warn)
         self.mox.ReplayAll()
 
         kwargs = {}
         kwargs['instance_id'] = 1
         self.network.deallocate_for_instance(self.context, **kwargs)
-        self.assertFalse(self._is_called)
+        self.assertEqual(_("Skipping fixed ip address deallocation "
+                           "for instance |%s|"), self._msg)
+        self.assertEqual(kwargs['instance_id'], self._args[0])
+        self.assertTrue(self._kwargs['context'] is not None)
 
     @attr(kind='small')
     def test_get_instance_nw_info_param_instance_does_not_exist(self):
