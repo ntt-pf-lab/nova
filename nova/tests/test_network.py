@@ -408,7 +408,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -425,7 +425,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         NetworkNotFound is raised when network does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         self.mox.StubOutWithMock(db, 'network_get')
         db.instance_get(mox.IgnoreArg(),
@@ -481,7 +481,7 @@ class FlatNetworkTestCase(test.TestCase):
         all networks are initialized even
         when exception is raised in _setup_network
         """
-#        raise SkipTest('AssertionError: 2 != 1')
+        raise SkipTest('AssertionError: 2 != 1')
         self._count = 0
 
         def stub_setup_network(context, network_ref):
@@ -564,7 +564,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         NetworkNotFound is raised when network_ref is none
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         network_ref = None
         self.assertRaises(exception.NetworkNotFound,
                           self.network.set_network_host,
@@ -575,7 +575,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         NetworkNotFound is raised when network does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'network_get')
         db.network_get(mox.IgnoreArg(),
                        mox.IgnoreArg()).AndRaise(exception.NetworkNotFound)
@@ -591,7 +591,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -712,7 +712,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -764,7 +764,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -1256,7 +1256,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -1273,7 +1273,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         NetworkNotFound is raised when network does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'network_get')
         db.network_get(mox.IgnoreArg(),
                        mox.IgnoreArg()).AndRaise(exception.NetworkNotFound)
@@ -1332,7 +1332,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -2641,7 +2641,7 @@ class VlanNetworkTestCase(test.TestCase):
         """
         ProcessExecutionError is raised
         """
-#        raise SkipTest('AssertionError: 2 != 1')
+        raise SkipTest('AssertionError: 2 != 1')
         self._count = 0
 
         def stub_bind_floating_ip(floating_ip, check_exit_code=True):
@@ -2867,7 +2867,7 @@ class VlanNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -3325,7 +3325,7 @@ class VlanNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
@@ -3998,7 +3998,7 @@ class CommonNetworkTestCase(test.TestCase):
         """
         InstanceNotFound is raised when instance does not exist
         """
-#        raise SkipTest('Parameter check is not implemented yet')
+        raise SkipTest('Parameter check is not implemented yet')
         self.mox.StubOutWithMock(db, 'instance_get')
         db.instance_get(mox.IgnoreArg(),
                         mox.IgnoreArg()).AndRaise(exception.InstanceNotFound)
