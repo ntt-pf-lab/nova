@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -288,53 +290,6 @@ def _sign_csr(csr_text, ca_folder):
     os.chdir(start)
     with open(outbound, 'r') as crtfile:
         return (serial, crtfile.read())
-
-
-def mkreq(bits, subject='foo', ca=0):
-    pk = M2Crypto.EVP.PKey()
-    req = M2Crypto.X509.Request()
-    rsa = M2Crypto.RSA.gen_key(bits, 65537, callback=lambda: None)
-    pk.assign_rsa(rsa)
-    rsa = None  # should not be freed here
-    req.set_pubkey(pk)
-    req.set_subject(subject)
-    req.sign(pk, 'sha512')
-    assert req.verify(pk)
-    pk2 = req.get_pubkey()
-    assert req.verify(pk2)
-    return req, pk
-
-
-def mkcacert(subject='nova', years=1):
-    req, pk = mkreq(2048, subject, ca=1)
-    pkey = req.get_pubkey()
-    sub = req.get_subject()
-    cert = M2Crypto.X509.X509()
-    cert.set_serial_number(1)
-    cert.set_version(2)
-    # FIXME subject is not set in mkreq yet
-    cert.set_subject(sub)
-    t = long(time.time()) + time.timezone
-    now = M2Crypto.ASN1.ASN1_UTCTIME()
-    now.set_time(t)
-    nowPlusYear = M2Crypto.ASN1.ASN1_UTCTIME()
-    nowPlusYear.set_time(t + (years * 60 * 60 * 24 * 365))
-    cert.set_not_before(now)
-    cert.set_not_after(nowPlusYear)
-    issuer = M2Crypto.X509.X509_Name()
-    issuer.C = 'US'
-    issuer.CN = subject
-    cert.set_issuer(issuer)
-    cert.set_pubkey(pkey)
-    ext = M2Crypto.X509.new_extension('basicConstraints', 'CA:TRUE')
-    cert.add_ext(ext)
-    cert.sign(pk, 'sha512')
-
-    # print 'cert', dir(cert)
-    print cert.as_pem()
-    print pk.get_rsa().as_pem()
-
-    return cert, pk, pkey
 
 
 def _build_cipher(key, iv, encode=True):
