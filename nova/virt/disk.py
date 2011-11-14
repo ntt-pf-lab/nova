@@ -228,6 +228,10 @@ def destroy_container(target, instance, nbd=False):
 
     LXC does not support qcow2 images yet.
     """
+    if not instance:
+        LOG.exception(_('instance is invalid'))
+        return
+
     container_dir = '%s/rootfs' % target
     out, err = utils.execute('mount', run_as_root=True)
     for loop in out.splitlines():
