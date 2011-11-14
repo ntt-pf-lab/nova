@@ -748,7 +748,8 @@ class RotationRequiredForBackup(NovaException):
 
 #TODO(bcwaldon): EOL this exception!
 class Duplicate(NovaException):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(Duplicate, self).__init__(**kwargs)
 
 
 class KeyPairExists(Duplicate):
