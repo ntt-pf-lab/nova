@@ -963,6 +963,8 @@ def virtual_interface_get(context, vif_id, session=None):
                       options(joinedload('instance')).\
                       options(joinedload('fixed_ips')).\
                       first()
+    if not vif_ref:
+        raise exception.NotFound
     return vif_ref
 
 
