@@ -121,7 +121,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_floating_ip_param_floating_ip_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -177,7 +177,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_vifs_by_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -620,7 +620,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_allocate_for_instance_param_instance_is_none(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -635,7 +635,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_allocate_for_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -674,7 +674,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_deallocate_for_instance_param_instance_is_none(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -688,7 +688,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_deallocate_for_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -745,7 +745,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_remove_fixed_ip_from_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -797,7 +797,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_instance_nw_info_param_instance_is_none(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """
@@ -808,7 +808,7 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_instance_nw_info_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
+#        raise SkipTest("Parameter check is not implemented.")
         """
         ApiError is raised
         """

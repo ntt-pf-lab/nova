@@ -1700,7 +1700,7 @@ class UtilsTestCase(test.TestCase):
 
         self.assertRaises(lockfile.LockError, _fake_f)
 
-    @test.skip_test("this method not exist in diablo release")
+#    @test.skip_test("this method not exist in diablo release")
     @attr(kind='small')
     def test_timefunc(self):
         """Test for nova.utils.timefunc.
@@ -1912,7 +1912,7 @@ class UtilsTestCase(test.TestCase):
 
         self.assertEqual(False, ref)
 
-    @test.skip_test("Skip here becuase have reported at Bug #149")
+#    @test.skip_test("Skip here becuase have reported at Bug #149")
     @attr(kind='small')
     def test_vpn_ping_exception_ioerror(self):
         """Test for nova.utils.vpn_ping.

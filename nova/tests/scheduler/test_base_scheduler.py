@@ -192,7 +192,7 @@ class BaseSchedulerTestCase(test.TestCase):
         """
         Test for nova.scheduler.base_scheduler.BaseScheduler.weigh_hosts.
         """
-        raise SkipTest("FIXME This test case goes into an infinite roop.")
+#        raise SkipTest("FIXME This test case goes into an infinite roop.")
 
         topic = 'compute'
         request_spec = {}

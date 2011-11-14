@@ -1442,7 +1442,7 @@ class DbApiTestCase(test.TestCase):
         """
         fixed_ip already stored in test db.
         """
-        raise SkipTest("fixed_ip already stored in test db.")
+#        raise SkipTest("fixed_ip already stored in test db.")
         # test and assert
         result = self.db.api.fixed_ip_get_all(self.context)
         self.assertTrue(result is not None)
@@ -1453,7 +1453,7 @@ class DbApiTestCase(test.TestCase):
         """
         fixed_ip_get_all_by_instance_host
         """
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_fixed_ip_get_all_by_instance_host_db_not_found(self):
@@ -1746,9 +1746,9 @@ class DbApiTestCase(test.TestCase):
         """
         virtual_interface_get_by_fixed_ip
         """
-        raise SkipTest("FIXME InvalidRequestError: \
-            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
-            has no property 'fixed_ip_id'")
+#        raise SkipTest("FIXME InvalidRequestError: \
+#            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
+#            has no property 'fixed_ip_id'")
         # setup
         self.db.api.network_create_safe(self.context, {'id': 100})
         self.db.api.fixed_ip_create(self.context,
@@ -1769,9 +1769,9 @@ class DbApiTestCase(test.TestCase):
         """
         virtual_interface_get_by_fixed_ip
         """
-        raise SkipTest("FIXME InvalidRequestError: \
-            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
-            has no property 'fixed_ip_id'")
+#        raise SkipTest("FIXME InvalidRequestError: \
+#            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
+#            has no property 'fixed_ip_id'")
         # test and assert
         # FIXME InvalidRequestError:
         # Entity 'Mapper|VirtualInterface|virtual_interfaces'
@@ -1880,8 +1880,8 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_virtual_interface_delete_db_not_found(self):
-        raise SkipTest("UnmappedInstanceError:\
-            Class '__builtin__.NoneType' is not mapped")
+#        raise SkipTest("UnmappedInstanceError:\
+#            Class '__builtin__.NoneType' is not mapped")
         # test and assert
         # FIXME VirtualInterfaceNotFound does not exist.
         self.assertRaises(exception.NotFound,
@@ -2578,11 +2578,11 @@ class DbApiTestCase(test.TestCase):
         """
         instance_set_state
         """
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_instance_set_state_db_not_found(self):
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_instance_update(self):
@@ -2989,7 +2989,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_network_associate_with_force(self):
-        raise SkipTest("network record should be store when associate called")
+#        raise SkipTest("network record should be store when associate called")
         # setup
         self.db.api.network_create_safe(self.context,
                                         {'id': 100,
@@ -3206,7 +3206,7 @@ class DbApiTestCase(test.TestCase):
         """
         safe means no error occurs when primary key is duplicate.
         """
-        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
+#        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         self.db.api.network_create_safe(self.context,
                                         {'id': 100, 'label': 'nw1'})
@@ -3232,7 +3232,7 @@ class DbApiTestCase(test.TestCase):
         """
         safe means no exception occures when network is not found
         """
-        raise SkipTest("Safe delete occured exception")
+#        raise SkipTest("Safe delete occured exception")
         # test and assert
         self.db.api.network_delete_safe(self.context, 100)
         self.assertRaises(exception.NetworkNotFound,
@@ -3244,11 +3244,11 @@ class DbApiTestCase(test.TestCase):
         """
         network_create_fixed_ips
         """
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_create_fixed_ips_db_duplicate(self):
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_disassociate(self):
@@ -3591,33 +3591,33 @@ class DbApiTestCase(test.TestCase):
         """
         network_get_index
         """
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_get_index_db_not_found(self):
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_get_vpn_ip(self):
         """
         network_get_vpn_ip
         """
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_get_vpn_ip_db_not_found(self):
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_set_cidr(self):
         """
         network_set_cidr
         """
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_set_cidr_db_not_found(self):
-        raise SkipTest("Not implemented in sqlalchemy.api.")
+#        raise SkipTest("Not implemented in sqlalchemy.api.")
 
     @attr(kind='small')
     def test_network_set_host(self):
@@ -3669,7 +3669,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_network_update_db_duplicate(self):
-        raise SkipTest("No error happened when update record\
+#        raise SkipTest("No error happened when update record\
             and duplicate unique column.")
         # setup
         self.db.network_create_safe(self.context,
@@ -3716,7 +3716,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_export_device_create_safe_db_duplicate(self):
-        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
+#        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         self.db.volume_create(self.context, {'id': 1, 'size': '1g'})
         device = {}
@@ -3762,7 +3762,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_iscsi_target_create_safe_db_duplicate(self):
-        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
+#        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         # setup
         self.db.volume_create(self.context, {'id': 1, 'size': '1g'})
@@ -4720,7 +4720,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_volume_metadata_get_item(self):
-        raise SkipTest("No method found in db.api")
+#        raise SkipTest("No method found in db.api")
         # setup
         vol = {}
         vol['id'] = 1
@@ -4741,7 +4741,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_volume_metadata_get_item_db_not_found(self):
-        raise SkipTest("No method found in db.api")
+#        raise SkipTest("No method found in db.api")
         # setup
         vol = {}
         vol['id'] = 1
@@ -5126,7 +5126,7 @@ class DbApiTestCase(test.TestCase):
         """
         looks never duplicate occur, but it is right?
         """
-        raise SkipTest("Block device never duplicate.")
+#        raise SkipTest("Block device never duplicate.")
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5204,7 +5204,7 @@ class DbApiTestCase(test.TestCase):
         when update or create, If the virtual_name not specified
             then raise KeyError.
         """
-        raise SkipTest("If the virtual_name not specified\
+#        raise SkipTest("If the virtual_name not specified\
             then raise KeyError.")
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
@@ -5233,7 +5233,7 @@ class DbApiTestCase(test.TestCase):
         when update or create, If the virtual_name not specified
             then raise KeyError.
         """
-        raise SkipTest("If the virtual_name not specified\
+#        raise SkipTest("If the virtual_name not specified\
             then raise KeyError.")
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
@@ -5667,7 +5667,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_security_group_destroy_db_not_found(self):
-        raise SkipTest("NotFound exception not raise")
+#        raise SkipTest("NotFound exception not raise")
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -7440,7 +7440,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_console_pool_get_db_not_found(self):
-        raise SkipTest("DBError occured")
+#        raise SkipTest("DBError occured")
         con = {}
         con['id'] = 1
         con['address'] = 'localhost'
@@ -7997,7 +7997,7 @@ class DbApiTestCase(test.TestCase):
         """
         Returned deleted instance_type.
         """
-        raise SkipTest("Returned deleted instance_type")
+#        raise SkipTest("Returned deleted instance_type")
         # setup
         values = {}
         values['id'] = 100
@@ -8268,7 +8268,7 @@ class DbApiTestCase(test.TestCase):
         """
         Not found in db.api.
         """
-        raise SkipTest("Not found in API")
+#        raise SkipTest("Not found in API")
         # setup
         i = {}
         i['id'] = 1
@@ -8285,7 +8285,7 @@ class DbApiTestCase(test.TestCase):
         """
         Not found in db.api.
         """
-        raise SkipTest("Not found in API")
+#        raise SkipTest("Not found in API")
         # setup
         i = {}
         i['id'] = 1
@@ -8532,7 +8532,7 @@ class DbApiTestCase(test.TestCase):
         """
         should be raise error
         """
-        raise SkipTest("No exception occured in invalid id specified,\
+#        raise SkipTest("No exception occured in invalid id specified,\
             so raise AttributeError.")
         # setup
         ab = {}
@@ -8639,7 +8639,7 @@ class DbApiTestCase(test.TestCase):
         """
         No method found in db.api
         """
-        raise SkipTest("No method found in db.api")
+#        raise SkipTest("No method found in db.api")
         # setup
         values = {}
         values['id'] = 100
@@ -8796,7 +8796,7 @@ class DbApiTestCase(test.TestCase):
         """
         Returns deleted type. is that right?
         """
-        raise SkipTest("Returned deleted volume_type.")
+#        raise SkipTest("Returned deleted volume_type.")
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8915,7 +8915,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_volume_type_extra_specs_get_item(self):
-        raise SkipTest("not defined in api interface")
+#        raise SkipTest("not defined in api interface")
         values = {}
         values['id'] = 1
         values['name'] = 'test'
@@ -8933,7 +8933,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_volume_type_extra_specs_get_item_exception(self):
-        raise SkipTest("not defined in api interface")
+#        raise SkipTest("not defined in api interface")
         values = {}
         values['id'] = 1
         values['name'] = 'test'

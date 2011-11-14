@@ -946,7 +946,7 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_mkreq(self):
         """Test for nova.crypto.mkreq. """
-        raise SkipTest('AttributeError occurred')
+#        raise SkipTest('AttributeError occurred')
         bits = 1024
         subject = 'nova'
         ca = 0
@@ -979,7 +979,7 @@ class CryptoTestCase(test.TestCase):
     @attr(kind='small')
     def test_mkcacert(self):
         """Test for nova.crypto.mkcacert. """
-        raise SkipTest('AttributeError occurred')
+#        raise SkipTest('AttributeError occurred')
         subject = 'nova'
         ca = 1
         cert, pk, pkey = self.crypto.mkcacert(subject, ca)

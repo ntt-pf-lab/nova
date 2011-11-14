@@ -2711,7 +2711,7 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         self.assertEqual('file contents', ref)
 
-    @test.skip_test('because get_console_output not implement for lxc ')
+#    @test.skip_test('because get_console_output not implement for lxc ')
     @attr(kind='small')
     def test_get_console_output_configuration_lxc(self):
         """Test for nova.virt.libvirt.connection.LibvirtConnection
@@ -3413,7 +3413,7 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         self.assertEqual(True, self.exe_flag)
 
-    @test.skip_test("because that multi thread is difficult to test")
+#    @test.skip_test("because that multi thread is difficult to test")
     @attr(kind='small')
     def test_live_migration_exception_post(self):
         """Test for nova.virt.libvirt.connection.LibvirtConnection
