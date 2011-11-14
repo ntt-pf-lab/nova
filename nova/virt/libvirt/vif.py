@@ -4,6 +4,8 @@
 # Copyright (C) 2011 Nicira, Inc
 # Copyright 2011 OpenStack LLC.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -107,9 +109,14 @@ class LibvirtOpenVswitchDriver(VIFDriver):
         iface_id = mapping['vif_uuid']
         dev = self.get_dev_name(iface_id)
         if not linux_net._device_exists(dev):
-            utils.execute('ip', 'tuntap', 'add', dev, 'mode', 'tap',
-                          run_as_root=True)
-            utils.execute('ip', 'link', 'set', dev, 'up', run_as_root=True)
+            try:
+                utils.execute('ip', 'tuntap', 'add', dev, 'mode', 'tap',
+                              run_as_root=True)
+                utils.execute('ip', 'link', 'set', dev, 'up', run_as_root=True)
+            except exception.ProcessExecutionError, e:
+                utils.execute('ip', 'link', 'set', dev, 'down',
+                              run_as_root=True)
+                raise e
         utils.execute('ovs-vsctl', '--', '--may-exist', 'add-port',
                 FLAGS.libvirt_ovs_bridge, dev,
                 '--', 'set', 'Interface', dev,

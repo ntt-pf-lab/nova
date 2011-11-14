@@ -317,6 +317,32 @@ class LibvirtOpenVswitchDriverTestCase(test.TestCase):
         self.assertEqual(expected_result, ref)
 
     @attr(kind='small')
+    def test_plug_parameter_process_execution_error_occur(self):
+        """Test for nova.virt.libvirt.vif.LibvirtOpenVswitchDriver.plug. """
+
+        def fake_linux_net_device_exists(*args, **kwargs):
+            self.stub_linux_flg = False
+
+        def fake_utils_execute_ip_link_set_up(*cmd, **kwargs):
+            if cmd[4] == 'mode':
+                pass
+            elif cmd[4] == 'up':
+                raise exception.ProcessExecutionError
+            elif cmd[4] == 'down':
+                self.stub_flg = True
+
+        self.stubs.Set(linux_net,
+                       '_device_exists',
+                       fake_linux_net_device_exists)
+        self.stubs.Set(utils, 'execute', fake_utils_execute_ip_link_set_up)
+        self.assertRaises(exception.ProcessExecutionError,
+                          self.libvirtopenvswitchdriver.plug,
+                          instance=instances[1],
+                          network=networks[0],
+                          mapping=info[0])
+        self.assertTrue(self.stub_flg)
+
+    @attr(kind='small')
     def test_plug_exception(self):
         """Test for nova.virt.libvirt.vif.LibvirtOpenVswitchDriver.unplug. """
 
