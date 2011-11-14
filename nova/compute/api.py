@@ -87,7 +87,9 @@ def _is_able_to_shutdown(instance, instance_id):
     if vm_state not in valid_shutdown_states:
         LOG.warn(_("Instance %(instance_id)s is not in an 'active' state. It "
                    "is currently %(vm_state)s. Shutdown aborted.") % locals())
-        return False
+        raise exception.ApiError(
+                _("Instance %(instance_id)s is not in an 'active' state. It "
+                   "is currently %(vm_state)s. Shutdown aborted.") % locals())
 
     return True
 
@@ -806,7 +808,8 @@ class API(base.Base):
         if vm_state != vm_states.STOPPED:
             LOG.warning(_("Instance %(instance_id)s is not "
                           "stopped. (%(vm_state)s)") % locals())
-            return
+            raise exception.ApiError(_("Instance %(instance_id)s is not "
+                          "stopped. (%(vm_state)s)") % locals())
 
         self.update(context,
                     instance_id,
