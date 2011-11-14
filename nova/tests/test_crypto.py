@@ -34,7 +34,6 @@ from nova import flags
 from nova import test
 from nova import utils
 from nose.plugins.attrib import attr
-from nose.plugins.skip import SkipTest
 
 FLAGS = flags.FLAGS
 
@@ -733,8 +732,7 @@ class CryptoTestCase(test.TestCase):
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-
-        os.remove(outbound)
+        self.assertFalse(os.path.exists(temp_dir))
 
     @attr(kind='small')
     def test_sign_csr_cfg_not_use_project_ca(self):
@@ -760,8 +758,7 @@ class CryptoTestCase(test.TestCase):
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-
-        os.remove(outbound)
+        self.assertFalse(os.path.exists(temp_dir))
 
     @attr(kind='small')
     def test_sign_csr_param_ca_path_does_exists(self):
@@ -791,8 +788,7 @@ class CryptoTestCase(test.TestCase):
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-
-        os.remove(outbound)
+        self.assertFalse(os.path.exists(temp_dir))
 
     @attr(kind='small')
     def test_sign_csr_param_ca_folder_does_not_exist(self):
@@ -830,8 +826,7 @@ class CryptoTestCase(test.TestCase):
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
         self.assertTrue(os.path.exists(ca_folder))
-
-        os.remove(outbound)
+        self.assertFalse(os.path.exists(temp_dir))
 
     @attr(kind='small')
     def test_sign_csr_ex_tempfile_mkdtemp(self):
@@ -942,6 +937,52 @@ class CryptoTestCase(test.TestCase):
         self.assertRaises(exception.FileError,
                           self.crypto.sign_csr,
                           csr_text, project_id)
+
+    @attr(kind='small')
+    def test_sign_csr_ex_shutil_rmtree(self):
+        """
+        OSError is not raised even when OSError occured in shutil.rmtree()
+        """
+        self.flags(use_project_ca=False)
+
+        self._msg = None
+        self._args = None
+        self._kwargs = None
+
+        def stub_warn(msg, *args, **kwargs):
+            self._msg = msg
+            self._args = args
+            self._kwargs = kwargs
+
+        self.mox.StubOutWithMock(utils, 'execute')
+        self.mox.StubOutWithMock(tempfile, 'mkdtemp')
+        self.mox.StubOutWithMock(shutil, 'rmtree')
+        self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
+        utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+                      mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                AndReturn(('aaa=bbb=ccc', None))
+        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(temp_dir)
+        ex = OSError()
+        shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
+        self.mox.ReplayAll()
+
+        csr_text = 'test'
+        project_id = 'fake'
+        # make a file {path to temp_dir}/crypto/outbound.csr
+        outbound = os.path.join(temp_dir, 'outbound.csr')
+        self._create_file(outbound, 'ddd')
+
+        ref = self.crypto.sign_csr(csr_text, project_id)
+        self.assertEqual(('ccc', 'ddd'), ref)
+        self.assertEqual('Failed to remove dir %s: %s', self._msg)
+        self.assertEqual(temp_dir, self._args[0])
+        self.assertEqual(ex, self._args[1])
+
+        os.remove(outbound)
 
     @attr(kind='small')
     def test_compute_md5(self):
@@ -1078,7 +1119,7 @@ class RevokeCertsTest(test.TestCase):
 
         user_id = 'test_user'
         project_id = 'test_project'
-        self.assertRaises(exception.ProcessExecutionError,
+        self.assertRaises(exception.RevokeCertException,
                           crypto.revoke_certs_by_user_and_project,
                           user_id, project_id)
         self.assertEqual(2, self._revoke_count)
@@ -1125,7 +1166,7 @@ class RevokeCertsTest(test.TestCase):
         self.mox.ReplayAll()
 
         user_id = 'test_user'
-        self.assertRaises(exception.ProcessExecutionError,
+        self.assertRaises(exception.RevokeCertException,
                           crypto.revoke_certs_by_user,
                           user_id)
         self.assertEqual(2, self._revoke_count)
@@ -1173,7 +1214,7 @@ class RevokeCertsTest(test.TestCase):
         self.mox.ReplayAll()
 
         project_id = 'test_project'
-        self.assertRaises(exception.ProcessExecutionError,
+        self.assertRaises(exception.RevokeCertException,
                           crypto.revoke_certs_by_project,
                           project_id)
         self.assertEqual(2, self._revoke_count)
