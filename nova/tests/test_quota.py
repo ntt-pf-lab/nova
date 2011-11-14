@@ -86,8 +86,16 @@ class QuotaTestCase(test.TestCase):
                 dict(memory_mb=4096, vcpus=2, local_gb=40, flavorid=3),
             'm1.large': dict(memory_mb=8192, vcpus=4, local_gb=80, flavorid=4),
             'm1.xlarge':
-                dict(memory_mb=16384, vcpus=8, local_gb=160, flavorid=5)}
+                dict(memory_mb=16384, vcpus=8, local_gb=160, flavorid=5),
+            'm1.test':
+                dict(memory_mb=0, vcpus=1, local_gb=0, flavorid=1)}
         return instance_types[name]
+
+    @attr(kind='small')
+    def test_quota_db_memory_mb_zero(self):
+        num_instances = quota.allowed_instances(self.context, 100,
+            self._get_instance_type('m1.test'))
+        self.assertEqual(num_instances, 2)
 
     @attr(kind='small')
     def test_get_project_quotas(self):
