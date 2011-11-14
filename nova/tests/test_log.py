@@ -26,6 +26,9 @@ import logging
 import sys
 from nose.plugins.attrib import attr
 
+flags.DEFINE_multistring('list_notifier_drivers',
+                         ['nova.notifier.no_op_notifier'],
+                         'List of drivers to send notifications')
 
 FLAGS = flags.FLAGS
 
@@ -541,6 +544,38 @@ class PublishErrorsHandlerTestCase(test.TestCase):
 
         def fake_notifier(*args, **kwargs):
             self.stub_flg = True
+
+        self.stubs.Set(notifier, 'notify', fake_notifier)
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'message', None, None)
+        self.publisherrorshandler.emit(logrecord)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_emit_cfg_list_notifier_drivers_in_flags(self):
+        """Test for nova.log.PublishErrorsHandler.emit. """
+
+        self.stub_flg = False
+
+        def fake_notifier(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(notifier, 'notify', fake_notifier)
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'message', None, None)
+        self.publisherrorshandler.emit(logrecord)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_emit_cfg_log_notifier_in_list_notifier_drivers(self):
+        """Test for nova.log.PublishErrorsHandler.emit. """
+
+        self.flags(list_notifier_drivers=['nova.notifier.rabbit_notifier',
+                                          'nova.notifier.log_notifier'])
+        self.stub_flg = True
+
+        def fake_notifier(*args, **kwargs):
+            self.stub_flg = False
 
         self.stubs.Set(notifier, 'notify', fake_notifier)
         logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
