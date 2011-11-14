@@ -964,6 +964,12 @@ class NovaExceptionTestCase(test.TestCase):
         ex = exception.ZoneRequestError("test")
         self.assertEqual("test", str(ex))
 
+    @attr(kind='small')
+    def test_InvalidRPCConnectionReuse(self):
+        ex = exception.InvalidRPCConnectionReuse()
+        self.assertEqual(
+        "It is not allowed to use that RPC Connection once again.",
+        str(ex))
 
 class ProcessExecutionErrorTestCase(test.TestCase):
 

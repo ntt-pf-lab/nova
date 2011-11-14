@@ -875,3 +875,7 @@ class FileError(Error):
     def __init__(self, inner_exception=None):
         self.inner_exception = inner_exception
         super(FileError, self).__init__(str(inner_exception))
+
+
+class InvalidRPCConnectionReuse(NovaException):
+    message = _("It is not allowed to use that RPC Connection once again.")

@@ -23,6 +23,7 @@ Unit Tests for remote procedure calls using kombu
 
 from nova import flags
 from nova import context
+from nova import exception
 from nova import log as logging
 from nova import test
 from nova.rpc import impl_kombu
@@ -290,3 +291,12 @@ class RpcKombuTestCase(test_rpc_common._BaseRpcTestCase):
     def test_msg_reply_parameter_type_error(self):
         """Test for nova.rpc.impl_kombu.msg_reply"""
         self.assertRaises(TypeError, self.rpc.msg_reply, [10, 20, 30])
+
+    @attr(kind='small')
+    def test_close_parameter_connection_is_none(self):
+        """Test for nova.rpc.impl_kombu.ConnectionContext.close. """
+        self.connectioncontext = impl_kombu.ConnectionContext()
+        self.connectioncontext.close()
+        self.assertRaises(exception.InvalidRPCConnectionReuse,
+                          self.connectioncontext.__getattr__,
+                          'key')
