@@ -23,10 +23,8 @@ from nova.virt import vif
 from nose.plugins.attrib import attr
 
 
-class VIFDriverTestCase(test.TestCase):
+class AbstarctVIFDriverTestCase(test.TestCase):
     """Test for nova.virt.vif.VIFDriver. """
-    def setUp(self):
-        super(VIFDriverTestCase, self).setUp()
 
     @attr(kind='small')
     def test_plug(self):
