@@ -1110,9 +1110,8 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_floating_ip_get_by_address_db_not_found(self):
         # test and assert
-        self.assertRaises(exception.FloatingIpNotFoundForAddress,
-                          db.api.floating_ip_get_by_address,
-                          self.context, '1.0.0.0')
+        result = db.api.floating_ip_get_by_address(self.context, '1.0.0.0')
+        self.assertEqual(None, result)
 
     @attr(kind='small')
     def test_floating_ip_update(self):
@@ -1493,9 +1492,8 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_fixed_ip_get_by_address_db_not_found(self):
         # test and assert
-        self.assertRaises(exception.FixedIpNotFoundForAddress,
-                          db.api.fixed_ip_get_by_address,
-                          self.context, '2.0.0.0')
+        result = db.api.fixed_ip_get_by_address(self.context, '2.0.0.0')
+        self.assertEqual(None, result)
 
     @attr(kind='small')
     def test_fixed_ip_get_by_instance(self):
@@ -1538,9 +1536,9 @@ class DbApiTestCase(test.TestCase):
     @attr(kind='small')
     def test_fixed_ip_get_by_network_host_db_not_found(self):
         # test and assert
-        self.assertRaises(exception.FixedIpNotFoundForNetworkHost,
-                          db.api.fixed_ip_get_by_network_host,
-                          self.context, 100, 'host1')
+        result = db.api.fixed_ip_get_by_network_host(
+                                    self.context, 100, 'host1')
+        self.assertEqual(None, result)
 
     @attr(kind='small')
     def test_fixed_ip_get_by_virtual_interface(self):
@@ -3514,9 +3512,8 @@ class DbApiTestCase(test.TestCase):
         self.db.network_create_safe(self.context,
                                     {'id': 101, 'cidr': '10.2.0.0'})
         # test and assert
-        self.assertRaises(exception.NetworkNotFoundForCidr,
-                          self.db.api.network_get_by_cidr,
-                          self.context, '10.3.0.0')
+        nw = self.db.api.network_get_by_cidr(self.context, '10.3.0.0')
+        self.assertEqual(None, nw)
 
     @attr(kind='small')
     def test_network_get_by_instance(self):
