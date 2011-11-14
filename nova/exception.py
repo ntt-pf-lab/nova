@@ -864,3 +864,7 @@ class ZoneRequestError(Error):
 
 class InsufficientFreeMemory(NovaException):
     message = _("Insufficient free memory on compute node to start %(uuid)s.")
+
+
+class RevokeCertException(NovaException):
+    message = _("Certificate revocation failed")

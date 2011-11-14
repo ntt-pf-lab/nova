@@ -1106,3 +1106,12 @@ class TerminateVolumeExceptionTestCase(test.TestCase):
         ex = exception.TerminateVolumeException()
 
         self.assertEqual('Volume termination failed', str(ex))
+
+
+class RevokeCertExceptionTestCase(test.TestCase):
+
+    @attr(kind='small')
+    def test_revoke_cert_exception(self):
+        ex = exception.RevokeCertException()
+
+        self.assertEqual('Certificate revocation failed', str(ex))
