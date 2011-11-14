@@ -868,3 +868,10 @@ class InsufficientFreeMemory(NovaException):
 
 class RevokeCertException(NovaException):
     message = _("Certificate revocation failed")
+
+
+class FileError(Error):
+    """Error in file operation."""
+    def __init__(self, inner_exception=None):
+        self.inner_exception = inner_exception
+        super(FileError, self).__init__(str(inner_exception))
