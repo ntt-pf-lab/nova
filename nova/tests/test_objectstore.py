@@ -63,7 +63,8 @@ class S3APITestCase(test.TestCase):
                                   router,
                                   host=FLAGS.s3_host,
                                   port=FLAGS.s3_port)
-        self.server.start()
+        # tearDown not called when test is skiped.so don't launch server.
+        # self.server.start()
 
         if not boto.config.has_section('Boto'):
             boto.config.add_section('Boto')
