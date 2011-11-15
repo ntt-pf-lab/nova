@@ -300,3 +300,35 @@ class RpcKombuTestCase(test_rpc_common._BaseRpcTestCase):
         self.assertRaises(exception.InvalidRPCConnectionReuse,
                           self.connectioncontext.__getattr__,
                           'key')
+
+    @attr(kind='small')
+    def test_call_multicall_is_empty(self):
+        def fake_multicall(context, topic, msg):
+            return []
+
+        self.stubs.Set(self.rpc, 'multicall', fake_multicall)
+        value = 10
+        result = self.rpc.call(self.context,
+                               'test', {"method": "echo",
+                               "args": {"value": value}})
+        self.assertEqual(None, result)
+
+    @attr(kind='small')
+    def test_msg_reply_raise_type_error(self):
+        class fake_reply():
+            pass
+
+        dummy = fake_reply()
+
+        def _fake_send(message):
+                raise TypeError
+
+        self.stubs.Set(self.rpc.DirectPublisher, 'send', _fake_send)
+        msg_id = 'test'
+        self.assertRaises(TypeError, self.rpc.msg_reply, msg_id, dummy, None)
+
+    @attr(kind='small')
+    def test_connection_cancel_consumer_thread(self):
+        self._rpc_consumer_thread = 10
+        result = self.rpc.Connection().cancel_consumer_thread()
+        self.assertEqual(None, result)
