@@ -565,12 +565,17 @@ class CryptoTestCase(test.TestCase):
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(shutil, 'rmtree')
         self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
+        self.mox.StubOutWithMock(self.crypto, '_sign_csr')
+        self.mox.StubOutWithMock(db, 'certificate_create')
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg())
+        self.crypto._sign_csr(mox.IgnoreArg(),
+                             mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
+        db.certificate_create(mox.IgnoreArg(), mox.IgnoreArg())
         temp_dir = os.path.join(os.getcwd(), 'crypto')
         tempfile.mkdtemp().AndReturn(temp_dir)
         ex = OSError()
