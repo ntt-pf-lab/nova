@@ -1442,7 +1442,7 @@ class DbApiTestCase(test.TestCase):
         """
         fixed_ip already stored in test db.
         """
-#        raise SkipTest("fixed_ip already stored in test db.")
+        raise SkipTest("fixed_ip already stored in test db.")
         # test and assert
         result = self.db.api.fixed_ip_get_all(self.context)
         self.assertTrue(result is not None)
@@ -2989,17 +2989,11 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_network_associate_with_force(self):
-#        raise SkipTest("network record should be store when associate called")
-        # setup
-        self.db.api.network_create_safe(self.context,
-                                        {'id': 100,
-                                         'project_id': 'other_project'})
-
         # test and assert
         result = self.db.api.network_associate(
                                     self.context, 'project1', True)
         self.assertEqual('project1', result.project_id)
-        network = self.db.api.network_get(self.context, 100)
+        network = self.db.api.network_get(self.context, 1)
         self.assertEqual('project1', network.project_id)
 
     @attr(kind='small')
