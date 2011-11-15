@@ -1884,6 +1884,19 @@ class FlatNetworkTestCase(test.TestCase):
                           self.context, '10.0.0.0/29', True)
 
     @attr(kind='small')
+    def test_delete_network_db_network_not_found(self):
+        """
+        NetworkNotFound is raised when network is not found
+        """
+        self.mox.StubOutWithMock(db, 'network_get_by_cidr')
+        db.network_get_by_cidr(mox.IgnoreArg(), mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        self.assertRaises(exception.NetworkNotFound,
+                          self.network.delete_network,
+                          self.context, '10.0.0.0/29', True)
+
+    @attr(kind='small')
     def test_allocate_for_instance_param_requested_networks_is_none(self):
         """
         address is not set
@@ -2861,6 +2874,70 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual(floating_ip, self._floating_ip)
         self.assertTrue(self._fixed_ip is None)
         self.assertTrue(self._affect_auto_assigned)
+
+    @attr(kind='small')
+    def test_allocate_for_instance_db_floating_ip_not_found_for_address(self):
+        """
+        FloatingIpNotFoundForAddress is raised when floating ip is not found
+        """
+        self.flags(auto_assign_floating_ip=True)
+
+        self.mox.StubOutWithMock(db, 'project_get_networks')
+        self.mox.StubOutWithMock(db, 'virtual_interface_create')
+        self.mox.StubOutWithMock(db, 'fixed_ip_associate_pool')
+        self.mox.StubOutWithMock(db, 'instance_get')
+        self.mox.StubOutWithMock(
+                        db, 'virtual_interface_get_by_instance_and_network')
+        self.mox.StubOutWithMock(db, 'fixed_ip_update')
+        self.mox.StubOutWithMock(db, 'fixed_ip_get_by_instance')
+        self.mox.StubOutWithMock(db, 'virtual_interface_get_by_instance')
+        self.mox.StubOutWithMock(db, 'instance_type_get')
+        self.mox.StubOutWithMock(db, 'floating_ip_count_by_project')
+        self.mox.StubOutWithMock(db, 'quota_get_all_by_project')
+        self.mox.StubOutWithMock(db, 'floating_ip_allocate_address')
+        self.mox.StubOutWithMock(db, 'floating_ip_set_auto_assigned')
+        self.mox.StubOutWithMock(db, 'floating_ip_get_by_address')
+        db.project_get_networks(mox.IgnoreArg(),
+                                mox.IgnoreArg()).AndReturn([networks[0]])
+        db.virtual_interface_create(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn(vifs[0])
+        db.fixed_ip_associate_pool(mox.IgnoreArg(),
+                                   mox.IgnoreArg(),
+                                   mox.IgnoreArg()).AndReturn('192.168.0.101')
+        db.instance_get(mox.IgnoreArg(), mox.IgnoreArg()).\
+                        AndReturn({'security_groups': [{'id': 0}]})
+        db.virtual_interface_get_by_instance_and_network(
+                        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
+                        AndReturn({'id': 0})
+        db.fixed_ip_update(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg())
+        db.fixed_ip_get_by_instance(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn([])
+        db.virtual_interface_get_by_instance(mox.IgnoreArg(),
+                                             mox.IgnoreArg()).AndReturn([])
+        db.instance_type_get(mox.IgnoreArg(), mox.IgnoreArg())
+        db.floating_ip_count_by_project(mox.IgnoreArg(),
+                                        mox.IgnoreArg()).AndReturn(0)
+        db.floating_ip_count_by_project(mox.IgnoreArg(),
+                                        mox.IgnoreArg()).AndReturn(0)
+        db.quota_get_all_by_project(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn({})
+        db.quota_get_all_by_project(mox.IgnoreArg(),
+                                    mox.IgnoreArg()).AndReturn({})
+        db.floating_ip_allocate_address(mox.IgnoreArg(), mox.IgnoreArg())
+        db.floating_ip_set_auto_assigned(mox.IgnoreArg(), mox.IgnoreArg())
+        db.floating_ip_get_by_address(mox.IgnoreArg(), mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        kwargs = {}
+        kwargs['instance_id'] = 1
+        kwargs['host'] = HOST
+        kwargs['project_id'] = 'fake_project'
+        kwargs['instance_type_id'] = 1
+        kwargs['requested_networks'] = None
+        kwargs['vpn'] = False
+        self.assertRaises(exception.FloatingIpNotFoundForAddress,
+                          self.network.allocate_for_instance,
+                          self.context, **kwargs)
 
     @attr(kind='small')
     def test_deallocate_for_instance_param_instance_does_not_exist(self):
