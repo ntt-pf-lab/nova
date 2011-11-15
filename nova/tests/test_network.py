@@ -2652,9 +2652,8 @@ class VlanNetworkTestCase(test.TestCase):
     @attr(kind='small')
     def test_init_host_floating_ips_ex_driver_bind_floating_ip(self):
         """
-        ProcessExecutionError is raised
+        NetworkInitHostException is raised
         """
-#        raise SkipTest('AssertionError: 2 != 1')
         self._count = 0
 
         def stub_bind_floating_ip(floating_ip, check_exit_code=True):
@@ -2671,7 +2670,7 @@ class VlanNetworkTestCase(test.TestCase):
                                        mox.IgnoreArg()).AndReturn(floating_ips)
         self.mox.ReplayAll()
 
-        self.assertRaises(exception.ProcessExecutionError,
+        self.assertRaises(exception.NetworkInitHostException,
                           self.network.init_host_floating_ips)
         self.assertEqual(2, self._count)
 
