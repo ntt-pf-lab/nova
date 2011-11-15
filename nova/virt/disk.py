@@ -232,8 +232,13 @@ def destroy_container(target, instance, nbd=False):
         LOG.exception(_('instance is invalid'))
         return
 
-    container_dir = '%s/rootfs' % target
-    out, err = utils.execute('mount', run_as_root=True)
+    try:
+        container_dir = '%s/rootfs' % target
+        out, err = utils.execute('mount', run_as_root=True)
+    except Exception, exn:
+        LOG.exception(_('Failed to remove container: %s'), exn)
+        return
+
     for loop in out.splitlines():
         for loop_split in loop.split():
             if container_dir == loop_split:
