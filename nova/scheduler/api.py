@@ -345,9 +345,9 @@ class reroute_compute(object):
         """
         if 'instance_id' in kwargs:
             kwargs['instance_id'] = replacement_id
-        elif len(args) > 1:
-            args.pop(1)
-            args.insert(1, replacement_id)
+        elif len(args) > 2:
+            args.pop(2)
+            args.insert(2, replacement_id)
 
     def unmarshall_result(self, zone_responses):
         """Result is a list of responses from each child zone.
