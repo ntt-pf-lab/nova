@@ -481,7 +481,6 @@ class FlatNetworkTestCase(test.TestCase):
         all networks are initialized even
         when exception is raised in _setup_network
         """
-#        raise SkipTest('AssertionError: 2 != 1')
         self._count = 0
 
         def stub_setup_network(context, network_ref):
@@ -494,7 +493,7 @@ class FlatNetworkTestCase(test.TestCase):
                                    mox.IgnoreArg()).AndReturn(networks)
         self.mox.ReplayAll()
 
-        self.assertRaises(exception.DBError,
+        self.assertRaises(exception.NetworkInitHostException,
                           self.network.init_host)
         self.assertEqual(2, self._count)
 
