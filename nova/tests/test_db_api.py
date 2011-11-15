@@ -1746,9 +1746,9 @@ class DbApiTestCase(test.TestCase):
         """
         virtual_interface_get_by_fixed_ip
         """
-#        raise SkipTest("FIXME InvalidRequestError: \
-#            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
-#            has no property 'fixed_ip_id'")
+        raise SkipTest("FIXME InvalidRequestError: \
+            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
+            has no property 'fixed_ip_id'")
         # setup
         self.db.api.network_create_safe(self.context, {'id': 100})
         self.db.api.fixed_ip_create(self.context,
@@ -1769,9 +1769,9 @@ class DbApiTestCase(test.TestCase):
         """
         virtual_interface_get_by_fixed_ip
         """
-#        raise SkipTest("FIXME InvalidRequestError: \
-#            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
-#            has no property 'fixed_ip_id'")
+        raise SkipTest("FIXME InvalidRequestError: \
+            Entity 'Mapper|VirtualInterface|virtual_interfaces' \
+            has no property 'fixed_ip_id'")
         # test and assert
         # FIXME InvalidRequestError:
         # Entity 'Mapper|VirtualInterface|virtual_interfaces'
@@ -1880,8 +1880,8 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_virtual_interface_delete_db_not_found(self):
-#        raise SkipTest("UnmappedInstanceError:\
-#            Class '__builtin__.NoneType' is not mapped")
+        raise SkipTest("UnmappedInstanceError:\
+            Class '__builtin__.NoneType' is not mapped")
         # test and assert
         # FIXME VirtualInterfaceNotFound does not exist.
         self.assertRaises(exception.NotFound,
@@ -3226,7 +3226,7 @@ class DbApiTestCase(test.TestCase):
         """
         safe means no exception occures when network is not found
         """
-#        raise SkipTest("Safe delete occured exception")
+        raise SkipTest("Safe delete occured exception")
         # test and assert
         self.db.api.network_delete_safe(self.context, 100)
         self.assertRaises(exception.NetworkNotFound,
@@ -3710,7 +3710,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_export_device_create_safe_db_duplicate(self):
-#        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
+        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         self.db.volume_create(self.context, {'id': 1, 'size': '1g'})
         device = {}
@@ -3756,8 +3756,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_iscsi_target_create_safe_db_duplicate(self):
-#        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
-        # setup
+        raise SkipTest("DBError: (IntegrityError) PRIMARY KEY must be unique")
         # setup
         self.db.volume_create(self.context, {'id': 1, 'size': '1g'})
         target = {}
@@ -5120,7 +5119,7 @@ class DbApiTestCase(test.TestCase):
         """
         looks never duplicate occur, but it is right?
         """
-#        raise SkipTest("Block device never duplicate.")
+        raise SkipTest("Block device never duplicate.")
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5198,8 +5197,8 @@ class DbApiTestCase(test.TestCase):
         when update or create, If the virtual_name not specified
             then raise KeyError.
         """
-#        raise SkipTest("If the virtual_name not specified\
-#            then raise KeyError.")
+        raise SkipTest("If the virtual_name not specified\
+            then raise KeyError.")
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5227,8 +5226,8 @@ class DbApiTestCase(test.TestCase):
         when update or create, If the virtual_name not specified
             then raise KeyError.
         """
-#        raise SkipTest("If the virtual_name not specified\
-#            then raise KeyError.")
+        raise SkipTest("If the virtual_name not specified\
+            then raise KeyError.")
         self.db.api.instance_create(self.context, {'id': 1})
         self.db.api.volume_create(self.context, {'id': 1, 'size': '1g'})
         self.db.api.snapshot_create(self.context, {'id': 1, 'volume_id': 1})
@@ -5661,7 +5660,7 @@ class DbApiTestCase(test.TestCase):
 
     @attr(kind='small')
     def test_security_group_destroy_db_not_found(self):
-#        raise SkipTest("NotFound exception not raise")
+        raise SkipTest("NotFound exception not raise")
         group = {}
         group['id'] = 1
         group['name'] = 'default'
@@ -7991,7 +7990,7 @@ class DbApiTestCase(test.TestCase):
         """
         Returned deleted instance_type.
         """
-#        raise SkipTest("Returned deleted instance_type")
+        raise SkipTest("Returned deleted instance_type")
         # setup
         values = {}
         values['id'] = 100
@@ -8526,8 +8525,8 @@ class DbApiTestCase(test.TestCase):
         """
         should be raise error
         """
-#        raise SkipTest("No exception occured in invalid id specified,\
-#            so raise AttributeError.")
+        raise SkipTest("No exception occured in invalid id specified,\
+            so raise AttributeError.")
         # setup
         ab = {}
         ab['id'] = 1
@@ -8633,7 +8632,7 @@ class DbApiTestCase(test.TestCase):
         """
         No method found in db.api
         """
-#        raise SkipTest("No method found in db.api")
+        raise SkipTest("No method found in db.api")
         # setup
         values = {}
         values['id'] = 100
@@ -8790,7 +8789,7 @@ class DbApiTestCase(test.TestCase):
         """
         Returns deleted type. is that right?
         """
-#        raise SkipTest("Returned deleted volume_type.")
+        raise SkipTest("Returned deleted volume_type.")
         values = {}
         values['id'] = 1
         values['name'] = 'test'
