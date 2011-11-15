@@ -933,6 +933,7 @@ class LibvirtConnection(driver.ComputeDriver):
         if config_drive_id:
             fname = '%08x' % int(config_drive_id)
             self._cache_image(fn=self._fetch_image,
+                              context=context,
                               target=basepath('disk.config'),
                               fname=fname,
                               image_id=config_drive_id,
