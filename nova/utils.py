@@ -188,7 +188,7 @@ def execute(*cmd, **kwargs):
                     (stdout, stderr) = result
                     LOG.error(
                         _('%(cmd)r failed.Result was %(_returncode)s')
-                                    % (cmd, _returncode))
+                                    % locals())
                     raise exception.ProcessExecutionError(
                             exit_code=_returncode,
                             stdout=stdout,
@@ -204,7 +204,7 @@ def execute(*cmd, **kwargs):
                     greenthread.sleep(random.randint(20, 200) / 100.0)
         except EnvironmentError, e:
             if not attempts:
-                LOG.error(_('%(cmd)r failed.exception: %(e)s') % (cmd, e))
+                LOG.error(_('%(cmd)r failed.exception: %(e)s') % locals())
                 raise exception.ProcessExecutionError(
                             exit_code=e.errno,
                             stdout=None,
@@ -253,8 +253,9 @@ def ssh_execute(ssh, cmd, process_input=None,
     if exit_status != -1:
         LOG.debug(_('Result was %s') % exit_status)
         if check_exit_code and exit_status != 0:
-            LOG.error(_('Command(%s ) failed. Result was %(exit_status)s')
-                            % (' '.join(cmd), exit_status))
+            scmd = ' '.join(cmd)
+            LOG.error(_('Command(%(scmd)s ) failed.\
+                         Result was %(exit_status)s') % locals())
             raise exception.ProcessExecutionError(exit_code=exit_status,
                                                   stdout=stdout,
                                                   stderr=stderr,
