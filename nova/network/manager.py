@@ -209,7 +209,7 @@ class FloatingIP(object):
                 except Exception as ex:
                     ex_flag = True
                     LOG.error(_('Exception occurred in configuring floating ip '
-                                '|address=%s|: %s'),
+                                '|address=%s|: %(ex)s'),
                               floating_ip['address'], ex)
         if ex_flag:
             raise exception.NetworkInitHostException()
@@ -276,7 +276,7 @@ class FloatingIP(object):
                 except exception.ApiError as ex:
                     ex_flag = True
                     LOG.error(_('Exception occurred in disassociating '
-                                'floating ip |address=%s|: %s'),
+                                'floating ip |address=%(address)s|: %(ex)s'),
                               address, ex)
                 # deallocate if auto_assigned
                 if floating_ip['auto_assigned']:
@@ -287,7 +287,7 @@ class FloatingIP(object):
                     except exception.ApiError as ex:
                         ex_flag = True
                         LOG.error(_('Exception occurred in removing '
-                                    'floating ip |address=%s|: %s'),
+                                    'floating ip |address=%(address)s|: %s'),
                                   address, ex)
 
         if ex_flag:
@@ -412,7 +412,7 @@ class NetworkManager(manager.SchedulerDependentManager):
             except Exception as ex:
                 ex_flag = True
                 LOG.error(_('Exception occurred in setting up network '
-                            '|%s|: %s'), network['id'], ex)
+                            '|%s|: %(ex)s'), network['id'], ex)
         if ex_flag:
             raise exception.NetworkInitHostException()
 
@@ -511,7 +511,7 @@ class NetworkManager(manager.SchedulerDependentManager):
             except Exception as ex:
                 ex_flag = True
                 LOG.error(_('Exception occurred in deallocating fixed ip '
-                            '|address=%s|: %s'), fixed_ip['address'], ex)
+                            '|address=%s|: %(ex)s'), fixed_ip['address'], ex)
         if ex_flag:
             raise exception.NetworkDeallocateException()
 
@@ -625,7 +625,7 @@ class NetworkManager(manager.SchedulerDependentManager):
             except Exception as ex:
                 ex_flag = True
                 LOG.error(_('Exception occurred in adding virtual interface '
-                            '|network_id=%s|: %s'), network['id'], ex)
+                            '|network_id=%s|: %(ex)s'), network['id'], ex)
         if ex_flag:
             raise exception.NetworkAllocateException()
 
@@ -943,7 +943,7 @@ class NetworkManager(manager.SchedulerDependentManager):
             except exception.DBError as ex:
                 ex_list.append(ex)
                 LOG.error(_('Exception occurred in creating fixed ip '
-                            '|address=%s|: %s'), address, ex)
+                            '|address=%(address)s|: %(ex)s'), address, ex)
         if ex_list:
             raise ex_list[0]
 
