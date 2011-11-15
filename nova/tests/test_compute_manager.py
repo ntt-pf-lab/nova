@@ -1910,7 +1910,7 @@ class ComputeTestCase(test.TestCase):
         mountpoint = "/dev/sdf"
         volume_id = self._create_volume()
         self.volume.create_volume(c, volume_id)
-
+        self.compute.run_instance(c, instance_id)
         self.compute.attach_volume(c, instance_id, volume_id, mountpoint)
 
         vol = db.volume_get(c, volume_id)
@@ -1948,6 +1948,7 @@ class ComputeTestCase(test.TestCase):
         mountpoint = "/dev/sdf"
         volume_id = self._create_volume()
         self.volume.create_volume(c, volume_id)
+        self.compute.run_instance(c, instance_id)
 
         self.assertRaises(NotImplementedError,
                           self.compute.attach_volume,

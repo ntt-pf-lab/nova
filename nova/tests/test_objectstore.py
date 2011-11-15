@@ -63,7 +63,8 @@ class S3APITestCase(test.TestCase):
                                   router,
                                   host=FLAGS.s3_host,
                                   port=FLAGS.s3_port)
-        self.server.start()
+        # tearDown not called when test is skiped.so don't launch server.
+        # self.server.start()
 
         if not boto.config.has_section('Boto'):
             boto.config.add_section('Boto')
@@ -93,10 +94,12 @@ class S3APITestCase(test.TestCase):
         self.assertEquals(buckets[0].name, name, "Wrong name")
         return True
 
+    @test.skip_test("Should not be use network connection")
     def test_list_buckets(self):
         """Make sure we are starting with no buckets."""
         self._ensure_no_buckets(self.conn.get_all_buckets())
 
+    @test.skip_test("Should not be use network connection")
     def test_create_and_delete_bucket(self):
         """Test bucket creation and deletion."""
         bucket_name = 'testbucket'
@@ -106,6 +109,7 @@ class S3APITestCase(test.TestCase):
         self.conn.delete_bucket(bucket_name)
         self._ensure_no_buckets(self.conn.get_all_buckets())
 
+    @test.skip_test("Should not be use network connection")
     def test_create_bucket_and_key_and_delete_key_again(self):
         """Test key operations on buckets."""
         bucket_name = 'testbucket'
@@ -128,6 +132,7 @@ class S3APITestCase(test.TestCase):
 
         self._ensure_no_buckets(bucket.get_all_keys())
 
+    @test.skip_test("Should not be use network connection")
     def test_unknown_bucket(self):
         bucket_name = 'falalala'
         self.assertRaises(boto_exception.S3ResponseError,
