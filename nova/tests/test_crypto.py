@@ -381,15 +381,15 @@ class CryptoTestCase(test.TestCase):
 
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
         self.mox.StubOutWithMock(shutil, 'rmtree')
         self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
-        self._create_file(os.path.join(temp_dir, 'temp'), 'AAAAAAAAAA')
-        self._create_file(os.path.join(temp_dir, 'temp.pub'), 'BBBBBBBBBB')
+        self._create_file(os.path.join(tmpdir, 'temp'), 'AAAAAAAAAA')
+        self._create_file(os.path.join(tmpdir, 'temp.pub'), 'BBBBBBBBBB')
         out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
         utils.execute(mox.IgnoreArg(),
                       mox.IgnoreArg(),
@@ -402,9 +402,8 @@ class CryptoTestCase(test.TestCase):
 
         ref = self.crypto.generate_key_pair()
         self.assertEqual(('AAAAAAAAAA', 'BBBBBBBBBB', 'CCCCCCCCCC'), ref)
-        self.assertEqual('Failed to remove dir %s: %s', self._msg)
-        self.assertEqual(temp_dir, self._args[0])
-        self.assertEqual(ex, self._args[1])
+        self.assertEqual('Failed to remove dir %(tmpdir)s: %(ex)s' % locals(),
+                         self._msg)
 
     @attr(kind='small')
     def test_ssl_pub_to_ssh_pub(self):
@@ -576,8 +575,8 @@ class CryptoTestCase(test.TestCase):
         self.crypto._sign_csr(mox.IgnoreArg(),
                              mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
         db.certificate_create(mox.IgnoreArg(), mox.IgnoreArg())
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(tmpdir)
         ex = OSError()
         shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
         self.mox.ReplayAll()
@@ -590,15 +589,14 @@ class CryptoTestCase(test.TestCase):
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
         # make a file {path to temp_dir}/crypto/temp.key
-        self._create_file(os.path.join(temp_dir, 'temp.key'), 'aaa')
+        self._create_file(os.path.join(tmpdir, 'temp.key'), 'aaa')
         # make a file {path to temp_dir}/crypto/temp.csr
-        self._create_file(os.path.join(temp_dir, 'temp.csr'), 'bbb')
+        self._create_file(os.path.join(tmpdir, 'temp.csr'), 'bbb')
 
         ref = self.crypto.generate_x509_cert(user_id, project_id, bits=bits)
         self.assertEqual(('aaa', 'sss'), ref)
-        self.assertEqual('Failed to remove dir %s: %s', self._msg)
-        self.assertEqual(temp_dir, self._args[0])
-        self.assertEqual(ex, self._args[1])
+        self.assertEqual('Failed to remove dir %(tmpdir)s: %(ex)s' % locals(),
+                         self._msg)
 
     @attr(kind='small')
     def test_generate_vpn_files(self):
@@ -969,8 +967,8 @@ class CryptoTestCase(test.TestCase):
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        tempfile.mkdtemp().AndReturn(tmpdir)
         ex = OSError()
         shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
         self.mox.ReplayAll()
@@ -978,14 +976,13 @@ class CryptoTestCase(test.TestCase):
         csr_text = 'test'
         project_id = 'fake'
         # make a file {path to temp_dir}/crypto/outbound.csr
-        outbound = os.path.join(temp_dir, 'outbound.csr')
+        outbound = os.path.join(tmpdir, 'outbound.csr')
         self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-        self.assertEqual('Failed to remove dir %s: %s', self._msg)
-        self.assertEqual(temp_dir, self._args[0])
-        self.assertEqual(ex, self._args[1])
+        self.assertEqual('Failed to remove dir %(tmpdir)s: %(ex)s' % locals(),
+                         self._msg)
 
         os.remove(outbound)
 
