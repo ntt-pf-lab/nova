@@ -25,6 +25,7 @@ semantics of real hypervisor connections.
 
 """
 
+from nova import db
 from nova import exception
 from nova import log as logging
 from nova import utils
@@ -52,6 +53,7 @@ class FakeConnection(driver.ComputeDriver):
 
     def __init__(self):
         self.instances = {}
+        self.rescuing_instances = {}
         self.host_status = {
           'host_name-description': 'Fake Host',
           'host_hostname': 'fake-mini',
@@ -79,7 +81,7 @@ class FakeConnection(driver.ComputeDriver):
         return
 
     def list_instances(self):
-        return self.instances.keys()
+        return self.instances.keys() + self.rescuing_instances.keys()
 
     def _map_to_instance_info(self, instance):
         instance = utils.check_isinstance(instance, FakeInstance)
@@ -101,49 +103,104 @@ class FakeConnection(driver.ComputeDriver):
 
     def snapshot(self, context, instance, name):
         if not instance['name'] in self.instances:
-            raise exception.InstanceNotRunning()
+            raise exception.InstanceNotFound
 
-    def reboot(self, instance, network_info):
-        pass
+    def reboot(self, instance, network_info, reboot_type):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def get_host_ip_addr(self):
         return '192.168.0.1'
 
     def resize(self, instance, flavor):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def set_admin_password(self, instance, new_pass):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def inject_file(self, instance, b64_path, b64_contents):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
+
+    def inject_network_info(self, instance, network_info):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
+
+    def reset_network(self, instance):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def agent_update(self, instance, url, md5hash):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def rescue(self, context, instance, callback, network_info):
-        pass
+        name = instance['name']
+        if name in self.instances:
+            self.rescuing_instances[name] = self.instances[name]
+            del self.instances[name]
+        else:
+            raise exception.InstanceNotFound
 
     def unrescue(self, instance, callback, network_info):
-        pass
+        name = instance['name']
+        if name in self.rescuing_instances:
+            self.instances[name] = self.rescuing_instances[name]
+            del self.rescuing_instances[name]
+        else:
+            raise exception.InstanceNotInRescueMode(instance_id=name)
 
     def poll_rescued_instances(self, timeout):
         pass
 
-    def migrate_disk_and_power_off(self, instance, dest):
+    def poll_unconfirmed_resizes(self, resize_confirm_window):
         pass
+
+    def migrate_disk_and_power_off(self, context, instance, dest):
+        if instance['name'] in self.instances:
+            del self.instances[instance['name']]
+        else:
+            raise exception.InstanceNotFound
 
     def pause(self, instance, callback):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def unpause(self, instance, callback):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def suspend(self, instance, callback):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def resume(self, instance, callback):
-        pass
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
 
     def destroy(self, instance, network_info, cleanup=True):
         key = instance['name']
@@ -154,12 +211,16 @@ class FakeConnection(driver.ComputeDriver):
                         (key, self.instances))
 
     def attach_volume(self, instance_name, device_path, mountpoint):
-        if not instance_name in self._mounts:
+        if instance_name not in self.instances:
+            raise exception.InstanceNotFound(instance_id=instance_name)
+        elif not instance_name in self._mounts:
             self._mounts[instance_name] = {}
         self._mounts[instance_name][mountpoint] = device_path
         return True
 
     def detach_volume(self, instance_name, mountpoint):
+        if instance_name not in self.instances:
+            raise exception.InstanceNotFound(instance_id=instance_name)
         try:
             del self._mounts[instance_name][mountpoint]
         except KeyError:
@@ -177,32 +238,56 @@ class FakeConnection(driver.ComputeDriver):
                 'cpu_time': 0}
 
     def get_diagnostics(self, instance_name):
-        return {}
+        if instance_name in self.instances:
+            return {}
+        else:
+            raise exception.InstanceNotFound
 
     def list_disks(self, instance_name):
-        return ['A_DISK']
+        if instance_name in self.instances:
+            return ['A_DISK']
+        else:
+            raise exception.InstanceNotFound
 
     def list_interfaces(self, instance_name):
-        return ['A_VIF']
+        if instance_name in self.instances:
+            return ['A_VIF']
+        else:
+            raise exception.InstanceNotFound
 
     def block_stats(self, instance_name, disk_id):
-        return [0L, 0L, 0L, 0L, None]
+        if instance_name in self.instances:
+            return [0L, 0L, 0L, 0L, None]
+        else:
+            raise exception.InstanceNotFound
 
     def interface_stats(self, instance_name, iface_id):
-        return [0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L]
+        if instance_name in self.instances:
+            return [0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L]
+        else:
+            raise exception.InstanceNotFound
 
     def get_console_output(self, instance):
-        return 'FAKE CONSOLE\xffOUTPUT'
+        if instance['name'] in self.instances:
+            return 'FAKE CONSOLE\xffOUTPUT'
+        else:
+            raise exception.InstanceNotFound
 
     def get_ajax_console(self, instance):
-        return {'token': 'FAKETOKEN',
-                'host': 'fakeajaxconsole.com',
-                'port': 6969}
+        if instance['name'] in self.instances:
+            return {'token': 'FAKETOKEN',
+                    'host': 'fakeajaxconsole.com',
+                    'port': 6969}
+        else:
+            raise exception.InstanceNotFound
 
     def get_vnc_console(self, instance):
-        return {'token': 'FAKETOKEN',
-                'host': 'fakevncconsole.com',
-                'port': 6969}
+        if instance['name'] in self.instances:
+            return {'token': 'FAKETOKEN',
+                    'host': 'fakevncconsole.com',
+                    'port': 6969}
+        else:
+            raise exception.InstanceNotFound
 
     def get_console_pool_info(self, console_type):
         return  {'address': '127.0.0.1',
@@ -220,7 +305,9 @@ class FakeConnection(driver.ComputeDriver):
 
     def update_available_resource(self, ctxt, host):
         """This method is supported only by libvirt."""
-        return
+        result = db.service_get_all_by_topic(ctxt, 'compute')
+        if len(result) == 0:
+            raise exception.ComputeServiceUnavailable(host=host)
 
     def compare_cpu(self, xml):
         """This method is supported only by libvirt."""
@@ -230,10 +317,37 @@ class FakeConnection(driver.ComputeDriver):
         """This method is supported only by libvirt."""
         raise NotImplementedError('This method is supported only by libvirt.')
 
-    def live_migration(self, context, instance_ref, dest,
+    def plug_vifs(self, instance, network_info):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
+
+    def finish_revert_migration(self, instance):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
+
+    def confirm_migration(self, migration, instance, network_info):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
+
+    def finish_migration(self, context, migration, instance, disk_info,
+                         network_info, resize_instance):
+        if instance['name'] in self.instances:
+            pass
+        else:
+            raise exception.InstanceNotFound
+
+    def live_migration(self, context, instance, dest,
                        post_method, recover_method, block_migration=False):
-        """This method is supported only by libvirt."""
-        return
+        if instance['name'] in self.instances:
+            post_method(context, instance, dest, block_migration)
+        else:
+            recover_method(context, instance, dest, block_migration)
 
     def unfilter_instance(self, instance_ref, network_info):
         """This method is supported only by libvirt."""
