@@ -1153,7 +1153,8 @@ class CloudTestCase(test.TestCase):
     def test_terminate_instances(self):
         inst1 = db.instance_create(self.context, {'reservation_id': 'a',
                                                   'image_ref': 1,
-                                                  'host': 'host1'})
+                                                  'host': 'host1',
+                                                'vm_state': vm_states.ACTIVE})
         terminate_instances = self.cloud.terminate_instances
         # valid instance_id
         result = terminate_instances(self.context, ['i-00000001'])
