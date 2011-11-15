@@ -3366,7 +3366,7 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         self.stubs.Set(FakeLibvirt, 'lookupByName', fake_lookupByName)
 
-        VIR_ERR_NO_DOMAIN = None
+        FakeLibvirt.VIR_ERR_NO_DOMAIN = None
 
         ins_ref = self._create_instance()
 
