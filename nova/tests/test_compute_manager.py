@@ -18,6 +18,7 @@
 Tests For Compute
 """
 from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
 import socket
 import sys
 import time
@@ -2936,6 +2937,7 @@ class ComputeTestCase(test.TestCase):
     def test_setup_block_device_mapping_database_vol_id_is_none(self):
         """ Ensure raise exception(RebuildRequiresActiveInstance)
             when corrupted state of block device mapping """
+        raise SkipTest("rejected bug report.")
         def stub_bdm_get(context, instance_id):
             return [{'volume_id': None,
                     'snapshot_id': 1,
