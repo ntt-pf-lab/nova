@@ -33,6 +33,7 @@ from nova import test
 from nova import wsgi
 from nova import exception
 from nose.plugins.attrib import attr
+from nose.plugins.skip import SkipTest
 import webob
 from eventlet.greenio import GreenSocket as gsocket
 from eventlet import greenthread
@@ -480,7 +481,7 @@ class MiddlewareTestCase(test.TestCase):
     def test_call_parameter_none(self):
         """Test for nova.wsgi.Middleware.__call__.
         Verify req parameter is None"""
-
+        raise SkipTest("rejected bug report.")
         middleware = wsgi.Middleware.factory(global_config=None)(
                                     app=FakeApp('fake'))
 
