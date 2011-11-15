@@ -657,11 +657,14 @@ class SetUpTestCase(test.TestCase):
 
         self.stubs.Set(log, 'reset', fake_reset_test)
         logging.root = log.NovaLogger('name_fake', level=log.CRITICAL)
-        logging.root.handlers = ['test1', 'test2', 'test3']
+        h1 = logging.Handler(log.DEBUG)
+        h2 = logging.Handler(log.INFO)
+        h3 = logging.Handler(log.ERROR)
+        logging.root.handlers = [h1, h2, h3]
         log.setup()
         for handler in logging.root.handlers:
             return handler
-        if 'test1' and 'test2' and 'test3' not in handler:
+        if h1 and h2 and h3 not in handler:
             self.stub_handle_flg = True
 
         self.assert_(self.stub_flg)

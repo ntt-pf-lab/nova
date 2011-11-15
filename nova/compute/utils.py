@@ -43,7 +43,8 @@ def terminate_volumes(db, context, instance_id):
                 volume_api.delete(context, bdm['volume_id'])
             except exception.ApiError as ex:
                 ex_flag = True
-                LOG.error(_('Exception occurred in deleting volume|%s|: %s'),
+                LOG.error(
+                    _('Exception occurred in deleting volume|%s|: %(ex)s'),
                           bdm['volume_id'], ex)
 
         try:
@@ -51,7 +52,7 @@ def terminate_volumes(db, context, instance_id):
         except exception.DBError as ex:
             ex_flag = True
             LOG.error(_('Exception occurred in destroying '\
-                        'block device mapping|%s|: %s'), bdm['id'], ex)
+                        'block device mapping|%s|: %(ex)s'), bdm['id'], ex)
 
     if ex_flag:
         raise exception.TerminateVolumeException()

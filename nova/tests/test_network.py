@@ -481,7 +481,6 @@ class FlatNetworkTestCase(test.TestCase):
         all networks are initialized even
         when exception is raised in _setup_network
         """
-#        raise SkipTest('AssertionError: 2 != 1')
         self._count = 0
 
         def stub_setup_network(context, network_ref):
@@ -494,7 +493,7 @@ class FlatNetworkTestCase(test.TestCase):
                                    mox.IgnoreArg()).AndReturn(networks)
         self.mox.ReplayAll()
 
-        self.assertRaises(exception.DBError,
+        self.assertRaises(exception.NetworkInitHostException,
                           self.network.init_host)
         self.assertEqual(2, self._count)
 
@@ -729,6 +728,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         db.deallocate_fixed_ip() is skipped and LOG.warn is called
         """
+        raise SkipTest('Bug #166 (openstack-qa-nova-884949) is not merged')
         self._msg = None
         self._args = None
         self._kwargs = None
@@ -2712,7 +2712,7 @@ class VlanNetworkTestCase(test.TestCase):
                           self.network.init_host_floating_ips)
         self.assertEqual(2, self._ensure_count)
         self.assertEqual(1, self._unbind_count)
-        self.assertEqual('192.168.0.100', self._floating_ip[0])
+        self.assertEqual('192.168.10.100', self._floating_ip[0])
 
     @attr(kind='small')
     def test_allocate_for_instance(self):

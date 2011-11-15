@@ -139,7 +139,7 @@ def generate_key_pair(bits=1024):
     try:
         shutil.rmtree(tmpdir)
     except OSError, ex:
-        LOG.warn(_('Failed to remove dir %s: %s'), tmpdir, ex)
+        LOG.warn(_('Failed to remove dir %s: %(ex)s'), tmpdir, ex)
     # code below returns public key in pem format
     # key = M2Crypto.RSA.gen_key(bits, 65537, callback=lambda: None)
     # private_key = key.as_pem(cipher=None)
@@ -188,9 +188,11 @@ def revoke_certs_by_user(user_id):
             revoke_cert(cert['project_id'], cert['file_name'])
         except Exception as ex:
             ex_flag = True
+            pid = cert['project_id']
+            fname = cert['file_name']
             LOG.error(_('Exception occurred in revoking user cert '
-                        '|project_id=%s, file_name=%s|: %s'),
-                      cert['project_id'], cert['file_name'], ex)
+                        '|project_id=%(pid)s, file_name=%(fname)s|: %(ex)s'),
+                     pid, fname, ex)
     if ex_flag:
         raise exception.RevokeCertException()
 
@@ -206,9 +208,11 @@ def revoke_certs_by_project(project_id):
             revoke_cert(cert['project_id'], cert['file_name'])
         except Exception as ex:
             ex_flag = True
+            pid = cert['project_id']
+            fname = cert['file_name']
             LOG.error(_('Exception occurred in revoking project cert '
-                        '|project_id=%s, file_name=%s|: %s'),
-                      cert['project_id'], cert['file_name'], ex)
+                        '|project_id=%(pid)s, file_name=%(fname)s|: %(ex)s'),
+                     pid, fname , ex)
     if ex_flag:
         raise exception.RevokeCertException()
 
@@ -223,10 +227,12 @@ def revoke_certs_by_user_and_project(user_id, project_id):
             revoke_cert(cert['project_id'], cert['file_name'])
         except Exception as ex:
             ex_flag = True
+            pid = cert['project_id']
+            fname = cert['file_name']
             LOG.error(_('Exception occurred in revoking cert '
                         'for user in project '
-                        '|project_id=%s, file_name=%s|: %s'),
-                      cert['project_id'], cert['file_name'], ex)
+                        '|project_id=%(pid)s, file_name=%(fname)s|: %(ex)s'),
+                      pid, fname, ex)
     if ex_flag:
         raise exception.RevokeCertException()
 
@@ -266,7 +272,7 @@ def generate_x509_cert(user_id, project_id, bits=1024):
     try:
         shutil.rmtree(tmpdir)
     except OSError, ex:
-        LOG.warn(_('Failed to remove dir %s: %s'), tmpdir, ex)
+        LOG.warn(_('Failed to remove dir %s: %(ex)s'), tmpdir, ex)
     (serial, signed_csr) = sign_csr(csr, project_id)
     fname = os.path.join(ca_folder(project_id), 'newcerts/%s.pem' % serial)
     cert = {'user_id': user_id,
@@ -364,7 +370,7 @@ def _sign_csr(csr_text, ca_folder):
     try:
         shutil.rmtree(tmpfolder)
     except OSError, ex:
-        LOG.warn(_('Failed to remove dir %s: %s'), tmpfolder, ex)
+        LOG.warn(_('Failed to remove dir %s: %(ex)s'), tmpfolder, ex)
     return (serial, signed_csr)
 
 
