@@ -163,7 +163,7 @@ class NotifierTestCase(test.TestCase):
         self.assertEqual(3, example_api(1, 2))
         self.assertEqual(self.notify_called, True)
 
-#    @test.skip_test("because has maximum recursion depth exceeded problem")
+    @test.skip_test("because has maximum recursion depth exceeded problem")
     @attr(kind='small')
     def test_notify_configuration_rabbit_and_log(self):
         """Verify notifier list with log_notifier ,rabbit_notifier
