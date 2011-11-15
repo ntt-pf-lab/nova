@@ -41,6 +41,7 @@ class ExceptionTestCase(test.TestCase):
 
 
 class ProjectTestCase(test.TestCase):
+    @test.skip_test("Depends on git environment")
     def test_authors_up_to_date(self):
         topdir = os.path.normpath(os.path.dirname(__file__) + '/../../')
         missing = set()
