@@ -729,6 +729,7 @@ class FlatNetworkTestCase(test.TestCase):
         """
         db.deallocate_fixed_ip() is skipped and LOG.warn is called
         """
+        raise SkipTest('Bug #166 (openstack-qa-nova-884949) is not merged')
         self._msg = None
         self._args = None
         self._kwargs = None
