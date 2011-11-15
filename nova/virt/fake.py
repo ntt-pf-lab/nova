@@ -105,7 +105,7 @@ class FakeConnection(driver.ComputeDriver):
         if not instance['name'] in self.instances:
             raise exception.InstanceNotFound
 
-    def reboot(self, instance, network_info, reboot_type):
+    def reboot(self, instance, network_info):
         if instance['name'] in self.instances:
             pass
         else:
@@ -172,7 +172,7 @@ class FakeConnection(driver.ComputeDriver):
     def poll_unconfirmed_resizes(self, resize_confirm_window):
         pass
 
-    def migrate_disk_and_power_off(self, context, instance, dest):
+    def migrate_disk_and_power_off(self, instance, dest):
         if instance['name'] in self.instances:
             del self.instances[instance['name']]
         else:
@@ -386,4 +386,7 @@ class FakeConnection(driver.ComputeDriver):
 
     def pre_block_migration(self, ctxt, instance_ref, disk_info_json):
         """This method is supported only by libvirt."""
+        pass
+
+    def revert_migration(self, instance_ref):
         pass
