@@ -2,6 +2,8 @@
 
 # Copyright 2010 OpenStack, LLC
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -152,7 +154,7 @@ def stub_out_db_network_api(stubs):
         ips = filter(lambda i: i['address'] == address,
                      floating_ips)
         if not ips:
-            raise exception.FloatingIpNotFoundForAddress(address=address)
+            return
         return FakeModel(ips[0])
 
     def fake_floating_ip_set_auto_assigned(contex, address):

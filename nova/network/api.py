@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -38,6 +40,8 @@ class API(base.Base):
 
     def get_floating_ip_by_ip(self, context, address):
         res = self.db.floating_ip_get_by_address(context, address)
+        if not res:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
         return dict(res.iteritems())
 
     def list_floating_ips(self, context):
@@ -64,6 +68,8 @@ class API(base.Base):
                             affect_auto_assigned=False):
         """Removes floating ip with address from a project."""
         floating_ip = self.db.floating_ip_get_by_address(context, address)
+        if not floating_ip:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
         if floating_ip['fixed_ip']:
             raise exception.ApiError(_('Floating ip is in use.  '
                              'Disassociate it before releasing.'))
@@ -78,22 +84,35 @@ class API(base.Base):
                  {'method': 'deallocate_floating_ip',
                   'args': {'floating_address': floating_ip['address']}})
 
-    def associate_floating_ip(self, context, floating_ip, fixed_ip,
+    def associate_floating_ip(self, context, floating_address, fixed_address,
                                        affect_auto_assigned=False):
         """Associates a floating ip with a fixed ip.
 
         ensures floating ip is allocated to the project in context
 
-        :param fixed_ip: is either fixed_ip object or a string fixed ip address
-        :param floating_ip: is a string floating ip address
+        :param fixed_address: is either fixed_ip object
+                              or a string fixed ip address
+        :param floating_address: is a string floating ip address
         """
         # NOTE(tr3buchet): i don't like the "either or" argument type
         # funcationility but i've left it alone for now
         # TODO(tr3buchet): this function needs to be rewritten to move
         # the network related db lookups into the network host code
-        if isinstance(fixed_ip, basestring):
-            fixed_ip = self.db.fixed_ip_get_by_address(context, fixed_ip)
-        floating_ip = self.db.floating_ip_get_by_address(context, floating_ip)
+        if isinstance(fixed_address, basestring):
+            fixed_ip = self.db.fixed_ip_get_by_address(
+                                                context, fixed_address)
+            if not fixed_ip:
+                raise exception.FixedIpNotFoundForAddress(
+                                                address=fixed_address)
+        else:
+            fixed_ip = fixed_address
+
+        floating_ip = self.db.floating_ip_get_by_address(
+                                                context, floating_address)
+        if not floating_ip:
+            raise exception.FloatingIpNotFoundForAddress(
+                                                address=floating_address)
+
         if not affect_auto_assigned and floating_ip.get('auto_assigned'):
             return
         # Check if the floating ip address is allocated
@@ -132,6 +151,8 @@ class API(base.Base):
                                  affect_auto_assigned=False):
         """Disassociates a floating ip from fixed ip it is associated with."""
         floating_ip = self.db.floating_ip_get_by_address(context, address)
+        if not floating_ip:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
         if not affect_auto_assigned and floating_ip.get('auto_assigned'):
             return
         if not floating_ip.get('fixed_ip'):

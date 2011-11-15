@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -227,6 +229,8 @@ class FloatingIP(object):
             # get the floating ip object from public_ip string
             floating_ip = self.db.floating_ip_get_by_address(context,
                                                              public_ip)
+            if not floating_ip:
+                raise exception.FloatingIpNotFoundForAddress(address=public_ip)
 
             # get the first fixed_ip belonging to the instance
             fixed_ips = self.db.fixed_ip_get_by_instance(context, instance_id)
@@ -287,6 +291,10 @@ class FloatingIP(object):
         """Associates an floating ip to a fixed ip."""
         floating_ip = self.db.floating_ip_get_by_address(context,
                                                          floating_address)
+        if not floating_ip:
+            raise exception.FloatingIpNotFoundForAddress(
+                                                address=floating_address)
+
         if floating_ip['fixed_ip']:
             raise exception.FloatingIpAlreadyInUse(
                             address=floating_ip['address'],
@@ -355,6 +363,9 @@ class NetworkManager(manager.SchedulerDependentManager):
             fip = self.db.fixed_ip_get_by_network_host(context,
                                                        network_id,
                                                        host)
+            if not fip:
+                raise exception.FixedIpNotFoundForNetworkHost(
+                                    network_id=network_id, host=host)
             return fip['address']
         except exception.FixedIpNotFoundForNetworkHost:
             elevated = context.elevated()
@@ -617,8 +628,9 @@ class NetworkManager(manager.SchedulerDependentManager):
                                                                    instance_id)
             get_vif = self.db.virtual_interface_get_by_instance_and_network
             vif = get_vif(context, instance_id, network['id'])
+            vif_id = vif['id'] if vif else None
             values = {'allocated': True,
-                      'virtual_interface_id': vif['id']}
+                      'virtual_interface_id': vif_id}
             self.db.fixed_ip_update(context, address, values)
 
         self._setup_network(context, network)
@@ -630,6 +642,9 @@ class NetworkManager(manager.SchedulerDependentManager):
                                 {'allocated': False,
                                  'virtual_interface_id': None})
         fixed_ip_ref = self.db.fixed_ip_get_by_address(context, address)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=address)
+
         instance_ref = fixed_ip_ref['instance']
         instance_id = instance_ref['id']
         self._do_trigger_security_group_members_refresh_for_instance(
@@ -638,12 +653,18 @@ class NetworkManager(manager.SchedulerDependentManager):
             dev = self.driver.get_dev(fixed_ip_ref['network'])
             vif = self.db.virtual_interface_get_by_instance_and_network(
                     context, instance_ref['id'], fixed_ip_ref['network']['id'])
-            self.driver.release_dhcp(dev, address, vif['address'])
+            if vif:
+                self.driver.release_dhcp(dev, address, vif['address'])
+            else:
+                LOG.warn(_('Skip driver.release_dhcp. '\
+                           'Because virtual interface chould not be found.'))
 
     def lease_fixed_ip(self, context, address):
         """Called by dhcp-bridge when ip is leased."""
         LOG.debug(_('Leased IP |%(address)s|'), locals(), context=context)
         fixed_ip = self.db.fixed_ip_get_by_address(context, address)
+        if not fixed_ip:
+            raise exception.FixedIpNotFoundForAddress(address=address)
         instance = fixed_ip['instance']
         if not instance:
             raise exception.Error(_('IP %s leased that is not associated') %
@@ -661,6 +682,8 @@ class NetworkManager(manager.SchedulerDependentManager):
         """Called by dhcp-bridge when ip is released."""
         LOG.debug(_('Released IP |%(address)s|'), locals(), context=context)
         fixed_ip = self.db.fixed_ip_get_by_address(context, address)
+        if not fixed_ip:
+            raise exception.FixedIpNotFoundForAddress(address=address)
         instance = fixed_ip['instance']
         if not instance:
             raise exception.Error(_('IP %s released that is not associated') %
@@ -808,6 +831,8 @@ class NetworkManager(manager.SchedulerDependentManager):
     def delete_network(self, context, fixed_range, require_disassociated=True):
 
         network = db.network_get_by_cidr(context, fixed_range)
+        if not network:
+            raise exception.NetworkNotFoundForCidr(cidr=fixed_range)
 
         if require_disassociated and network.project_id is not None:
             raise ValueError(_('Network must be disassociated from project %s'
@@ -872,6 +897,8 @@ class NetworkManager(manager.SchedulerDependentManager):
 
                 fixed_ip_ref = self.db.fixed_ip_get_by_address(context,
                                                                address)
+                if not fixed_ip_ref:
+                    raise exception.FixedIpNotFoundForAddress(address=address)
                 if fixed_ip_ref['network']['uuid'] != network_uuid:
                     raise exception.FixedIpNotFoundForNetwork(address=address,
                                             network_uuid=network_uuid)
@@ -1033,8 +1060,9 @@ class VlanManager(RPCAllocateFixedIP, FloatingIP, NetworkManager):
         vif = self.db.virtual_interface_get_by_instance_and_network(context,
                                                                  instance_id,
                                                                  network['id'])
+        vif_id = vif['id'] if vif else None
         values = {'allocated': True,
-                  'virtual_interface_id': vif['id']}
+                  'virtual_interface_id': vif_id}
         self.db.fixed_ip_update(context, address, values)
         self._setup_network(context, network)
         return address

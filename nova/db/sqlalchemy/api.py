@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -536,9 +538,16 @@ def floating_ip_fixed_ip_associate(context, floating_address,
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      floating_address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(
+                                                address=floating_address)
+
         fixed_ip_ref = fixed_ip_get_by_address(context,
                                                fixed_address,
                                                session=session)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=fixed_address)
+
         floating_ip_ref.fixed_ip = fixed_ip_ref
         floating_ip_ref.host = host
         floating_ip_ref.save(session=session)
@@ -551,6 +560,9 @@ def floating_ip_deallocate(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         floating_ip_ref['project_id'] = None
         floating_ip_ref['host'] = None
         floating_ip_ref['auto_assigned'] = False
@@ -564,6 +576,9 @@ def floating_ip_destroy(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         floating_ip_ref.delete(session=session)
 
 
@@ -574,6 +589,9 @@ def floating_ip_disassociate(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         fixed_ip_ref = floating_ip_ref.fixed_ip
         if fixed_ip_ref:
             fixed_ip_address = fixed_ip_ref['address']
@@ -592,6 +610,9 @@ def floating_ip_set_auto_assigned(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         floating_ip_ref.auto_assigned = True
         floating_ip_ref.save(session=session)
 
@@ -649,7 +670,7 @@ def floating_ip_get_by_address(context, address, session=None):
                 first()
 
     if not result:
-        raise exception.FloatingIpNotFoundForAddress(address=address)
+        return result
 
     # If the floating IP has a project ID set, check to make sure
     # the non-admin user has access.
@@ -664,6 +685,9 @@ def floating_ip_update(context, address, values):
     session = get_session()
     with session.begin():
         floating_ip_ref = floating_ip_get_by_address(context, address, session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         for (key, value) in values.iteritems():
             floating_ip_ref[key] = value
         floating_ip_ref.save(session=session)
@@ -756,6 +780,9 @@ def fixed_ip_disassociate(context, address):
         fixed_ip_ref = fixed_ip_get_by_address(context,
                                                address,
                                                session=session)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=address)
+
         fixed_ip_ref.instance = None
         fixed_ip_ref.save(session=session)
 
@@ -820,7 +847,7 @@ def fixed_ip_get_by_address(context, address, session=None):
                      options(joinedload('instance')).\
                      first()
     if not result:
-        raise exception.FixedIpNotFoundForAddress(address=address)
+        return result
 
     if is_user_context(context):
         authorize_project_context(context, result.instance.project_id)
@@ -849,9 +876,6 @@ def fixed_ip_get_by_network_host(context, network_id, host):
                  filter_by(host=host).\
                  filter_by(deleted=False).\
                  first()
-    if not rv:
-        raise exception.FixedIpNotFoundForNetworkHost(network_id=network_id,
-                                                      host=host)
     return rv
 
 
@@ -871,6 +895,8 @@ def fixed_ip_get_by_virtual_interface(context, vif_id):
 @require_admin_context
 def fixed_ip_get_network(context, address):
     fixed_ip_ref = fixed_ip_get_by_address(context, address)
+    if not fixed_ip_ref:
+        raise exception.FixedIpNotFoundForAddress(address=address)
     return fixed_ip_ref.network
 
 
@@ -881,6 +907,9 @@ def fixed_ip_update(context, address, values):
         fixed_ip_ref = fixed_ip_get_by_address(context,
                                                address,
                                                session=session)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=address)
+
         fixed_ip_ref.update(values)
         fixed_ip_ref.save(session=session)
 
@@ -1446,6 +1475,8 @@ def instance_get_all_by_reservation(context, reservation_id):
 def instance_get_by_fixed_ip(context, address):
     """Return instance ref by exact match of FixedIP"""
     fixed_ip_ref = fixed_ip_get_by_address(context, address)
+    if not fixed_ip_ref:
+        raise exception.FixedIpNotFoundForAddress(address=address)
     return fixed_ip_ref.instance
 
 
@@ -1903,9 +1934,6 @@ def network_get_by_cidr(context, cidr):
                            models.Network.cidr_v6 == cidr)).\
                 filter_by(deleted=False).\
                 first()
-
-    if not result:
-        raise exception.NetworkNotFoundForCidr(cidr=cidr)
     return result
 
 
