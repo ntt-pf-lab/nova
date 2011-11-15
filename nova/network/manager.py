@@ -204,12 +204,19 @@ class FloatingIP(object):
                 #             that the ip is already bound.
                 try:
                     self.driver.bind_floating_ip(floating_ip['address'], False)
-                    self.driver.ensure_floating_forward(floating_ip['address'],
-                                                        fixed_address)
+                    try:
+                        self.driver.ensure_floating_forward(
+                                        floating_ip['address'], fixed_address)
+                    except Exception:
+                        LOG.error('Failed to ensure floating ip '
+                                  'forwarding rule. Now trying to '
+                                  'unbind the bound ip.')
+                        self.driver.unbind_floating_ip(floating_ip['address'])
+                        raise
                 except Exception as ex:
                     ex_flag = True
-                    LOG.error(_('Exception occurred in configuring floating ip '
-                                '|address=%s|: %s'),
+                    LOG.error(_('Exception occurred in configuring '
+                                'floating ip |address=%s|: %s'),
                               floating_ip['address'], ex)
         if ex_flag:
             raise exception.NetworkInitHostException()
@@ -330,7 +337,14 @@ class FloatingIP(object):
                                                fixed_address,
                                                self.host)
         self.driver.bind_floating_ip(floating_address)
-        self.driver.ensure_floating_forward(floating_address, fixed_address)
+        try:
+            self.driver.ensure_floating_forward(floating_address,
+                                                fixed_address)
+        except Exception:
+            LOG.error('Failed to ensure floating ip forwarding rule. '
+                      'Now trying to unbind the bound ip.')
+            self.driver.unbind_floating_ip(floating_address)
+            raise
 
     def disassociate_floating_ip(self, context, floating_address):
         """Disassociates a floating ip."""
@@ -1074,15 +1088,28 @@ class FlatDHCPManager(FloatingIP, RPCAllocateFixedIP, NetworkManager):
 
         mac_address = self.generate_mac_address()
         dev = self.driver.plug(network_ref, mac_address)
-        self.driver.initialize_gateway_device(dev, network_ref)
+        try:
+            self.driver.initialize_gateway_device(dev, network_ref)
 
-        if not FLAGS.fake_network:
-            self.driver.update_dhcp(context, dev, network_ref)
-            if(FLAGS.use_ipv6):
-                self.driver.update_ra(context, dev, network_ref)
-                gateway = utils.get_my_linklocal(dev)
-                self.db.network_update(context, network_ref['id'],
-                                       {'gateway_v6': gateway})
+            if not FLAGS.fake_network:
+                self.driver.update_dhcp(context, dev, network_ref)
+                if(FLAGS.use_ipv6):
+                    try:
+                        self.driver.update_ra(context, dev, network_ref)
+                        gateway = utils.get_my_linklocal(dev)
+                        self.db.network_update(context, network_ref['id'],
+                                               {'gateway_v6': gateway})
+                    except Exception:
+                        LOG.error('Failed to setup network for ipv6. '
+                                  'Now trying to release dhcp.')
+                        self.driver.release_dhcp(dev,
+                                                 network_ref['dhcp_server'],
+                                                 mac_address)
+                        raise
+        except Exception:
+            LOG.error('Failed to setup network. Now trying to unplug.')
+            self.driver.unplug(network_ref)
+            raise
 
 
 class VlanManager(RPCAllocateFixedIP, FloatingIP, NetworkManager):
@@ -1193,22 +1220,35 @@ class VlanManager(RPCAllocateFixedIP, FloatingIP, NetworkManager):
 
         mac_address = self.generate_mac_address()
         dev = self.driver.plug(network_ref, mac_address)
-        self.driver.initialize_gateway_device(dev, network_ref)
+        try:
+            self.driver.initialize_gateway_device(dev, network_ref)
 
-        # NOTE(vish): only ensure this forward if the address hasn't been set
-        #             manually.
-        if address == FLAGS.vpn_ip and hasattr(self.driver,
-                                               "ensure_vpn_forward"):
-            self.driver.ensure_vpn_forward(FLAGS.vpn_ip,
+            # NOTE(vish): only ensure this forward if the address hasn't been
+            #             set manually.
+            if address == FLAGS.vpn_ip and hasattr(self.driver,
+                                                   "ensure_vpn_forward"):
+                self.driver.ensure_vpn_forward(FLAGS.vpn_ip,
                                             network_ref['vpn_public_port'],
                                             network_ref['vpn_private_address'])
-        if not FLAGS.fake_network:
-            self.driver.update_dhcp(context, dev, network_ref)
-            if(FLAGS.use_ipv6):
-                self.driver.update_ra(context, dev, network_ref)
-                gateway = utils.get_my_linklocal(dev)
-                self.db.network_update(context, network_ref['id'],
-                                       {'gateway_v6': gateway})
+            if not FLAGS.fake_network:
+                self.driver.update_dhcp(context, dev, network_ref)
+                if(FLAGS.use_ipv6):
+                    try:
+                        self.driver.update_ra(context, dev, network_ref)
+                        gateway = utils.get_my_linklocal(dev)
+                        self.db.network_update(context, network_ref['id'],
+                                               {'gateway_v6': gateway})
+                    except Exception:
+                        LOG.error('Failed to setup network for ipv6. '
+                                  'Now trying to release dhcp.')
+                        self.driver.release_dhcp(dev,
+                                                 network_ref['dhcp_server'],
+                                                 mac_address)
+                        raise
+        except Exception:
+            LOG.error('Failed to setup network. Now trying to unplug.')
+            self.driver.unplug(network_ref)
+            raise
 
     def _get_networks_by_uuids(self, context, network_uuids):
         return self.db.network_get_all_by_uuids(context, network_uuids,
