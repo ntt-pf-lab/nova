@@ -7785,7 +7785,7 @@ class DbApiTestCase(test.TestCase):
 
         # test and assert
         self.db.api.instance_type_create(self.context, values)
-        self.assertRaises(exception.Duplicate,
+        self.assertRaises(exception.DBError,
                           self.db.api.instance_type_create,
                           self.context, values)
 
