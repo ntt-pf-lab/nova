@@ -303,7 +303,7 @@ class LibvirtOpenVswitchDriverTestCase(test.TestCase):
                 self.stub_execute_flg = True
 
         self.stubs.Set(linux_net,
-                       '_device_exists',
+                       'device_exists',
                        fake_linux_net_device_exists)
         self.stubs.Set(utils, 'execute', fake_utils_execute)
         ref = self.libvirtopenvswitchdriver.plug(instance=instances[1],
