@@ -19,6 +19,7 @@
 import datetime
 import os
 import tempfile
+import socket
 
 import nova
 from nova import exception
@@ -1912,7 +1913,6 @@ class UtilsTestCase(test.TestCase):
 
         self.assertEqual(False, ref)
 
-    @test.skip_test("Skip here becuase have reported at Bug #149")
     @attr(kind='small')
     def test_vpn_ping_exception_ioerror(self):
         """Test for nova.utils.vpn_ping.
@@ -1924,7 +1924,7 @@ class UtilsTestCase(test.TestCase):
         self.stubs.Set(utils.socket.socket, 'sendto', _fake_sendto)
 
         def _fake_recv(self, buffersize):
-            raise IOError
+            raise socket.error
 
         self.stubs.Set(utils.socket.socket, 'recv', _fake_recv)
 
