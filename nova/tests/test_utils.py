@@ -466,6 +466,7 @@ class UtilsTestCase(test.TestCase):
         super(UtilsTestCase, self).setUp()
         self.utils = utils
         self.utils.clear_time_override()
+        utils._semaphores = {}
 
     @attr(kind='small')
     def test_abspath(self):
