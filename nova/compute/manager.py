@@ -4,6 +4,8 @@
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2011 Justin Santa Barbara
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -43,7 +45,6 @@ import time
 import functools
 
 from eventlet import greenthread
-
 import nova.context
 from nova import block_device
 from nova import exception
@@ -142,8 +143,7 @@ class ComputeManager(manager.SchedulerDependentManager):
             sys.exit(1)
 
         self.network_api = network.API()
-        self.network_manager = utils.import_object(FLAGS.network_manager)
-        self.volume_manager = utils.import_object(FLAGS.volume_manager)
+        self.volume_api = volume.API()
         self._last_host_check = 0
         super(ComputeManager, self).__init__(service_name="compute",
                                              *args, **kwargs)
@@ -241,7 +241,6 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     def _setup_block_device_mapping(self, context, instance_id):
         """setup volumes for block device mapping"""
-        volume_api = volume.API()
         block_device_mapping = []
         swap = None
         ephemerals = []
@@ -269,11 +268,11 @@ class ComputeManager(manager.SchedulerDependentManager):
             if ((bdm['snapshot_id'] is not None) and
                 (bdm['volume_id'] is None)):
                 # TODO(yamahata): default name and description
-                vol = volume_api.create(context, bdm['volume_size'],
+                vol = self.volume_api.create(context, bdm['volume_size'],
                                         bdm['snapshot_id'], '', '')
                 # TODO(yamahata): creating volume simultaneously
                 #                 reduces creation time?
-                volume_api.wait_creation(context, vol['id'])
+                self.volume_api.wait_creation(context, vol['id'])
                 self.db.block_device_mapping_update(
                     context, bdm['id'], {'volume_id': vol['id']})
                 bdm['volume_id'] = vol['id']
@@ -290,7 +289,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                                          bdm['id'])
 
             if bdm['volume_id'] is not None:
-                volume_api.check_attach(context,
+                self.volume_api.check_attach(context,
                                         volume_id=bdm['volume_id'])
                 dev_path = self._attach_volume_boot(context, instance_id,
                                                     bdm['volume_id'],
@@ -1253,7 +1252,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         LOG.audit(_("instance %(instance_id)s: booting with "
                     "volume %(volume_id)s at %(mountpoint)s") %
                   locals(), context=context)
-        dev_path = self.volume_manager.setup_compute_volume(context, volume_id)
+        dev_path = self.volume_api.setup_compute_volume(context, volume_id)
         self.db.volume_attached(context, volume_id, instance_id, mountpoint)
         return dev_path
 
@@ -1264,7 +1263,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         instance_ref = self.db.instance_get(context, instance_id)
         LOG.audit(_("instance %(instance_id)s: attaching volume %(volume_id)s"
                 " to %(mountpoint)s") % locals(), context=context)
-        dev_path = self.volume_manager.setup_compute_volume(context,
+        dev_path = self.volume_api.setup_compute_volume(context,
                                                             volume_id)
         try:
             self.driver.attach_volume(instance_ref['name'],
@@ -1290,7 +1289,7 @@ class ComputeManager(manager.SchedulerDependentManager):
             #             ecxception below.
             LOG.exception(_("instance %(instance_id)s: attach failed"
                     " %(mountpoint)s, removing") % locals(), context=context)
-            self.volume_manager.remove_compute_volume(context,
+            self.volume_api.remove_compute_volume(context,
                                                       volume_id)
             raise exc
 
@@ -1312,7 +1311,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         else:
             self.driver.detach_volume(instance_ref['name'],
                                       volume_ref['mountpoint'])
-        self.volume_manager.remove_compute_volume(context, volume_id)
+        self.volume_api.remove_compute_volume(context, volume_id)
         self.db.volume_detached(context, volume_id)
         if destroy_bdm:
             self.db.block_device_mapping_destroy_by_instance_and_volume(
@@ -1329,7 +1328,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         :param context: security context
         :param volume_id: volume ID
         """
-        self.volume_manager.remove_compute_volume(context, volume_id)
+        self.volume_api.remove_compute_volume(context, volume_id)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     def compare_cpu(self, context, cpu_info):
@@ -1424,13 +1423,12 @@ class ComputeManager(manager.SchedulerDependentManager):
             LOG.info(_("%s has no volume."), hostname)
         else:
             for v in instance_ref['volumes']:
-                self.volume_manager.setup_compute_volume(context, v['id'])
+                self.volume_api.setup_compute_volume(context, v['id'])
 
         # Bridge settings.
         # Call this method prior to ensure_filtering_rules_for_instance,
         # since bridge is not set up, ensure_filtering_rules_for instance
         # fails.
-        #
         # Retry operation is necessary because continuously request comes,
         # concorrent request occurs to iptables, then it complains.
         network_info = self._get_instance_nw_info(context, instance_ref)
@@ -1534,7 +1532,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         # Detaching volumes.
         try:
             for vol in self.db.volume_get_all_by_instance(ctxt, instance_id):
-                self.volume_manager.remove_compute_volume(ctxt, vol['id'])
+                self.volume_api.remove_compute_volume(ctxt, vol['id'])
         except exception.NotFound:
             pass
 
@@ -1638,7 +1636,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         for volume_ref in instance_ref['volumes']:
             volume_id = volume_ref['id']
             self.db.volume_update(context, volume_id, {'status': 'in-use'})
-            volume.API().remove_from_compute(context, volume_id, dest)
+            self.volume_api.remove_from_compute(context, volume_id, dest)
 
         # Block migration needs empty image at destination host
         # before migration starts, so if any failure occurs,

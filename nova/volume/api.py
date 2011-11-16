@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -265,3 +267,14 @@ class API(base.Base):
                 if i['key'] == key:
                     return i['value']
         return None
+
+    def setup_compute_volume(self, context, volume_id):
+        """return path to device from manager of volume."""
+        self.manager = utils.import_object(FLAGS.volume_manager)
+        return self.manager.setup_compute_volume(context, volume_id)
+
+    def remove_compute_volume(self, context, volume_id):
+        """return result of removing remote volume on compute host
+        from manager of volume"""
+        self.manager = utils.import_object(FLAGS.volume_manager)
+        return self.manager.remove_compute_volume(context, volume_id)
