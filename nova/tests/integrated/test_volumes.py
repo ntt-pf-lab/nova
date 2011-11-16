@@ -18,6 +18,7 @@
 import unittest
 import time
 
+from nova import test
 from nova.log import logging
 from nova.tests.integrated import integrated_helpers
 from nova.tests.integrated.api import client
@@ -135,6 +136,7 @@ class VolumesTest(integrated_helpers._IntegratedTestBase):
         delete_action = export_actions[0]
         self.assertEquals(delete_action['id'], created_volume_id)
 
+    @test.skip_test("Ignore invalid test")
     def test_attach_and_detach_volume(self):
         """Creates, attaches, detaches and deletes a volume."""
 
