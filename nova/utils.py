@@ -273,7 +273,9 @@ def debug(arg):
 
 def runthis(prompt, *cmd, **kwargs):
     LOG.debug(_('Running %s'), (' '.join(cmd)))
+    LOG.debug(_('prompt is %s') % (prompt))
     rv, err = execute(*cmd, **kwargs)
+    return (rv, err)
 
 
 def generate_uid(topic, size=8):
