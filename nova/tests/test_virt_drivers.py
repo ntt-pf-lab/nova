@@ -2,6 +2,9 @@
 #
 #    Copyright 2010 OpenStack LLC
 #
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -145,7 +148,7 @@ def fake_greenthread_spawn(func, *args):
         func(*args)
     except Exception:
         pass
- 
+
 
 class LiveMigrationCallbackHandler:
     def post_method(self, *args, **kwargs):
@@ -165,7 +168,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
 
         assert getattr(self, 'driver_module', None) is not None, \
             "Define the target driver module as an attribute 'driver_module'."
-        assert getattr(self.driver_module, 'get_connection', None) is not None, \
+        assert getattr(self.driver_module,
+                       'get_connection', None) is not None, \
             "All driver modules have an entry function " \
             "get_connection(readonly=boolean)."
         self.connection = self.driver_module.get_connection('')
@@ -200,7 +204,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
         self.assertEqual(self.connection.list_instances(), [],
                 "Be empty before an instance running")
         self._ensure_test_instance_running()
-        self.assertIn(self.instance_ref['name'], self.connection.list_instances())
+        self.assertIn(self.instance_ref['name'],
+                      self.connection.list_instances())
 
     @catch_notimplementederror
     def test_list_instances_detail(self):
@@ -208,7 +213,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
                 "Be empty before an instance running")
         self._ensure_test_instance_running()
         self.assertIn(self.instance_ref['name'],
-                [instance.name for instance in self.connection.list_instances_detail()])
+                [instance.name for instance in \
+                 self.connection.list_instances_detail()])
 
     @catch_notimplementederror
     def test_spawn(self):
@@ -293,9 +299,9 @@ class _VirtDriverConnectionTestCase(test.TestCase):
     @catch_notimplementederror
     def test_inject_network_info(self):
         self._ensure_test_instance_running()
-        self.connection.inject_network_info(self.instance_ref, self.network_info)
+        self.connection.inject_network_info(self.instance_ref,
+                                            self.network_info)
         self._must_be_test_instance_running()
-
 
     @catch_notimplementederror
     def test_plug_vifs(self):
@@ -342,7 +348,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
     @catch_notimplementederror
     def test_agent_update(self):
         self._ensure_test_instance_running()
-        self.connection.agent_update(self.instance_ref, 'http://www.openstack.org/',
+        self.connection.agent_update(self.instance_ref,
+                                     'http://www.openstack.org/',
                                      'd41d8cd98f00b204e9800998ecf8427e')
         self._must_be_test_instance_running()
 
@@ -374,7 +381,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
         self._ensure_test_instance_running()
         self.connection.rescue(self.ctxt, self.instance_ref,
                                lambda x: None, self.network_info)
-        self.connection.unrescue(self.instance_ref, lambda x: None, self.network_info)
+        self.connection.unrescue(self.instance_ref,
+                                 lambda x: None, self.network_info)
         self._must_be_test_instance_running()
 
     @catch_notimplementederror
@@ -570,7 +578,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
     @catch_notimplementederror
     def test_block_stats(self):
         self._ensure_test_instance_running()
-        stats = self.connection.block_stats(self.instance_ref['name'], 'someid')
+        stats = self.connection.block_stats(self.instance_ref['name'],
+                                            'someid')
         self.assertEquals(len(stats), 5)
 
     @catch_notimplementederror
@@ -583,7 +592,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
     @catch_notimplementederror
     def test_interface_stats(self):
         self._ensure_test_instance_running()
-        stats = self.connection.interface_stats(self.instance_ref['name'], 'someid')
+        stats = self.connection.interface_stats(self.instance_ref['name'],
+                                                'someid')
         self.assertEquals(len(stats), 8)
 
     @catch_notimplementederror
@@ -720,7 +730,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
         migration = test_utils.get_test_migration()
         self.assertRaises(exception.InstanceNotFound,
                           self.connection.finish_migration,
-                          self.ctxt, migration, instance_ref, disk_info, network_info, None)
+                          self.ctxt, migration, instance_ref,
+                          disk_info, network_info, None)
 
     @test.skip_test("for essex")
     @catch_notimplementederror
@@ -737,7 +748,8 @@ class _VirtDriverConnectionTestCase(test.TestCase):
     def test_revert_migration_not_running(self):
         instance_ref = test_utils.get_test_instance()
         self.assertRaises(exception.InstanceNotFound,
-                          self.connection.finish_revert_migration, instance_ref)
+                          self.connection.finish_revert_migration,
+                          instance_ref)
 
     @test.skip_test("for essex")
     @catch_notimplementederror
@@ -745,9 +757,11 @@ class _VirtDriverConnectionTestCase(test.TestCase):
         disk_info = test_utils.get_test_disk_info()
         migration = test_utils.get_test_migration()
         self._ensure_test_instance_running()
-        self.connection.finish_migration(self.ctxt, migration, self.instance_ref,
+        self.connection.finish_migration(self.ctxt, migration,
+                                         self.instance_ref,
                                          disk_info, self.network_info, None)
-        self.connection.confirm_migration(migration, self.instance_ref, self.network_info)
+        self.connection.confirm_migration(migration, self.instance_ref,
+                                          self.network_info)
         self._must_be_test_instance_running()
 
     @catch_notimplementederror
@@ -761,15 +775,17 @@ class _VirtDriverConnectionTestCase(test.TestCase):
         handler = LiveMigrationCallbackHandler()
         instance_ref = test_utils.get_test_instance()
         self.connection.live_migration(self.ctxt, instance_ref, 'otherhost',
-                                       handler.post_method, handler.recover_method)
+                                       handler.post_method,
+                                       handler.recover_method)
         self.assertEqual(handler.state, 'FAILED')
 
     @catch_notimplementederror
     def test_live_migration(self):
         self._ensure_test_instance_running()
         handler = LiveMigrationCallbackHandler()
-        self.connection.live_migration(self.ctxt, self.instance_ref, 'otherhost',
-                                       handler.post_method, handler.recover_method)
+        self.connection.live_migration(self.ctxt, self.instance_ref,
+                                       'otherhost', handler.post_method,
+                                       handler.recover_method)
         self._must_be_test_instance_running()
         self.assertEqual(handler.state, 'SUCCESS')
 
@@ -858,11 +874,16 @@ class AbstractDriverConnectionTestCase(_VirtDriverConnectionTestCase):
 
         def get_driver_connection(_):
             connection = nova.virt.driver.ComputeDriver()
-            # For the tests which should be examined after spawning, the spawn API must be replaced
-            # to avoid raising NotImplementedError at the ComputeDriver.spawn().
-            # Because its an interface method, and it have to be passed for sequential execution of those tests.
-            # For example, to test the snapshot API, the spawn API have to be passed before.
-            connection.spawn = lambda context, instance, network_info=None, block_device_info=None: None
+            # For the tests which should be examined after spawning,
+            # the spawn API must be replaced
+            # to avoid raising NotImplementedError
+            # at the ComputeDriver.spawn().
+            # Because its an interface method,
+            # and it have to be passed for sequential execution of those tests.
+            # For example, to test the snapshot API,
+            # the spawn API have to be passed before.
+            connection.spawn = lambda context, instance, network_info=None, \
+                                block_device_info=None: None
             return connection
 
         self.driver_module.get_connection = get_driver_connection
@@ -872,7 +893,8 @@ class AbstractDriverConnectionTestCase(_VirtDriverConnectionTestCase):
     def test_spawn(self):
         import nova.virt.driver
 
-        # Override the connection for the purpose in get_driver_connection of setUp.
+        # Override the connection for the purpose in
+        # get_driver_connection of setUp.
         self.connection = nova.virt.driver.ComputeDriver()
         self._ensure_test_instance_running()
 
@@ -882,7 +904,7 @@ class FakeConnectionTestCase(_VirtDriverConnectionTestCase):
         import nova.virt.fake
         self.driver_module = nova.virt.fake
         super(FakeConnectionTestCase, self).setUp()
-        
+
 # Before long, we'll add the real hypervisor drivers here as well
 # with whatever instrumentation they need to work independently of
 # their hypervisor. This way, we can verify that they all act the

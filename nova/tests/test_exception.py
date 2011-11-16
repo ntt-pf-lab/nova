@@ -971,6 +971,7 @@ class NovaExceptionTestCase(test.TestCase):
         "It is not allowed to use that RPC Connection once again.",
         str(ex))
 
+
 class ProcessExecutionErrorTestCase(test.TestCase):
 
     @attr(kind='small')

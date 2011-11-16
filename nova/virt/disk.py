@@ -126,6 +126,7 @@ def extend(image, size):
         os.rename(image_org, image)
         raise e
 
+
 def inject_data(image, key=None, net=None, metadata=None,
                 partition=None, nbd=False, tune2fs=True):
     """Injects a ssh key and optionally net data into a disk image.

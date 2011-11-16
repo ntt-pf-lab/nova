@@ -88,4 +88,3 @@ def get_test_migration(context=None):
 
     return nova.db.migration_create(
         context, migration_values)
-
