@@ -392,8 +392,6 @@ class ValidateRulesTestCase(test.TestCase):
 
         # assertion
         self.assertEqual("meth", actual)
-        self.assertRaises(exception.FixedIpNotFoundForAddress,
-                          target.meth, self.context, ['10.1.1.1', '0.0.0.0'])
         self.assertRaises(exception.FixedIpInvalid,
                           target.meth, self.context, ['10.1.1.1', 'invalid'])
 
