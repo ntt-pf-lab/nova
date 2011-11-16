@@ -259,13 +259,15 @@ class CryptoTestCase(test.TestCase):
         """Test for nova.crypto.generate_key_pair. """
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
-        self._create_file(os.path.join(temp_dir, 'temp'), 'AAAAAAAAAA')
-        self._create_file(os.path.join(temp_dir, 'temp.pub'), 'BBBBBBBBBB')
+        self._create_file(os.path.join(tmpdir, 'temp'), 'AAAAAAAAAA')
+        self._create_file(os.path.join(tmpdir, 'temp.pub'), 'BBBBBBBBBB')
         out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
         utils.execute(mox.IgnoreArg(),
                       mox.IgnoreArg(),
@@ -327,8 +329,10 @@ class CryptoTestCase(test.TestCase):
         """
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
@@ -350,12 +354,14 @@ class CryptoTestCase(test.TestCase):
         """
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
-        self._create_file(os.path.join(temp_dir, 'temp.pub'), 'BBBBBBBBBB')
+        self._create_file(os.path.join(tmpdir, 'temp.pub'), 'BBBBBBBBBB')
         out = 'ssh-rsa CCCCCCCCCC test_user@test_host'
         utils.execute(mox.IgnoreArg(),
                       mox.IgnoreArg(),
@@ -383,9 +389,11 @@ class CryptoTestCase(test.TestCase):
 
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        tmpdir = os.path.join(os.getcwd(), 'crypto')
         self.mox.StubOutWithMock(shutil, 'rmtree')
         self.stubs.Set(self.crypto.LOG, 'warn', stub_warn)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
         tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
@@ -437,8 +445,10 @@ class CryptoTestCase(test.TestCase):
         self.crypto._sign_csr(mox.IgnoreArg(),
                              mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
         db.certificate_create(mox.IgnoreArg(), mox.IgnoreArg())
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         self.mox.ReplayAll()
 
         user_id = 'test_user'
@@ -448,10 +458,10 @@ class CryptoTestCase(test.TestCase):
         # make sure the condition that ca_path exists
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
-        # make a file {path to temp_dir}/crypto/temp.key
-        self._create_file(os.path.join(temp_dir, 'temp.key'), 'aaa')
-        # make a file {path to temp_dir}/crypto/temp.csr
-        self._create_file(os.path.join(temp_dir, 'temp.csr'), 'bbb')
+        # make a file {path to tmpdir}/crypto/temp.key
+        self._create_file(os.path.join(tmpdir, 'temp.key'), 'aaa')
+        # make a file {path to tmpdir}/crypto/temp.csr
+        self._create_file(os.path.join(tmpdir, 'temp.csr'), 'bbb')
 
         ref = self.crypto.generate_x509_cert(user_id, project_id, bits=bits)
         self.assertEqual(('aaa', 'sss'), ref)
@@ -498,8 +508,10 @@ class CryptoTestCase(test.TestCase):
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
@@ -523,8 +535,10 @@ class CryptoTestCase(test.TestCase):
         self.flags(use_project_ca=True)
         self.mox.StubOutWithMock(tempfile, 'mkdtemp')
         self.mox.StubOutWithMock(utils, 'execute')
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
@@ -540,8 +554,8 @@ class CryptoTestCase(test.TestCase):
         # make sure the condition that ca_path exists
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
-        # make a file {path to temp_dir}/crypto/temp.key
-        self._create_file(os.path.join(temp_dir, 'temp.key'), 'aaa')
+        # make a file {path to tmpdir}/crypto/temp.key
+        self._create_file(os.path.join(tmpdir, 'temp.key'), 'aaa')
 
         self.assertRaises(exception.FileError,
                           self.crypto.generate_x509_cert,
@@ -578,6 +592,8 @@ class CryptoTestCase(test.TestCase):
                              mox.IgnoreArg()).AndReturn(('ccc', 'sss'))
         db.certificate_create(mox.IgnoreArg(), mox.IgnoreArg())
         tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
         tempfile.mkdtemp().AndReturn(tmpdir)
         ex = OSError()
         shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
@@ -590,9 +606,9 @@ class CryptoTestCase(test.TestCase):
         # make sure the condition that ca_path exists
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
-        # make a file {path to temp_dir}/crypto/temp.key
+        # make a file {path to tmpdir}/crypto/temp.key
         self._create_file(os.path.join(tmpdir, 'temp.key'), 'aaa')
-        # make a file {path to temp_dir}/crypto/temp.csr
+        # make a file {path to tmpdir}/crypto/temp.csr
         self._create_file(os.path.join(tmpdir, 'temp.csr'), 'bbb')
 
         ref = self.crypto.generate_x509_cert(user_id, project_id, bits=bits)
@@ -721,8 +737,10 @@ class CryptoTestCase(test.TestCase):
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         self.mox.ReplayAll()
 
         csr_text = 'test'
@@ -731,13 +749,13 @@ class CryptoTestCase(test.TestCase):
         # make sure the condition that ca_path does not exist
         if os.path.exists(ca_path):
             os.remove(ca_path)
-        # make a file {path to temp_dir}/crypto/outbound.csr
-        outbound = os.path.join(temp_dir, 'outbound.csr')
+        # make a file {path to tmpdir}/crypto/outbound.csr
+        outbound = os.path.join(tmpdir, 'outbound.csr')
         self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-        self.assertFalse(os.path.exists(temp_dir))
+        self.assertFalse(os.path.exists(tmpdir))
 
     @attr(kind='small')
     def test_sign_csr_cfg_not_use_project_ca(self):
@@ -751,19 +769,21 @@ class CryptoTestCase(test.TestCase):
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         self.mox.ReplayAll()
 
         csr_text = 'test'
         project_id = 'fake'
-        # make a file {path to temp_dir}/crypto/outbound.csr
-        outbound = os.path.join(temp_dir, 'outbound.csr')
+        # make a file {path to tmpdir}/crypto/outbound.csr
+        outbound = os.path.join(tmpdir, 'outbound.csr')
         self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-        self.assertFalse(os.path.exists(temp_dir))
+        self.assertFalse(os.path.exists(tmpdir))
 
     @attr(kind='small')
     def test_sign_csr_param_ca_path_does_exists(self):
@@ -777,8 +797,10 @@ class CryptoTestCase(test.TestCase):
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         self.mox.ReplayAll()
 
         csr_text = 'test'
@@ -787,13 +809,13 @@ class CryptoTestCase(test.TestCase):
         # make sure the condition that ca_path exists
         if not os.path.exists(ca_path):
             self._create_file(ca_path)
-        # make a file {path to temp_dir}/crypto/outbound.csr
-        outbound = os.path.join(temp_dir, 'outbound.csr')
+        # make a file {path to tmpdir}/crypto/outbound.csr
+        outbound = os.path.join(tmpdir, 'outbound.csr')
         self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
-        self.assertFalse(os.path.exists(temp_dir))
+        self.assertFalse(os.path.exists(tmpdir))
 
     @attr(kind='small')
     def test_sign_csr_param_ca_folder_does_not_exist(self):
@@ -809,8 +831,10 @@ class CryptoTestCase(test.TestCase):
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         self.mox.ReplayAll()
 
         csr_text = 'test'
@@ -824,14 +848,14 @@ class CryptoTestCase(test.TestCase):
         if os.path.exists(ca_folder):
             shutil.rmtree(ca_folder)
         self.assertFalse(os.path.exists(ca_folder))
-        # make a file {path to temp_dir}/crypto/outbound.csr
-        outbound = os.path.join(temp_dir, 'outbound.csr')
+        # make a file {path to tmpdir}/crypto/outbound.csr
+        outbound = os.path.join(tmpdir, 'outbound.csr')
         self._create_file(outbound, 'ddd')
 
         ref = self.crypto.sign_csr(csr_text, project_id)
         self.assertEqual(('ccc', 'ddd'), ref)
         self.assertTrue(os.path.exists(ca_folder))
-        self.assertFalse(os.path.exists(temp_dir))
+        self.assertFalse(os.path.exists(tmpdir))
 
     @attr(kind='small')
     def test_sign_csr_ex_tempfile_mkdtemp(self):
@@ -872,7 +896,6 @@ class CryptoTestCase(test.TestCase):
         """
         FileError is raised when OSError occurred in os.makedirs()
         """
-        raise SkipTest('remain bug')
         self.flags(use_project_ca=True)
 
         self.mox.StubOutWithMock(utils, 'execute')
@@ -880,8 +903,10 @@ class CryptoTestCase(test.TestCase):
         self.mox.StubOutWithMock(os, 'makedirs')
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg())
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         os.makedirs(mox.IgnoreArg()).AndRaise(OSError)
         self.mox.ReplayAll()
 
@@ -935,8 +960,10 @@ class CryptoTestCase(test.TestCase):
         utils.execute(mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
-        temp_dir = os.path.join(os.getcwd(), 'crypto')
-        tempfile.mkdtemp().AndReturn(temp_dir)
+        tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        tempfile.mkdtemp().AndReturn(tmpdir)
         self.mox.ReplayAll()
 
         csr_text = 'test'
@@ -972,6 +999,8 @@ class CryptoTestCase(test.TestCase):
                       mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).\
                 AndReturn(('aaa=bbb=ccc', None))
         tmpdir = os.path.join(os.getcwd(), 'crypto')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
         tempfile.mkdtemp().AndReturn(tmpdir)
         ex = OSError()
         shutil.rmtree(mox.IgnoreArg()).AndRaise(ex)
@@ -979,7 +1008,7 @@ class CryptoTestCase(test.TestCase):
 
         csr_text = 'test'
         project_id = 'fake'
-        # make a file {path to temp_dir}/crypto/outbound.csr
+        # make a file {path to tmpdir}/crypto/outbound.csr
         outbound = os.path.join(tmpdir, 'outbound.csr')
         self._create_file(outbound, 'ddd')
 
