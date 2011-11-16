@@ -4,6 +4,8 @@
 # Copyright (C) 2011 Nicira, Inc
 # Copyright 2011 OpenStack LLC.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -106,7 +108,7 @@ class LibvirtOpenVswitchDriver(VIFDriver):
     def plug(self, instance, network, mapping):
         iface_id = mapping['vif_uuid']
         dev = self.get_dev_name(iface_id)
-        if not linux_net._device_exists(dev):
+        if not linux_net.device_exists(dev):
             utils.execute('ip', 'tuntap', 'add', dev, 'mode', 'tap',
                           run_as_root=True)
             utils.execute('ip', 'link', 'set', dev, 'up', run_as_root=True)
