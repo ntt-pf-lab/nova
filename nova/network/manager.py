@@ -516,21 +516,26 @@ class NetworkManager(manager.SchedulerDependentManager):
                   self.db.fixed_ip_get_by_instance(context, instance_id)
         except exception.FixedIpNotFoundForInstance:
             fixed_ips = []
-        LOG.debug(_("network deallocation for instance |%s|"), instance_id,
-                                                               context=context)
-        # deallocate fixed ips
-        ex_flag = False
-        for fixed_ip in fixed_ips:
-            try:
-                self.deallocate_fixed_ip(context, fixed_ip['address'],
-                                         **kwargs)
-            except Exception as ex:
-                ex_flag = True
-                fixip = fixed_ip['address']
-                LOG.error(_('Exception occurred in deallocating fixed ip '
-                            '|address=%(fixip)s|: %(ex)s') % locals())
-        if ex_flag:
-            raise exception.NetworkDeallocateException()
+
+        if fixed_ips:
+            LOG.info(_("Now deallocating fixed ip for instance |%s|"),
+                     instance_id, context=context)
+            # deallocate fixed ips
+            ex_flag = False
+            for fixed_ip in fixed_ips:
+                try:
+                    self.deallocate_fixed_ip(context, fixed_ip['address'],
+                                             **kwargs)
+                except Exception as ex:
+                    ex_flag = True
+                    fixip = fixed_ip['address']
+                    LOG.error(_('Exception occurred in deallocating fixed ip '
+                                '|address=%(fixip)s|: %(ex)s') % locals())
+            if ex_flag:
+                raise exception.NetworkDeallocateException()
+        else:
+            LOG.warn(_("Skipping fixed ip address deallocation "
+                       "for instance |%s|"), instance_id, context=context)
 
         # deallocate vifs (mac addresses)
         self.db.virtual_interface_delete_by_instance(context, instance_id)
