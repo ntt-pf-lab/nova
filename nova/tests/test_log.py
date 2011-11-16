@@ -21,14 +21,12 @@ from nova import flags
 from nova import log
 from nova import test
 from nova.notifier import api as notifier
+from nova.notifier import list_notifier
 
 import logging
 import sys
 from nose.plugins.attrib import attr
 
-flags.DEFINE_multistring('list_notifier_drivers',
-                         ['nova.notifier.no_op_notifier'],
-                         'List of drivers to send notifications')
 
 FLAGS = flags.FLAGS
 
