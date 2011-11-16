@@ -467,6 +467,12 @@ class UtilsTestCase(test.TestCase):
         super(UtilsTestCase, self).setUp()
         self.utils = utils
         self.utils.clear_time_override()
+        utils._semaphores = {}
+        self.flag_lp = flags.FLAGS.lock_path
+
+    def tearDown(self):
+        super(UtilsTestCase, self).tearDown()
+        self.flags(lock_path=self.flag_lp)
 
     @attr(kind='small')
     def test_abspath(self):
