@@ -4,6 +4,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -80,10 +82,6 @@ class SchedulerManager(manager.Manager):
     def select(self, context=None, *args, **kwargs):
         """Select a list of hosts best matching the provided specs."""
         return self.driver.select(context, *args, **kwargs)
-
-    def get_scheduler_rules(self, context=None, *args, **kwargs):
-        """Ask the driver how requests should be made of it."""
-        return self.driver.get_scheduler_rules(context, *args, **kwargs)
 
     def _schedule(self, method, context, topic, *args, **kwargs):
         """Tries to call schedule_* method on the driver to retrieve host.
