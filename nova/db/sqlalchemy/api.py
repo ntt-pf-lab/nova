@@ -4012,11 +4012,7 @@ def eventlog_create(context, values):
 def eventlog_update(context, message_id, values):
     session = get_session()
     with session.begin():
-        try:
-            eventlog_ref = eventlog_get(context, message_id, session=session)
-        except exception.EventLogNotFound:
-            eventlog_ref = eventlog_create(context, values)
-            return eventlog_ref
+        eventlog_ref = eventlog_get(context, message_id, session=session)
         eventlog_ref.update(values)
         eventlog_ref.save(session=session)
         return eventlog_ref

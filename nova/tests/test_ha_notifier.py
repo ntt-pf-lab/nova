@@ -61,7 +61,7 @@ class HaNotifiationTestCase(test.TestCase):
 
         self.assertEqual(3, example_api('self_dummy', self.context, 1, 2))
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('INFO',
             self.msg['args']['message']['priority'])
@@ -99,7 +99,7 @@ class HaNotifiationTestCase(test.TestCase):
         self.assertEqual(6,
             example_api('self_dummy', self.context, 1, 2, 3, fake=1, fake1=2))
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('INFO',
             self.msg['args']['message']['priority'])
@@ -140,7 +140,7 @@ class HaNotifiationTestCase(test.TestCase):
                                            1,
                                            2)
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('ERROR',
             self.msg['args']['message']['priority'])
@@ -180,7 +180,7 @@ class HaNotifiationTestCase(test.TestCase):
         self.assertEqual(1,
             example_api('self_dummy'))
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('INFO',
             self.msg['args']['message']['priority'])
@@ -249,7 +249,7 @@ class HaNotifiationTestCase(test.TestCase):
         self.assertEqual(1,
             example_api('self_dummy', 'self_dummy1', self.context))
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('INFO',
             self.msg['args']['message']['priority'])
@@ -293,7 +293,7 @@ class HaNotifiationTestCase(test.TestCase):
                                          fake=1,
                                          fake1=example_class()))
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('INFO',
             self.msg['args']['message']['priority'])
@@ -337,7 +337,7 @@ class HaNotifiationTestCase(test.TestCase):
                                          fake=1,
                                          fake1=example_class()))
         self.assertEqual(True, self.mock_cast_flag)
-        self.assertEqual('notification', self.topic)
+        self.assertEqual('notifications', self.topic)
         self.assertEqual('notify', self.msg['method'])
         self.assertEqual('INFO',
             self.msg['args']['message']['priority'])

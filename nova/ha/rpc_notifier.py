@@ -154,8 +154,11 @@ def consume(self, *args, **kwargs):
             if message.payload['method'] != 'notify':
                 values = {'message_id': message.payload['_msg_id'],
                           'status': EVENTLOG_STATUS_SUCCESS}
-                db.eventlog_update(nova.context.get_admin_context(False),
+                try:
+                    db.eventlog_update(nova.context.get_admin_context(False),
                                    values['message_id'], values)
+                except exception.EventLogNotFound:
+                    LOG.warn("Specified event log is not found, ignore it")
 
         callback(message.payload)
         message.ack()
