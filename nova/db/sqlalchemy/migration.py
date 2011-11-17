@@ -66,7 +66,8 @@ def db_version():
                           'user_role_association',
                           'virtual_storage_arrays',
                           'volumes', 'volume_metadata',
-                          'volume_types', 'volume_type_extra_specs'):
+                          'volume_types', 'volume_type_extra_specs',
+                          'eventlog'):
                 assert table in meta.tables
             return db_version_control(1)
         except AssertionError:

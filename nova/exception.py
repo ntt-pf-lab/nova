@@ -879,3 +879,7 @@ class FileError(Error):
 
 class InvalidRPCConnectionReuse(NovaException):
     message = _("It is not allowed to use that RPC Connection once again.")
+
+
+class EventLogNotFound(NotFound):
+    message = _("EventLog Not Found.")

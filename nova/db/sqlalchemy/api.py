@@ -3999,3 +3999,49 @@ def vsa_get_all_by_project(context, project_id):
 
 
     ####################
+
+@require_context
+def eventlog_create(context, values):
+    eventlog_ref = models.EventLog()
+    eventlog_ref.update(values)
+    eventlog_ref.save()
+    return eventlog_ref
+
+
+@require_context
+def eventlog_update(context, message_id, values):
+    session = get_session()
+    with session.begin():
+        eventlog_ref = eventlog_get(context, message_id, session=session)
+        eventlog_ref.update(values)
+        eventlog_ref.save(session=session)
+        return eventlog_ref
+
+
+@require_context
+def eventlog_get(context, message_id, session=None):
+    if not session:
+        session = get_session()
+    eventlog_ref = None
+    eventlog_ref = session.query(models.EventLog).\
+                     filter_by(message_id=message_id).\
+                     first()
+    if not eventlog_ref:
+        raise exception.EventLogNotFound(message_id=message_id)
+
+    return eventlog_ref
+
+
+@require_context
+def eventlog_get_all_by_request_id(context, request_id, session=None):
+    if not session:
+        session = get_session()
+    eventlog_ref = None
+    eventlog_ref = session.query(models.EventLog).\
+                     filter_by(request_id=request_id).\
+                     order_by('id').\
+                     all()
+    if not eventlog_ref:
+        raise exception.EventLogNotFound(request_id=request_id)
+
+    return eventlog_ref
