@@ -71,8 +71,7 @@ def upgrade(migrate_engine):
     try:
         eventlog.create()
     except Exception:
-        logging.info(repr(table))
-        logging.exception('Exception while creating table')
+        logging.exception('Exception while creating table eventlog')
         raise
 
 
