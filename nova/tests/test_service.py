@@ -36,7 +36,7 @@ from nova import manager
 from nova import wsgi
 from nova.compute import manager as compute_manager
 from nose.plugins.attrib import attr
-from nova.rpc import impl_kombu
+from nova.rpc import impl_carrot
 from nova.db import sqlalchemy
 FLAGS = flags.FLAGS
 flags.DEFINE_string("fake_manager", "nova.tests.test_service.FakeManager",
@@ -87,14 +87,15 @@ class ServiceManagerTestCase(test.TestCase):
                           admin_context, host, binary)
         app.start()
         service_ref = db.service_get_by_args(admin_context, host, binary)
-        self.assert_(topic, service_ref['topic'])
+        self.assertEquals(topic, service_ref['topic'])
         app.kill()
         self.assertRaises(exception.HostBinaryNotFound,
                           service.db.service_get_by_args,
                           admin_context, host, binary)
 
     @attr(kind='small')
-    def test_service_and_periodic_tasks(self):
+    def test_periodic_tasks(self):
+        """Test for nova.service.Service.periodic_tasks. """
         self.error_list = []
 
         def fake_manager_periodic_tasks(*args, **kwargs):
@@ -125,7 +126,7 @@ class ServiceFlagsTestCase(test.TestCase):
         app.stop()
         ref = db.service_get(context.get_admin_context(), app.service_id)
         db.service_destroy(context.get_admin_context(), app.service_id)
-        self.assert_(not ref['disabled'])
+        self.assertTrue(not ref['disabled'])
 
     def test_service_disabled_on_create_based_on_flag(self):
         self.flags(enable_new_services=False)
@@ -136,7 +137,7 @@ class ServiceFlagsTestCase(test.TestCase):
         app.stop()
         ref = db.service_get(context.get_admin_context(), app.service_id)
         db.service_destroy(context.get_admin_context(), app.service_id)
-        self.assert_(ref['disabled'])
+        self.assertTrue(ref['disabled'])
 
 
 class FlagsOfServiceTestCase(test.TestCase):
@@ -154,32 +155,36 @@ class FlagsOfServiceTestCase(test.TestCase):
         super(FlagsOfServiceTestCase, self).tearDown()
 
     @attr(kind='small')
-    def test_service_flags_report_interval_is_on(self):
+    def test_start_configuration_flags_report_interval_has_value(self):
+        """Test for nova.service.Service.start. Report interval flags
+        has value, not False"""
         self.flags(enable_new_services=False)
         host = 'foo'
         binary = 'nova-fake'
         app = service.Service.create(host=host,
                                      binary=binary,
-                                     report_interval=10)
+                                     report_interval=10,
+                                     periodic_interval=None)
         app.start()
         app.stop()
         ref = db.service_get(context.get_admin_context(), app.service_id)
-        db.service_destroy(context.get_admin_context(), app.service_id)
-        self.assert_(ref['disabled'])
+        self.assertTrue(ref['disabled'])
 
     @attr(kind='small')
-    def test_service_flags_periodic_interval_is_one(self):
+    def test_start_configuration_flags_periodic_interval_has_value(self):
+        """Test for nova.service.Service.start. Periodic interval flags
+        has value, not False"""
         self.flags(enable_new_services=True)
         host = 'foo'
         binary = 'nova-fake'
         app = service.Service.create(host=host,
                                      binary=binary,
+                                     report_interval=None,
                                      periodic_interval=20)
         app.start()
         app.stop()
         ref = db.service_get(context.get_admin_context(), app.service_id)
-        db.service_destroy(context.get_admin_context(), app.service_id)
-        self.assert_(not ref['disabled'])
+        self.assertTrue(not ref['disabled'])
 
 
 class ServiceAndStopTestCase(test.TestCase):
@@ -198,7 +203,9 @@ class ServiceAndStopTestCase(test.TestCase):
         super(ServiceAndStopTestCase, self).tearDown()
 
     @attr(kind='small')
-    def test_service_and_stop_parameter_timers_is_one(self):
+    def test_stop_parameter_timers_iteration_is_one(self):
+        """Test for nova.service.Service.stop. In stop method, repeat
+        stop only once normally."""
         host = 'foo'
         binary = 'bar'
         topic = 'test'
@@ -222,7 +229,7 @@ class ServiceAndStopTestCase(test.TestCase):
         serv.model_disconnected = True
         serv.report_state()
         serv.stop()
-        self.assertEquals([], serv.timers)
+        self.assertEquals(serv.timers, [])
 
 
 class ServiceTestCase(test.TestCase):
@@ -230,10 +237,10 @@ class ServiceTestCase(test.TestCase):
 
     def setUp(self):
         super(ServiceTestCase, self).setUp()
-        self.mox.StubOutWithMock(service, 'db')
+#        self.mox.StubOutWithMock(service, 'db')
 
     @attr(kind='small')
-    def test_service_and_create_parameter_manager_is_not_None(self):
+    def test_create_parameter_manager_is_not_none(self):
         host = 'foo'
         binary = 'nova-volume'
         topic = 'volume'
@@ -253,9 +260,10 @@ class ServiceTestCase(test.TestCase):
         #             the looping calls are created in StartService.
         app = service.Service.create(host=host, binary=binary, topic=topic)
 
-        self.assert_(app)
+        self.assertTrue(app)
 
     def test_report_state_newly_disconnected(self):
+        self.mox.StubOutWithMock(service, 'db')
         host = 'foo'
         binary = 'bar'
         topic = 'test'
@@ -286,9 +294,10 @@ class ServiceTestCase(test.TestCase):
                                'nova.tests.test_service.FakeManager')
         serv.start()
         serv.report_state()
-        self.assert_(serv.model_disconnected)
+        self.assertTrue(serv.model_disconnected)
 
     def test_report_state_newly_connected(self):
+        self.mox.StubOutWithMock(service, 'db')
         host = 'foo'
         binary = 'bar'
         topic = 'test'
@@ -323,10 +332,10 @@ class ServiceTestCase(test.TestCase):
         serv.model_disconnected = True
         serv.report_state()
 
-        self.assert_(not serv.model_disconnected)
+        self.assertTrue(not serv.model_disconnected)
 
     @attr(kind='small')
-    def test_service_and_create_parameter_binary_is_None(self):
+    def test_create_parameter_binary_is_none(self):
         host = 'foo'
         binary = None
         topic = 'volume'
@@ -338,24 +347,29 @@ class ServiceTestCase(test.TestCase):
                                         topic=topic,
                                         manager=manager,
                                         report_interval=report_interval)
-        self.assert_(isinstance(result, service.Service))
+        self.assertTrue(isinstance(result, service.Service))
 
     @attr(kind='small')
-    def test_service_and_stop_exception_conn_close_pass(self):
-        def fake_conn_close():
-            return exception
+    def test_stop_exception_conn_close_is_failure(self):
+        self.stub_flg = False
+
+        def fake_conn_close(*args, **kwargs):
+            self.stub_flg = True
+            raise exception
 
         host = 'foo'
         binary = 'nova-volume'
         topic = 'volume'
         manager = 'nova.volume.manager.VolumeManager'
-        self.stubs.Set(rpc.impl_carrot, 'Connection', fake_conn_close)
+        self.stubs.Set(rpc.impl_carrot.Connection, 'close', fake_conn_close)
         app = service.Service.create(host=host,
                                      binary=binary,
                                      topic=topic,
                                      manager=manager)
-        self.assertEqual(None, app.stop())
-        self.assertEquals([], app.timers)
+        app.start()
+        app.stop()
+        self.assertTrue(self.stub_flg)
+        self.assertEquals(app.timers, [])
 
 
 class TestWSGIService(test.TestCase):
@@ -387,7 +401,7 @@ class TestLauncher(test.TestCase):
         launcher.stop()
 
     @attr(kind='small')
-    def test_launcher_and_run_server_configuration_start(self):
+    def test_run_server_configuration_start(self):
         self.stub_flg = False
 
         def fake_wait(*args, **kwargs):
@@ -397,24 +411,24 @@ class TestLauncher(test.TestCase):
         self.stubs.Set(service.Service, 'wait', fake_wait)
         server = service.Service.create(binary='nova-compute')
         self.assertEqual(None, service.Launcher().run_server(server))
-        self.assert_(self.stub_flg)
+        self.assertTrue(self.stub_flg)
 
     @attr(kind='small')
-    def test_launcher_and_stop_configuration_iter_is_zero(self):
+    def test_stop_configuration_iter_is_zero(self):
         launcher = service.Launcher()
         launcher._services = []
         result = launcher.stop()
         self.assertEqual(None, result)
 
     @attr(kind='small')
-    def test_launcher_and_wait_configuration_iter_is_zero(self):
+    def test_wait_configuration_iter_is_zero(self):
         launcher = service.Launcher()
         launcher._services = []
         result = launcher.wait()
         self.assertEqual(None, result)
 
     @attr(kind='small')
-    def test_launcher_and_wait_configuration_iter_is_one(self):
+    def test_wait_configuration_iter_is_one(self):
         server = service.Service.create(binary='nova-compute')
         launcher = service.Launcher()
         launcher._services = [server]
@@ -422,7 +436,7 @@ class TestLauncher(test.TestCase):
         self.assertEqual(None, result)
 
     @attr(kind='small')
-    def test_launcher_and_wait_configuration_iter_is_three(self):
+    def test_wait_configuration_iter_is_three(self):
         self.num = 0
 
         def fake_wait(*args, **kwargs):
@@ -441,7 +455,7 @@ class TestLauncher(test.TestCase):
         self.assertEqual(3, self.num)
 
     @attr(kind='small')
-    def test_launcher_and_wait_exception(self):
+    def test_wait_exception(self):
         self.stub_flg = False
 
         def fake_wait(*args, **kwargs):
@@ -453,7 +467,7 @@ class TestLauncher(test.TestCase):
         launcher = service.Launcher()
         launcher._services = [server]
         result = launcher.wait()
-        self.assert_(self.stub_flg)
+        self.assertTrue(self.stub_flg)
         self.assertEqual(None, result)
 
     @attr(kind='small')
@@ -484,5 +498,5 @@ class TestLauncher(test.TestCase):
 
         self.stubs.Set(service.Launcher, 'wait', fake_wait)
         app = service.wait()
-        self.assert_(self.stub_flg)
+        self.assertTrue(self.stub_flg)
         self.assertEqual(None, app)
