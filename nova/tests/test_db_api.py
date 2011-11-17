@@ -9293,6 +9293,7 @@ class DbApiTestCase(test.TestCase):
 
         self.assertEqual('Timeout', result.status)
 
+    @test.skip_test('wait for ha fixe')
     def test_eventlog_update_not_found(self):
         con = {}
         con['id'] = 1

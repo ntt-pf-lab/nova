@@ -24,10 +24,9 @@ from nova import rpc
 from nova import log as LOG
 from nova.notifier import api
 from nova import utils
+from nova.notifier import rabbit_notifier
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string('notification_topic', 'notification',
-                    'RabbitMQ topic used for Nova notifications')
 
 
 def api_decorator(name, fn):
