@@ -1456,11 +1456,13 @@ class UtilsTestCase(test.TestCase):
             return (stdout, stderror)
 
         self.stubs.Set(utils, 'execute', _fake_execute)
+
         cmd = 'dir'
         kwargs = {}
 
-        ref = self.utils.runthis(None, cmd, **kwargs)
-        self.assertEqual(None, ref)
+        ref = utils.runthis('test_prompt', cmd, **kwargs)
+        self.assertEqual(stdout, ref[0])
+        self.assertEqual(stderror, ref[1])
 
     @attr(kind='small')
     def test_set_time_override(self):
