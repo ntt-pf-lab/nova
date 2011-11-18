@@ -304,3 +304,14 @@ class KeypairNameValid(BaseValidator):
             raise exception.KeyPairExists(key_name=keypair_name)
         except exception.KeypairNotFound:
             pass
+
+
+class FloatingIpRequire(BaseValidator):
+    """
+    FloatingIpRequire.
+
+    Validate the floating ip is exists.
+    Require the 'floating_ip_id' parameter.
+    """
+    def validate_floating_ip_id(self, floating_ip_id):
+        db.floating_ip_get(self.context, floating_ip_id)

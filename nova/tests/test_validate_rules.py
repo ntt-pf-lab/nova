@@ -542,3 +542,22 @@ class ValidateRulesTestCase(test.TestCase):
         # assertion
         self.assertEqual("meth", actual)
         self.assertRaises(exception.KeyPairExists, target.meth, 'key1')
+
+    def test_floating_ip_require(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.FloatingIpRequire)
+            def meth(self, floating_ip_id):
+                return "meth"
+
+        validation.apply()
+        # setup data
+        values = {'id': 1, 'address': '192.168.0.1'}
+        db.floating_ip_create(self.context, values)
+        # do test
+        target = TargetClass()
+        actual = target.meth(1)
+
+        # assertion
+        self.assertEqual("meth", actual)
+        self.assertRaises(exception.FloatingIpNotFound, target.meth, 999)

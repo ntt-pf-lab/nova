@@ -24,6 +24,8 @@ from nova import exception
 from nova import flags
 from nova import log as logging
 from nova import rpc
+from nova import validation
+from nova import validate_rules as rules
 from nova.db import base
 
 
@@ -31,9 +33,22 @@ FLAGS = flags.FLAGS
 LOG = logging.getLogger('nova.network')
 
 
+class InstanceCreationResolver(validation.Resolver):
+
+    def resolve_parameter(self, params):
+        body = params['instance']
+        if body:
+            params['instance_id'] = body['id']
+        else:
+            params['instance_id'] = None
+        return params
+
+
 class API(base.Base):
     """API for interacting with the network manager."""
 
+    @validation.method(rules.FloatingIpRequire,
+                       alias={'id': 'floating_ip_id'})
     def get_floating_ip(self, context, id):
         rv = self.db.floating_ip_get(context, id)
         return dict(rv.iteritems())
@@ -49,6 +64,7 @@ class API(base.Base):
                                                      context.project_id)
         return ips
 
+    @validation.method(rules.InstanceRequire)
     def get_vifs_by_instance(self, context, instance_id):
         vifs = self.db.virtual_interface_get_by_instance(context, instance_id)
         return vifs
@@ -167,6 +183,8 @@ class API(base.Base):
                  {'method': 'disassociate_floating_ip',
                   'args': {'floating_address': floating_ip['address']}})
 
+    @validation.method(rules.InstanceRequire,
+                       resolver=InstanceCreationResolver)
     def allocate_for_instance(self, context, instance, **kwargs):
         """Allocates all network structures for an instance.
 
@@ -182,6 +200,8 @@ class API(base.Base):
                         {'method': 'allocate_for_instance',
                          'args': args})
 
+    @validation.method(rules.InstanceRequire,
+                       resolver=InstanceCreationResolver)
     def deallocate_for_instance(self, context, instance, **kwargs):
         """Deallocates all network structures related to instance."""
         args = kwargs
@@ -191,6 +211,7 @@ class API(base.Base):
                  {'method': 'deallocate_for_instance',
                   'args': args})
 
+    @validation.method(rules.InstanceRequire, rules.NetworkRequire)
     def add_fixed_ip_to_instance(self, context, instance_id, host, network_id):
         """Adds a fixed ip to instance from specified network."""
         args = {'instance_id': instance_id,
@@ -200,6 +221,7 @@ class API(base.Base):
                  {'method': 'add_fixed_ip_to_instance',
                   'args': args})
 
+    @validation.method(rules.InstanceRequire)
     def remove_fixed_ip_from_instance(self, context, instance_id, address):
         """Removes a fixed ip from instance from specified network."""
         args = {'instance_id': instance_id,
@@ -214,6 +236,8 @@ class API(base.Base):
                  {'method': 'add_network_to_project',
                   'args': {'project_id': project_id}})
 
+    @validation.method(rules.InstanceRequire,
+                       resolver=InstanceCreationResolver)
     def get_instance_nw_info(self, context, instance):
         """Returns all network info related to an instance."""
         args = {'instance_id': instance['id'],

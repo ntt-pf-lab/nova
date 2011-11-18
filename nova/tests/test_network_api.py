@@ -19,13 +19,14 @@ Tests For nova.network.api
 """
 
 from nova import context
+from nova import db
 from nova import exception
 from nova import flags
 from nova import rpc
 from nova import test
+from nova import validation
 from nova.network import api
 from nose.plugins.attrib import attr
-from nose.plugins.skip import SkipTest
 
 FLAGS = flags.FLAGS
 
@@ -91,7 +92,6 @@ class APITestCase(test.TestCase):
     def setUp(self):
         super(APITestCase, self).setUp()
         self.api = api.API()
-        #self.db = db
         self.context = context.get_admin_context()
 
         def fake_cast(context, topic, content):
@@ -102,8 +102,22 @@ class APITestCase(test.TestCase):
             if self.call:
                 return self.call(topic, content)
 
+        def fake_instance_get(context, instance_id):
+            pass
+
+        def fake_network_get(context, network_id):
+            pass
+
+        def fake_floating_ip_get(context, id):
+            pass
+
         self.stubs.Set(rpc, 'cast', fake_cast)
         self.stubs.Set(rpc, 'call', fake_call)
+        # stub for validate rules
+        self.stubs.Set(db, 'instance_get', fake_instance_get)
+        self.stubs.Set(db, 'network_get', fake_network_get)
+        self.stubs.Set(db, 'floating_ip_get', fake_floating_ip_get)
+        validation.apply()
 
     @attr(kind='small')
     def test_get_floating_ip(self):
@@ -121,18 +135,16 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_floating_ip_param_floating_ip_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        FloatingIpNotFound is raised
         """
         def fake_floating_ip_get(context, floating_ip_id):
-            return exception.FloatingIpNotFound(id=floating_ip_id)
+            raise exception.FloatingIpNotFound(id=floating_ip_id)
 
-        self.stubs.Set(self.api.db, "floating_ip_get",
-                                    fake_floating_ip_get)
+        self.stubs.Set(db, "floating_ip_get", fake_floating_ip_get)
 
         floating_ip_id = 99999
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.FloatingIpNotFound,
                           self.api.get_floating_ip,
                           self.context, floating_ip_id)
 
@@ -177,18 +189,16 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_vifs_by_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
         def fake_instance_get(context, instance_id):
-            return exception.InstanceNotFound(instance_id=instance_id)
+            raise exception.InstanceNotFound(instance_id=instance_id)
 
-        self.stubs.Set(self.api.db, "instance_get",
-                                    fake_instance_get)
+        self.stubs.Set(db, "instance_get", fake_instance_get)
 
         instance_id = 99999
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.get_vifs_by_instance,
                           self.context, instance_id)
 
@@ -620,37 +630,39 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_allocate_for_instance_param_instance_is_none(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
+        def fake_instance_get(context, instance_id):
+            raise exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(db, "instance_get", fake_instance_get)
+
         instance = None
         kwargs = {}
         kwargs['instance_id'] = 1
         kwargs['project_id'] = 'fake'
         kwargs['requested_networks'] = networks
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.allocate_for_instance,
                           self.context, instance, **kwargs)
 
     @attr(kind='small')
     def test_allocate_for_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
         def fake_instance_get(context, instance_id):
-            return exception.InstanceNotFound(instance_id=instance_id)
+            raise exception.InstanceNotFound(instance_id=instance_id)
 
-        self.stubs.Set(self.api.db, "instance_get",
-                                    fake_instance_get)
+        self.stubs.Set(db, "instance_get", fake_instance_get)
 
         instance = {'id': 99999}
         kwargs = {}
         kwargs['instance_id'] = 1
         kwargs['project_id'] = 'fake'
         kwargs['requested_networks'] = networks
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.allocate_for_instance,
                           self.context, instance, **kwargs)
 
@@ -674,35 +686,37 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_deallocate_for_instance_param_instance_is_none(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
+        def fake_instance_get(context, instance_id):
+            raise exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(db, "instance_get", fake_instance_get)
+
         instance = None
         kwargs = {}
         kwargs['instance_id'] = 1
         kwargs['fixed_ips'] = fixed_ips
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.deallocate_for_instance,
                           self.context, instance, **kwargs)
 
     @attr(kind='small')
     def test_deallocate_for_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
         def fake_instance_get(context, instance_id):
-            return exception.InstanceNotFound(instance_id=instance_id)
+            raise exception.InstanceNotFound(instance_id=instance_id)
 
-        self.stubs.Set(self.api.db, "instance_get",
-                                    fake_instance_get)
+        self.stubs.Set(db, "instance_get", fake_instance_get)
 
         instance = {'id': 99999}
         kwargs = {}
         kwargs['instance_id'] = 1
         kwargs['fixed_ips'] = fixed_ips
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.deallocate_for_instance,
                           self.context, instance, **kwargs)
 
@@ -726,6 +740,40 @@ class APITestCase(test.TestCase):
                             self.context, instance_id, host, network_id)
 
     @attr(kind='small')
+    def test_add_fixed_ip_to_instance_param_instance_not_found(self):
+        """
+        InstanceNotFound is raised
+        """
+        def fake_instance_get(context, instance_id):
+            raise exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(db, "instance_get", fake_instance_get)
+
+        instance_id = 99999
+        host = 'testhost'
+        network_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.api.add_fixed_ip_to_instance,
+                          self.context, instance_id, host, network_id)
+
+    @attr(kind='small')
+    def test_add_fixed_ip_to_instance_param_network_not_found(self):
+        """
+        NetworkNotFound is raised
+        """
+        def fake_network_get(context, network_id):
+            raise exception.NetworkNotFound(network_id=network_id)
+
+        self.stubs.Set(db, "network_get", fake_network_get)
+
+        instance_id = 1
+        host = 'testhost'
+        network_id = 99999
+        self.assertRaises(exception.NetworkNotFound,
+                          self.api.add_fixed_ip_to_instance,
+                          self.context, instance_id, host, network_id)
+
+    @attr(kind='small')
     def test_remove_fixed_ip_from_instance(self):
         """Test for nova.network.api.API.remove_fixed_ip_from_instance. """
         def cast(topic, content):
@@ -745,19 +793,17 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_remove_fixed_ip_from_instance_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
         def fake_instance_get(context, instance_id):
-            return exception.InstanceNotFound(instance_id=instance_id)
+            raise exception.InstanceNotFound(instance_id=instance_id)
 
-        self.stubs.Set(self.api.db, "instance_get",
-                                    fake_instance_get)
+        self.stubs.Set(db, "instance_get", fake_instance_get)
 
         instance_id = 99999
         address = '10.0.0.1'
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.remove_fixed_ip_from_instance,
                           self.context, instance_id, address)
 
@@ -797,29 +843,31 @@ class APITestCase(test.TestCase):
 
     @attr(kind='small')
     def test_get_instance_nw_info_param_instance_is_none(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
+        def fake_instance_get(context, instance_id):
+            raise exception.InstanceNotFound(instance_id=instance_id)
+
+        self.stubs.Set(db, "instance_get", fake_instance_get)
+
         instance = None
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.get_instance_nw_info,
                           self.context, instance)
 
     @attr(kind='small')
     def test_get_instance_nw_info_param_instance_not_found(self):
-        raise SkipTest("Parameter check is not implemented.")
         """
-        ApiError is raised
+        InstanceNotFound is raised
         """
         def fake_instance_get(context, instance_id):
-            return exception.InstanceNotFound(instance_id=instance_id)
+            raise exception.InstanceNotFound(instance_id=instance_id)
 
-        self.stubs.Set(self.api.db, "instance_get",
-                                    fake_instance_get)
+        self.stubs.Set(db, "instance_get", fake_instance_get)
 
         instance = {'id': 99999}
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(exception.InstanceNotFound,
                           self.api.get_instance_nw_info,
                           self.context, instance)
 
