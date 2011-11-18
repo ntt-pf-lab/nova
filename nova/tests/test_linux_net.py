@@ -24,6 +24,7 @@ from nova import test
 from nova import utils
 from nova.network import manager as network_manager
 from nova.network import linux_net
+from nose.plugins.attrib import attr
 
 import mox
 
@@ -444,3 +445,57 @@ class LinuxNetworkTestCase(test.TestCase):
             ('ip', 'link', 'set', 'dev', 'eth0', 'promisc', 'on'),
         ]
         self._test_initialize_gateway(existing, expected)
+
+    @attr(kind='small')
+    def test_device_exists(self):
+        """Test for nova.network.linux_net.device_exists"""
+        self.flags(fake_network=False)
+        executes = []
+
+        def fake_execute(*args, **kwargs):
+            executes.append(args)
+            if args[0] == 'ip' and args[1] == 'link' and args[2] == 'show':
+                return 'success', ''
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        device = 'eth0'
+        actual = self.driver.device_exists(device)
+        self.assertEqual(True, actual)
+        self.assertEqual([('ip', 'link', 'show', 'dev', device)], executes)
+
+    @attr(kind='small')
+    def test_device_exists_ex_execute_stderr(self):
+        """Test for nova.network.linux_net.device_exists"""
+        self.flags(fake_network=False)
+        executes = []
+
+        def fake_execute(*args, **kwargs):
+            executes.append(args)
+            if args[0] == 'ip' and args[1] == 'link' and args[2] == 'show':
+                return '', 'fail'
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        device = 'eth0'
+        actual = self.driver.device_exists(device)
+        self.assertEqual(False, actual)
+        self.assertEqual([('ip', 'link', 'show', 'dev', device)], executes)
+
+    @attr(kind='small')
+    def test_device_exists_ex_execute_raise_exception(self):
+        """Test for nova.network.linux_net.device_exists"""
+        self.flags(fake_network=False)
+        executes = []
+
+        def fake_execute(*args, **kwargs):
+            executes.append(args)
+            if args[0] == 'ip' and args[1] == 'link' and args[2] == 'show':
+                raise exception.ProcessExecutionError()
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        device = 'eth0'
+        self.assertRaises(exception.ProcessExecutionError,
+                          self.driver.device_exists,
+                          device)
