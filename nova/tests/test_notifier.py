@@ -124,6 +124,7 @@ class NotifierTestCase(test.TestCase):
         self.assertEqual(self.test_topic, 'testnotify.debug')
 
     def test_error_notification(self):
+        log.PublishErrorsHandler.emit = log.origin_emit
         self.stubs.Set(nova.flags.FLAGS, 'notification_driver',
             'nova.notifier.rabbit_notifier')
         self.stubs.Set(nova.flags.FLAGS, 'publish_errors', True)

@@ -79,6 +79,10 @@ def api_decorator(name, fn):
 
 
 def emit(self, record):
+    if 'list_notifier_drivers' in FLAGS:
+        if 'nova.notifier.log_notifier' in  FLAGS.list_notifier_drivers:
+            return
+
     api.notify('nova.error.publisher', 'error_notification',
          api.ERROR, dict(error=self.format(record).split('\n')))
 

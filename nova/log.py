@@ -283,6 +283,8 @@ class PublishErrorsHandler(logging.Handler):
         nova.notifier.api.notify('nova.error.publisher', 'error_notification',
             nova.notifier.api.ERROR, dict(error=record.msg))
 
+origin_emit = PublishErrorsHandler.emit
+
 
 def handle_exception(type, value, tb):
     extra = {}

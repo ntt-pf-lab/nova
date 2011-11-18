@@ -553,6 +553,7 @@ class PublishErrorsHandlerTestCase(test.TestCase):
     def test_emit_cfg_list_notifier_drivers_in_flags(self):
         """Test for nova.log.PublishErrorsHandler.emit. """
 
+        log.PublishErrorsHandler.emit = log.origin_emit
         self.stub_flg = False
 
         def fake_notifier(*args, **kwargs):
