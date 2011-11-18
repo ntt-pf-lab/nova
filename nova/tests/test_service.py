@@ -417,8 +417,7 @@ class TestLauncher(test.TestCase):
     def test_stop_configuration_iter_is_zero(self):
         launcher = service.Launcher()
         launcher._services = []
-        result = launcher.stop()
-        self.assertEqual(None, result)
+        launcher.stop()
 
     @attr(kind='small')
     def test_wait_configuration_iter_is_zero(self):
