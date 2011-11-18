@@ -467,6 +467,7 @@ class UtilsTestCase(test.TestCase):
         self.utils = utils
         self.utils.clear_time_override()
         self.flag_lp = flags.FLAGS.lock_path
+        utils._semaphores = {}
 
     def tearDown(self):
         super(UtilsTestCase, self).tearDown()
