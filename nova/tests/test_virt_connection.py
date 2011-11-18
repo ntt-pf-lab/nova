@@ -123,7 +123,7 @@ class ConnectionTestCase(test.TestCase):
                          isinstance(ref, vmwareapi_conn.VMWareESXConnection))
 
     @attr(kind='small')
-    def test_get_connection_configuration_none(self):
+    def test_get_connection_exception_none(self):
         """Test for nova.virt.connection.get_connection"""
         self.flags(connection_type='vmwareapi')
         self.flags(vmwareapi_host_ip='fakeip')
