@@ -63,6 +63,8 @@ from nova import manager
 from nova import quota
 from nova import utils
 from nova import rpc
+from nova import validation
+from nova import validate_rules as rules
 from nova.network import api as network_api
 from nova.compute import api as compute_api
 import random
@@ -117,6 +119,17 @@ flags.DEFINE_bool('force_dhcp_release', False,
 flags.DEFINE_string('dhcp_domain',
                     'novalocal',
                     'domain to use for building the hostnames')
+
+
+class NetworkCreationResolver(validation.Resolver):
+
+    def resolve_parameter(self, params):
+        body = params['network_ref']
+        if body:
+            params['network_id'] = body['id']
+        else:
+            params['network_id'] = None
+        return params
 
 
 class AddressAlreadyAllocated(exception.Error):
@@ -222,6 +235,7 @@ class FloatingIP(object):
         if ex_flag:
             raise exception.NetworkInitHostException()
 
+    @validation.method(rules.InstanceRequire)
     def allocate_for_instance(self, context, **kwargs):
         """Handles allocating the floating IP resources for an instance.
 
@@ -260,6 +274,7 @@ class FloatingIP(object):
                                               affect_auto_assigned=True)
         return ips
 
+    @validation.method(rules.InstanceRequire)
     def deallocate_for_instance(self, context, **kwargs):
         """Handles deallocating floating IP resources for an instance.
 
@@ -445,6 +460,8 @@ class NetworkManager(manager.SchedulerDependentManager):
             if num:
                 LOG.debug(_('Dissassociated %s stale fixed ip(s)'), num)
 
+    @validation.method(rules.NetworkRequire,
+                       resolver=NetworkCreationResolver)
     def set_network_host(self, context, network_ref):
         """Safely sets the host of the network."""
         LOG.debug(_('setting network host'), context=context)
@@ -481,6 +498,7 @@ class NetworkManager(manager.SchedulerDependentManager):
         return [network for network in networks if
                 not network['vlan']]
 
+    @validation.method(rules.InstanceRequire)
     def allocate_for_instance(self, context, **kwargs):
         """Handles allocating the various network resources for an instance.
 
@@ -504,6 +522,7 @@ class NetworkManager(manager.SchedulerDependentManager):
                                  requested_networks=requested_networks)
         return self.get_instance_nw_info(context, instance_id, type_id, host)
 
+    @validation.method(rules.InstanceRequire)
     def deallocate_for_instance(self, context, **kwargs):
         """Handles deallocating various network resources for an instance.
 
@@ -540,6 +559,7 @@ class NetworkManager(manager.SchedulerDependentManager):
         # deallocate vifs (mac addresses)
         self.db.virtual_interface_delete_by_instance(context, instance_id)
 
+    @validation.method(rules.InstanceRequire)
     def get_instance_nw_info(self, context, instance_id,
                              instance_type_id, host):
         """Creates network info list for instance.
@@ -652,6 +672,7 @@ class NetworkManager(manager.SchedulerDependentManager):
         if ex_flag:
             raise exception.NetworkAllocateException()
 
+    @validation.method(rules.InstanceRequire, rules.NetworkRequire)
     def add_virtual_interface(self, context, instance_id, network_id):
         vif = {'address': self.generate_mac_address(),
                    'instance_id': instance_id,
@@ -676,11 +697,13 @@ class NetworkManager(manager.SchedulerDependentManager):
                random.randint(0x00, 0xff)]
         return ':'.join(map(lambda x: "%02x" % x, mac))
 
+    @validation.method(rules.InstanceRequire, rules.NetworkRequire)
     def add_fixed_ip_to_instance(self, context, instance_id, host, network_id):
         """Adds a fixed ip to an instance from specified network."""
         networks = [self.db.network_get(context, network_id)]
         self._allocate_fixed_ips(context, instance_id, host, networks)
 
+    @validation.method(rules.InstanceRequire)
     def remove_fixed_ip_from_instance(self, context, instance_id, address):
         """Removes a fixed ip from an instance from specified network."""
         fixed_ips = self.db.fixed_ip_get_by_instance(context, instance_id)
@@ -691,6 +714,7 @@ class NetworkManager(manager.SchedulerDependentManager):
         raise exception.FixedIpNotFoundForSpecificInstance(
                                     instance_id=instance_id, ip=address)
 
+    @validation.method(rules.InstanceRequire)
     def allocate_fixed_ip(self, context, instance_id, network, **kwargs):
         """Gets a fixed ip from the pool."""
         # TODO(vish): when this is called by compute, we can associate compute
@@ -1152,6 +1176,7 @@ class VlanManager(RPCAllocateFixedIP, FloatingIP, NetworkManager):
 
         self.driver.metadata_forward()
 
+    @validation.method(rules.InstanceRequire)
     def allocate_fixed_ip(self, context, instance_id, network, **kwargs):
         """Gets a fixed ip from the pool."""
         if kwargs.get('vpn', None):
