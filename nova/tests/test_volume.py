@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -31,6 +33,7 @@ from nova import rpc
 from nova import test
 from nova import utils
 from nova import volume
+from nose.plugins.attrib import attr
 
 FLAGS = flags.FLAGS
 LOG = logging.getLogger('nova.tests.volume')
@@ -254,6 +257,30 @@ class VolumeTestCase(test.TestCase):
                                                         'fake_description')
         db.snapshot_destroy(self.context, snapshot_ref['id'])
         db.volume_destroy(self.context, volume_id)
+
+    @attr(kind='small')
+    def test_setup_compute_volume(self):
+        """Make sure volume can be setupped."""
+        volume_id = self._create_volume()
+        volume_api = volume.api.API()
+        result = volume_api.setup_compute_volume(self.context, volume_id)
+        self.assertEquals(result, '/dev/disk/by-path/volume-id-1')
+
+    @attr(kind='small')
+    def test_remove_compute_volume(self):
+        """Make sure volume can be removed."""
+        self.stub_flg = False
+
+        def fake_driver_undiscover_volume(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(volume.driver.FakeISCSIDriver,
+                       'undiscover_volume',
+                       fake_driver_undiscover_volume)
+        volume_id = self._create_volume()
+        volume_api = volume.api.API()
+        volume_api.remove_compute_volume(self.context, volume_id)
+        self.assert_(self.stub_flg)
 
 
 class DriverTestCase(test.TestCase):
