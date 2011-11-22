@@ -42,6 +42,7 @@ from nova import test
 from nova import utils
 from nova.notifier import test_notifier
 from nova.scheduler import api as scheduler_api
+from nova import validation
 from nova import volume
 from nova import block_device
 #from nova.tests import fake_network
@@ -84,6 +85,7 @@ class ComputeTestCase(test.TestCase):
             return {'id': 1, 'properties': {'kernel_id': 1, 'ramdisk_id': 1}}
 
         self.stubs.Set(nova.image.fake._FakeImageService, 'show', fake_show)
+        validation.apply()
 
     def _create_instance(self, params=None):
         """Create a test instance"""
@@ -208,6 +210,19 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_stop_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.stop_instance,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_start(self):
         """Ensure instance can be started"""
         instance_id = self._create_instance()
@@ -224,6 +239,19 @@ class ComputeTestCase(test.TestCase):
         self.assertEquals(vm_states.ACTIVE, instance['vm_state'])
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_start_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.start_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_pause(self):
@@ -401,6 +429,19 @@ class ComputeTestCase(test.TestCase):
         self.assert_(console)
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
+    def test_get_console_output_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.get_console_output,
+                          self.context, instance_id)
+
     def test_ajax_console(self):
         """Make sure we can get console output from instance"""
         instance_id = self._create_instance()
@@ -411,6 +452,19 @@ class ComputeTestCase(test.TestCase):
         self.assert_(set(['token', 'host', 'port']).issubset(console.keys()))
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
+    def test_get_ajax_console_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.get_ajax_console,
+                          self.context, instance_id)
+
     def test_vnc_console(self):
         """Make sure we can a vnc console for an instance."""
         instance_id = self._create_instance()
@@ -420,6 +474,19 @@ class ComputeTestCase(test.TestCase):
                                                instance_id)
         self.assert_(console)
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_get_vnc_console_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.get_vnc_console,
+                          self.context, instance_id)
 
     def test_run_instance_usage_notification(self):
         """Ensure run instance generates apropriate usage notification"""
@@ -476,12 +543,18 @@ class ComputeTestCase(test.TestCase):
                           instance_id)
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
     def test_lock(self):
         """ensure locked instance cannot be changed"""
         instance_id = self._create_instance()
         self.compute.run_instance(self.context, instance_id)
 
         non_admin_context = context.RequestContext(None, None, False, False)
+
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
 
         # decorator should return False(fail) with locked nonadmin context
         self.compute.lock_instance(self.context, instance_id)
@@ -494,6 +567,32 @@ class ComputeTestCase(test.TestCase):
         self.assertEqual(ret_val, None)
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_lock_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.lock_instance,
+                          self.context, instance_id)
+
+    @attr(kind='small')
+    def test_unlock_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.unlock_instance,
+                          self.context, instance_id)
 
     def test_finish_resize(self):
         """Contrived test to ensure finish_resize doesn't raise anything"""
@@ -566,6 +665,20 @@ class ComputeTestCase(test.TestCase):
                 migration_ref['id'])
         self.compute.terminate_instance(context, instance_id)
 
+    @attr(kind='small')
+    def test_resize_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        migration_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.resize_instance,
+                          self.context, instance_id, migration_id)
+
     def test_finish_revert_resize(self):
         """Ensure that the flavor is reverted to the original on revert"""
         context = self.context.elevated()
@@ -619,6 +732,34 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(context, instance_id)
 
+    @attr(kind='small')
+    def test_revert_resize_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        migration_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.revert_resize,
+                          self.context, instance_id, migration_id)
+
+    @attr(kind='small')
+    def test_finish_revert_resize_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        migration_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.finish_revert_resize,
+                          self.context, instance_id, migration_id)
+
     def test_get_by_flavor_id(self):
         type = instance_types.get_instance_type_by_flavor_id(1)
         self.assertEqual(type['name'], 'm1.tiny')
@@ -634,11 +775,25 @@ class ComputeTestCase(test.TestCase):
                 self.context, inst_ref['uuid'], 1)
         self.compute.terminate_instance(self.context, instance_id)
 
+    @attr(kind='small')
+    def test_prep_resize_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.prep_resize,
+                          self.context, instance_id)
+
     def _setup_other_managers(self):
         self.volume_manager = utils.import_object(FLAGS.volume_manager)
         self.network_manager = utils.import_object(FLAGS.network_manager)
         self.compute_driver = utils.import_object(FLAGS.compute_driver)
 
+    @attr(kind='small')
     def test_pre_live_migration_instance_has_no_fixed_ip(self):
         """Confirm raising exception if instance doesn't have fixed_ip."""
         instance_ref = self._get_dummy_instance()
@@ -649,12 +804,17 @@ class ComputeTestCase(test.TestCase):
         dbmock.instance_get(c, i_id).AndReturn(instance_ref)
         dbmock.instance_get_fixed_addresses(c, i_id).AndReturn(None)
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.mox.ReplayAll()
         self.assertRaises(exception.NotFound,
                           self.compute.pre_live_migration,
                           c, instance_ref['id'], time=FakeTime())
 
+    @attr(kind='small')
     def test_pre_live_migration_instance_has_volume(self):
         """Confirm setup_compute_volume is called when volume is mounted."""
         i_ref = self._get_dummy_instance()
@@ -673,6 +833,10 @@ class ComputeTestCase(test.TestCase):
         drivermock.plug_vifs(i_ref, [])
         drivermock.ensure_filtering_rules_for_instance(i_ref, [])
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.compute.volume_api = volmock
         self.compute.driver = drivermock
@@ -681,6 +845,7 @@ class ComputeTestCase(test.TestCase):
         ret = self.compute.pre_live_migration(c, i_ref['id'])
         self.assertEqual(ret, None)
 
+    @attr(kind='small')
     def test_pre_live_migration_instance_has_no_volume(self):
         """Confirm log meg when instance doesn't mount any volumes."""
         i_ref = self._get_dummy_instance()
@@ -698,6 +863,10 @@ class ComputeTestCase(test.TestCase):
         drivermock.plug_vifs(i_ref, [])
         drivermock.ensure_filtering_rules_for_instance(i_ref, [])
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.compute.driver = drivermock
 
@@ -705,6 +874,7 @@ class ComputeTestCase(test.TestCase):
         ret = self.compute.pre_live_migration(c, i_ref['id'], time=FakeTime())
         self.assertEqual(ret, None)
 
+    @attr(kind='small')
     def test_pre_live_migration_setup_compute_node_fail(self):
         """Confirm operation setup_compute_network() fails.
 
@@ -729,6 +899,10 @@ class ComputeTestCase(test.TestCase):
             drivermock.plug_vifs(i_ref, []).\
                 AndRaise(exception.ProcessExecutionError())
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.compute.network_manager = netmock
         self.compute.volume_api = volmock
@@ -739,6 +913,7 @@ class ComputeTestCase(test.TestCase):
                           self.compute.pre_live_migration,
                           c, i_ref['id'], time=FakeTime())
 
+    @attr(kind='small')
     def test_live_migration_works_correctly_with_volume(self):
         """Confirm check_for_export to confirm volume health check."""
         i_ref = self._get_dummy_instance()
@@ -763,11 +938,16 @@ class ComputeTestCase(test.TestCase):
                                   self.compute.rollback_live_migration,
                                   False)
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.mox.ReplayAll()
         ret = self.compute.live_migration(c, i_ref['id'], i_ref['host'])
         self.assertEqual(ret, None)
 
+    @attr(kind='small')
     def test_live_migration_dest_raises_exception(self):
         """Confirm exception when pre_live_migration fails."""
         i_ref = self._get_dummy_instance()
@@ -795,12 +975,17 @@ class ComputeTestCase(test.TestCase):
             rpc.call(c, topic, {"method": "remove_volume",
                                 "args": {'volume_id': v['id']}})
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.mox.ReplayAll()
         self.assertRaises(rpc.RemoteError,
                           self.compute.live_migration,
                           c, i_ref['id'], i_ref['host'])
 
+    @attr(kind='small')
     def test_live_migration_dest_raises_exception_no_volume(self):
         """Same as above test(input pattern is different) """
         i_ref = self._get_dummy_instance()
@@ -822,12 +1007,17 @@ class ComputeTestCase(test.TestCase):
                                                 'task_state': None,
                                                 'host': i_ref['host']})
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.mox.ReplayAll()
         self.assertRaises(rpc.RemoteError,
                           self.compute.live_migration,
                           c, i_ref['id'], i_ref['host'])
 
+    @attr(kind='small')
     def test_live_migration_works_correctly_no_volume(self):
         """Confirm live_migration() works as expected correctly."""
         i_ref = self._get_dummy_instance()
@@ -850,6 +1040,10 @@ class ComputeTestCase(test.TestCase):
                                   self.compute.rollback_live_migration,
                                   False)
 
+        def stub_instance_get(context, instance_id):
+            pass
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
         self.compute.db = dbmock
         self.mox.ReplayAll()
         ret = self.compute.live_migration(c, i_ref['id'], i_ref['host'])
@@ -1165,6 +1359,19 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_reset_network_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.reset_network,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_inject_network_info(self):
         """ Ensure call driver.inject_network_info."""
         self.stub_flag = False
@@ -1183,6 +1390,19 @@ class ComputeTestCase(test.TestCase):
         self.assertTrue(self.stub_flag)
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_inject_network_info_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.inject_network_info,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_get_diagnostics_instance_running(self):
@@ -1215,6 +1435,19 @@ class ComputeTestCase(test.TestCase):
                                                        instance_id))
 
     @attr(kind='small')
+    def test_get_diagnostics_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.get_diagnostics,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_rebuild_instance(self):
         """Ensure instance is rebuild and running."""
 
@@ -1243,6 +1476,19 @@ class ComputeTestCase(test.TestCase):
         self.assertEquals(power_state.RUNNING, instance['power_state'])
 
         self.compute.terminate_instance(c, instance_id)
+
+    @attr(kind='small')
+    def test_rebuild_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.rebuild_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_snapshot_instance_when_image_type_is_backup_and_no_rotation(self):
@@ -1409,6 +1655,35 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_snapshot_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        name = "myfakesnapshot"
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.snapshot_instance,
+                          self.context, instance_id, name)
+
+    @attr(kind='small')
+    def test_rotate_backups_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_uuid = '99999999-9999-9999-9999-999999999999'  # not found
+        backup_type = 'daily'
+        rotation = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.rotate_backups,
+                          self.context, instance_uuid, backup_type, rotation)
+
+    @attr(kind='small')
     def test_set_admin_password_with_new_password(self):
         """Ensure admin password is changed to new password"""
         self.new_pass = '000000000000'
@@ -1485,6 +1760,19 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_set_admin_password_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.set_admin_password,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_reboot_instance_when_instance_not_running(self):
         """Ensure instance can be rebooted when instance is not running"""
         c = context.get_admin_context()
@@ -1506,6 +1794,19 @@ class ComputeTestCase(test.TestCase):
         self.assertEqual(power_state.RUNNING, instance_ref['power_state'])
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_reboot_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.reboot_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_init_check_isinstance_raise_import_error(self):
@@ -1643,24 +1944,15 @@ class ComputeTestCase(test.TestCase):
     @attr(kind='small')
     def test_run_instance_instance_not_found(self):
         """ Ensure raise exception when instance not found"""
-        self.stub_cnt = 0
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
 
-        def stub_usage_from_instance(instance_ref, **kw):
-            self.stub_cnt += 1
-            if self.stub_cnt == 1:
-                raise exception.InstanceNotFound
-            else:
-                pass
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
 
-        self.stubs.Set(utils, 'usage_from_instance', stub_usage_from_instance)
-
-        instance_id = self._create_instance()
-
-        self.compute.run_instance(self.context, instance_id)
-        self.assertEquals(1, self.stub_cnt)
-
-        self.compute.terminate_instance(self.context, instance_id)
-        self.assertEquals(2, self.stub_cnt)
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.run_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_run_instance_stub_network_is_false(self):
@@ -1720,6 +2012,19 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_rescue_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.rescue_instance,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_unrescue_instance(self):
         """ Ensure instance can be unrescued
             and vm state is changed active."""
@@ -1740,6 +2045,19 @@ class ComputeTestCase(test.TestCase):
         self.assertEqual(vm_states.ACTIVE, instance_ref['vm_state'])
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_unrescue_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.unrescue_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_confirm_resize(self):
@@ -1769,6 +2087,20 @@ class ComputeTestCase(test.TestCase):
         self.assert_(self.stub_flag)
 
         self.compute.terminate_instance(c, instance_id)
+
+    @attr(kind='small')
+    def test_confirm_resize_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        migration_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.confirm_resize,
+                          self.context, instance_id, migration_id)
 
     @attr(kind='small')
     def test_add_fixed_ip_to_instance(self):
@@ -1801,6 +2133,20 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_add_fixed_ip_to_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        network_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.add_fixed_ip_to_instance,
+                          self.context, instance_id, network_id)
+
+    @attr(kind='small')
     def test_remove_fixed_ip_from_instance(self):
         """ Ensure call network.api.remove_fixed_ip_from_instance"""
         self.instance_id = None
@@ -1830,6 +2176,20 @@ class ComputeTestCase(test.TestCase):
         self.assertEquals(address, self.address)
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_remove_fixed_ip_from_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        address = '90:12:34:56:78:90'
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.remove_fixed_ip_from_instance,
+                          self.context, instance_id, address)
 
     @attr(kind='small')
     def test_host_power_action(self):
@@ -1952,6 +2312,35 @@ class ComputeTestCase(test.TestCase):
         self.assertRaises(NotImplementedError,
                           self.compute.attach_volume,
                           c, instance_id, volume_id, mountpoint)
+
+    @attr(kind='small')
+    def test_attach_volume_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        volume_id = 1
+        mountpoint = '/dev/sdf'
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.attach_volume,
+                          self.context, instance_id, volume_id, mountpoint)
+
+    @attr(kind='small')
+    def test_detach_volume_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        volume_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.detach_volume,
+                          self.context, instance_id, volume_id)
 
     @attr(kind='small')
     def test_remove_volume(self):
@@ -2089,6 +2478,19 @@ class ComputeTestCase(test.TestCase):
         self.assertEquals(instance_id, self.instance_id)
 
     @attr(kind='small')
+    def test_post_live_migration_at_destination_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.post_live_migration_at_destination,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_rollback_live_migration_at_destination(self):
         """ Ensure call driver.destroy"""
         self.instance_id = None
@@ -2105,6 +2507,19 @@ class ComputeTestCase(test.TestCase):
         self.compute.rollback_live_migration_at_destination(self.context,
                                                             instance_id)
         self.assertEquals(instance_id, self.instance_id)
+
+    @attr(kind='small')
+    def test_rollback_live_migration_at_destination_param_inst_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.rollback_live_migration_at_destination,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_periodic_tasks_update_host_status(self):
@@ -2435,6 +2850,21 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(c, instance_id)
 
     @attr(kind='small')
+    def test_inject_file_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        path = "/tmp/test"
+        file_contents = "File Contents"
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.inject_file,
+                          self.context, instance_id, path, file_contents)
+
+    @attr(kind='small')
     def test_agent_update_when_instance_not_running(self):
         """Ensure instance can have its agent updated
             when instance is not running"""
@@ -2471,6 +2901,21 @@ class ComputeTestCase(test.TestCase):
         self.assertEquals(md5hash, self.md5hash)
 
         self.compute.terminate_instance(c, instance_id)
+
+    @attr(kind='small')
+    def test_agent_update_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        url = 'http://127.0.0.1/agent'
+        md5hash = '00112233445566778899aabbccddeeff'
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.agent_update,
+                          self.context, instance_id, url, md5hash)
 
     @attr(kind='small')
     def test_finish_resize_old_type_id_equal_new(self):
@@ -2516,6 +2961,20 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(context, instance_id)
 
     @attr(kind='small')
+    def test_finish_resize_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        migration_id = 1
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.finish_resize,
+                          self.context, instance_id, migration_id)
+
+    @attr(kind='small')
     def test_pause_unpause_instance_with_callback_not_none(self):
         """Ensure instance can be paused/unpaused
            and callback is not none"""
@@ -2547,6 +3006,32 @@ class ComputeTestCase(test.TestCase):
         self.assert_(self.stub_flag)
 
         self.compute.terminate_instance(self.context, instance_id)
+
+    @attr(kind='small')
+    def test_pause_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.pause_instance,
+                          self.context, instance_id)
+
+    @attr(kind='small')
+    def test_unpause_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.unpause_instance,
+                          self.context, instance_id)
 
     @attr(kind='small')
     def test_suspend_resume_instance_callback_is_not_none(self):
@@ -2581,6 +3066,32 @@ class ComputeTestCase(test.TestCase):
         self.compute.terminate_instance(self.context, instance_id)
 
     @attr(kind='small')
+    def test_suspend_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.suspend_instance,
+                          self.context, instance_id)
+
+    @attr(kind='small')
+    def test_resume_instance_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.resume_instance,
+                          self.context, instance_id)
+
+    @attr(kind='small')
     def test_rollback_live_migration_block_migration_true(self):
         """ Ensure call rpc.cast when block_migration is true"""
         self.instance_id = None
@@ -2595,6 +3106,36 @@ class ComputeTestCase(test.TestCase):
         self.compute.rollback_live_migration(self.context,
                                              instance, None, True)
         self.assertEquals(instance_id, self.instance_id)
+
+    @attr(kind='small')
+    def test_rollback_live_migration_param_instance_is_none(self):
+        """ Ensure raise exception when instance is none"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_ref = None
+        dest = 'hostname-1'
+        block_migration = False
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.rollback_live_migration,
+                          self.context, instance_ref, dest, block_migration)
+
+    @attr(kind='small')
+    def test_rollback_live_migration_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_ref = {'id': 99999}  # not found
+        dest = 'hostname-1'
+        block_migration = False
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.rollback_live_migration,
+                          self.context, instance_ref, dest, block_migration)
 
     @attr(kind='small')
     def test_post_live_migration_volume_manager_raise_notfound(self):
@@ -2740,6 +3281,34 @@ class ComputeTestCase(test.TestCase):
         self.assertEquals(instance_id, self.instance_id)
 
     @attr(kind='small')
+    def test_post_live_migration_param_instance_is_none(self):
+        """ Ensure raise exception when instance is none"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_ref = None
+        dest = 'hostname-1'
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.post_live_migration,
+                          self.context, instance_ref, dest)
+
+    @attr(kind='small')
+    def test_post_live_migration_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_ref = {'id': 99999}  # not found
+        dest = 'hostname-1'
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.post_live_migration,
+                          self.context, instance_ref, dest)
+
+    @attr(kind='small')
     def test_live_migration_block_migration_true(self):
         """ Ensure call driver.get_instance_disk_info
             when block_migration is true"""
@@ -2770,6 +3339,20 @@ class ComputeTestCase(test.TestCase):
                         self.disk_info[1]['path'] == '/test/disk.local' and
                         self.disk_info[0]['local_gb'] == '10G' and
                         self.disk_info[1]['local_gb'] == '20G')
+
+    @attr(kind='small')
+    def test_live_migration_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        dest = 'hostname-1'
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.live_migration,
+                          self.context, instance_id, dest)
 
     @attr(kind='small')
     def test_pre_live_migration_network_info_is_empty(self):
@@ -2932,6 +3515,19 @@ class ComputeTestCase(test.TestCase):
         self.assertFalse(rtn)
 
         self.compute.terminate_instance(c, instance_id)
+
+    @attr(kind='small')
+    def test_get_lock_param_instance_not_found(self):
+        """ Ensure raise exception when instance not found"""
+        def stub_instance_get(context, instance_id):
+            raise exception.InstanceNotFound
+
+        self.stubs.Set(db, 'instance_get', stub_instance_get)
+
+        instance_id = 99999  # not found
+        self.assertRaises(exception.InstanceNotFound,
+                          self.compute.get_lock,
+                          self.context, instance_id)
 
     @test.skip_test("rejected bug report.")
     @attr(kind='small')

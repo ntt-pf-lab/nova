@@ -56,6 +56,8 @@ from nova import manager
 from nova import network
 from nova import rpc
 from nova import utils
+from nova import validation
+from nova import validate_rules as rules
 from nova import volume
 from nova.compute import power_state
 from nova.compute import task_states
@@ -123,6 +125,17 @@ def checks_instance_lock(function):
             return False
 
     return decorated_function
+
+
+class InstanceCreationResolver(validation.Resolver):
+
+    def resolve_parameter(self, params):
+        body = params['instance_ref']
+        if body:
+            params['instance_id'] = body['id']
+        else:
+            params['instance_id'] = None
+        return params
 
 
 class ComputeManager(manager.SchedulerDependentManager):
@@ -476,11 +489,13 @@ class ComputeManager(manager.SchedulerDependentManager):
                 raise type_, value, traceback
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def run_instance(self, context, instance_id, **kwargs):
         self._run_instance(context, instance_id, **kwargs)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def start_instance(self, context, instance_id):
         """Starting an instance on this host."""
         # TODO(yamahata): injected_files isn't supported.
@@ -513,6 +528,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def terminate_instance(self, context, instance_id):
         """Terminate an instance on this host."""
         self._shutdown_instance(context, instance_id, 'Terminating')
@@ -532,6 +548,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def stop_instance(self, context, instance_id):
         """Stopping an instance on this host."""
         self._shutdown_instance(context, instance_id, 'Stopping')
@@ -542,6 +559,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def rebuild_instance(self, context, instance_id, **kwargs):
         """Destroy and re-make this instance.
 
@@ -605,6 +623,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def reboot_instance(self, context, instance_id):
         """Reboot an instance on this host."""
         LOG.audit(_("Rebooting instance %s"), instance_id, context=context)
@@ -637,6 +656,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                               task_state=None)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def snapshot_instance(self, context, instance_id, image_id,
                           image_type='snapshot', backup_type=None,
                           rotation=None):
@@ -690,6 +710,8 @@ class ComputeManager(manager.SchedulerDependentManager):
         elif image_type == 'backup':
             raise exception.RotationRequiredForBackup()
 
+    @validation.method(rules.InstanceRequire,
+                       alias={'instance_uuid': 'instance_id'})
     def rotate_backups(self, context, instance_uuid, backup_type, rotation):
         """Delete excess backups associated to an instance.
 
@@ -738,6 +760,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def set_admin_password(self, context, instance_id, new_pass=None):
         """Set the root/admin password for an instance on this host.
 
@@ -786,6 +809,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def inject_file(self, context, instance_id, path, file_contents):
         """Write a file to the specified path in an instance on this host."""
         context = context.elevated()
@@ -804,6 +828,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def agent_update(self, context, instance_id, url, md5hash):
         """Update agent running on an instance on this host."""
         context = context.elevated()
@@ -822,6 +847,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def rescue_instance(self, context, instance_id):
         """Rescue an instance on this host."""
         LOG.audit(_('instance %s: rescuing'), instance_id, context=context)
@@ -842,6 +868,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def unrescue_instance(self, context, instance_id):
         """Rescue an instance on this host."""
         LOG.audit(_('instance %s: unrescuing'), instance_id, context=context)
@@ -862,6 +889,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def confirm_resize(self, context, instance_id, migration_id):
         """Destroys the source instance."""
         migration_ref = self.db.migration_get(context, migration_id)
@@ -878,6 +906,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def revert_resize(self, context, instance_id, migration_id):
         """Destroys the new instance on the destination machine.
 
@@ -901,6 +930,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def finish_revert_resize(self, context, instance_id, migration_id):
         """Finishes the second half of reverting a resize.
 
@@ -935,6 +965,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def prep_resize(self, context, instance_id, instance_type_id):
         """Initiates the process of moving a running instance to another host.
 
@@ -988,6 +1019,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def resize_instance(self, context, instance_id, migration_id):
         """Starts the migration of a running instance to another host."""
         migration_ref = self.db.migration_get(context, migration_id)
@@ -1017,6 +1049,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def finish_resize(self, context, instance_id, migration_id, disk_info):
         """Completes the migration process.
 
@@ -1057,6 +1090,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def add_fixed_ip_to_instance(self, context, instance_id, network_id):
         """Calls network_api to add new fixed_ip to instance
         then injects the new network info and resets instance networking.
@@ -1069,6 +1103,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def remove_fixed_ip_from_instance(self, context, instance_id, address):
         """Calls network_api to remove existing fixed_ip from instance
         by injecting the altered network info and resetting
@@ -1081,6 +1116,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def pause_instance(self, context, instance_id):
         """Pause an instance on this host."""
         LOG.audit(_('instance %s: pausing'), instance_id, context=context)
@@ -1098,6 +1134,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def unpause_instance(self, context, instance_id):
         """Unpause a paused instance on this host."""
         LOG.audit(_('instance %s: unpausing'), instance_id, context=context)
@@ -1124,6 +1161,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         return self.driver.set_host_enabled(host, enabled)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def get_diagnostics(self, context, instance_id):
         """Retrieve diagnostics for an instance on this host."""
         instance_ref = self.db.instance_get(context, instance_id)
@@ -1134,6 +1172,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def suspend_instance(self, context, instance_id):
         """Suspend the given instance."""
         LOG.audit(_('instance %s: suspending'), instance_id, context=context)
@@ -1151,6 +1190,7 @@ class ComputeManager(manager.SchedulerDependentManager):
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def resume_instance(self, context, instance_id):
         """Resume the given suspended instance."""
         LOG.audit(_('instance %s: resuming'), instance_id, context=context)
@@ -1167,6 +1207,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                               task_state=None)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def lock_instance(self, context, instance_id):
         """Lock the given instance."""
         context = context.elevated()
@@ -1175,6 +1216,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         self.db.instance_update(context, instance_id, {'locked': True})
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def unlock_instance(self, context, instance_id):
         """Unlock the given instance."""
         context = context.elevated()
@@ -1183,6 +1225,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         self.db.instance_update(context, instance_id, {'locked': False})
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def get_lock(self, context, instance_id):
         """Return the boolean state of the given instance's lock."""
         context = context.elevated()
@@ -1196,6 +1239,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         return instance_ref['locked']
 
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def reset_network(self, context, instance_id):
         """Reset networking on the given instance."""
         instance = self.db.instance_get(context, instance_id)
@@ -1204,6 +1248,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         self.driver.reset_network(instance)
 
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def inject_network_info(self, context, instance_id):
         """Inject network info for the given instance."""
         LOG.debug(_('instance %s: inject network info'), instance_id,
@@ -1215,6 +1260,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         self.driver.inject_network_info(instance, network_info)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def get_console_output(self, context, instance_id):
         """Send the console output for the given instance."""
         context = context.elevated()
@@ -1225,6 +1271,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         return output.decode('utf-8', 'replace').encode('ascii', 'replace')
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def get_ajax_console(self, context, instance_id):
         """Return connection information for an ajax console."""
         context = context.elevated()
@@ -1233,6 +1280,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         return self.driver.get_ajax_console(instance_ref)
 
     @exception.wrap_exception(notifier=notifier, publisher_id=publisher_id())
+    @validation.method(rules.InstanceRequire)
     def get_vnc_console(self, context, instance_id):
         """Return connection information for a vnc console."""
         context = context.elevated()
@@ -1257,6 +1305,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         return dev_path
 
     @checks_instance_lock
+    @validation.method(rules.InstanceRequire)
     def attach_volume(self, context, instance_id, volume_id, mountpoint):
         """Attach a volume to an instance."""
         context = context.elevated()
@@ -1318,6 +1367,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                 context, instance_id, volume_id)
         return True
 
+    @validation.method(rules.InstanceRequire)
     def detach_volume(self, context, instance_id, volume_id):
         """Detach a volume from an instance."""
         return self._detach_volume(context, instance_id, volume_id, True)
@@ -1397,6 +1447,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         """
         return self.driver.update_available_resource(context, self.host)
 
+    @validation.method(rules.InstanceRequire)
     def pre_live_migration(self, context, instance_id, time=None,
                            block_migration=False, disk=None):
         """Preparations for live migration at dest host.
@@ -1462,6 +1513,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                                             instance_ref,
                                             disk)
 
+    @validation.method(rules.InstanceRequire)
     def live_migration(self, context, instance_id,
                        dest, block_migration=False):
         """Executing live migration.
@@ -1513,6 +1565,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                                    self.rollback_live_migration,
                                    block_migration)
 
+    @validation.method(rules.InstanceRequire,
+                       resolver=InstanceCreationResolver)
     def post_live_migration(self, ctxt, instance_ref,
                             dest, block_migration=False):
         """Post operations for live migration.
@@ -1603,6 +1657,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                    "Domain not found: no domain with matching name.\" "
                    "This error can be safely ignored."))
 
+    @validation.method(rules.InstanceRequire)
     def post_live_migration_at_destination(self, context,
                                 instance_id, block_migration=False):
         """Post operations for live migration .
@@ -1621,6 +1676,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                                                        network_info,
                                                        block_migration)
 
+    @validation.method(rules.InstanceRequire,
+                       resolver=InstanceCreationResolver)
     def rollback_live_migration(self, context, instance_ref,
                                 dest, block_migration):
         """Recovers Instance/volume state from migrating -> running.
@@ -1652,6 +1709,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                      {"method": "rollback_live_migration_at_destination",
                       "args": {'instance_id': instance_ref['id']}})
 
+    @validation.method(rules.InstanceRequire)
     def rollback_live_migration_at_destination(self, context, instance_id):
         """ Cleaning up image directory that is created pre_live_migration.
 

@@ -169,7 +169,7 @@ class Filter(object):
                 params = {}
                 # weave runtime parameter names and values.
                 if not (len(self.args) == len(v_args) or
-                        len(self.args) + len(self.defaults) > len(v_args)):
+                        len(self.args) + len(self.defaults) >= len(v_args)):
                     raise TypeError("Number of arguments is different.")
                 for (i, name) in enumerate(self.args):
                     if len(v_args) > 0:
