@@ -45,6 +45,7 @@ import time
 import functools
 
 from eventlet import greenthread
+
 import nova.context
 from nova import block_device
 from nova import exception
@@ -1428,6 +1429,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         # Call this method prior to ensure_filtering_rules_for_instance,
         # since bridge is not set up, ensure_filtering_rules_for instance
         # fails.
+        #
         # Retry operation is necessary because continuously request comes,
         # concorrent request occurs to iptables, then it complains.
         network_info = self._get_instance_nw_info(context, instance_ref)

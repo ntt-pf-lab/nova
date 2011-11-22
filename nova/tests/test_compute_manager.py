@@ -674,7 +674,7 @@ class ComputeTestCase(test.TestCase):
         drivermock.ensure_filtering_rules_for_instance(i_ref, [])
 
         self.compute.db = dbmock
-        self.compute.volume_manager = volmock
+        self.compute.volume_api = volmock
         self.compute.driver = drivermock
 
         self.mox.ReplayAll()
@@ -731,7 +731,7 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.db = dbmock
         self.compute.network_manager = netmock
-        self.compute.volume_manager = volmock
+        self.compute.volume_api = volmock
         self.compute.driver = drivermock
 
         self.mox.ReplayAll()
@@ -876,10 +876,10 @@ class ComputeTestCase(test.TestCase):
         i_ref = db.instance_get(c, instance_id)
 
         # Preparing mocks
-        self.mox.StubOutWithMock(self.compute.volume_manager,
+        self.mox.StubOutWithMock(self.compute.volume_api,
                                  'remove_compute_volume')
         for v in i_ref['volumes']:
-            self.compute.volume_manager.remove_compute_volume(c, v['id'])
+            self.compute.volume_api.remove_compute_volume(c, v['id'])
         self.mox.StubOutWithMock(self.compute.driver, 'unfilter_instance')
         self.compute.driver.unfilter_instance(i_ref, [])
         self.mox.StubOutWithMock(rpc, 'call')
@@ -1963,7 +1963,7 @@ class ComputeTestCase(test.TestCase):
                                                       volume_id):
             self.volume_id = volume_id
 
-        self.stubs.Set(self.compute.volume_manager,
+        self.stubs.Set(self.compute.volume_api,
                        'remove_compute_volume',
                        stub_volume_manager_remove_compute_volume)
 
@@ -2286,7 +2286,7 @@ class ComputeTestCase(test.TestCase):
                        'block_device_mapping_update',
                        stub_pass)
         self.stubs.Set(volume.API, 'check_attach', stub_pass)
-        self.stubs.Set(self.compute.volume_manager,
+        self.stubs.Set(self.compute.volume_api,
                        'setup_compute_volume',
                        stub_setup_compute_volume)
         self.stubs.Set(self.compute.db, 'volume_attached', stub_pass)
@@ -2616,7 +2616,7 @@ class ComputeTestCase(test.TestCase):
         def stub_rpc_call(*args, **kwargs):
             self.instance_id = args[2]['args']['instance_id']
 
-        self.stubs.Set(self.compute.volume_manager, 'remove_compute_volume',
+        self.stubs.Set(self.compute.volume_api, 'remove_compute_volume',
                        stub_volume_manager_remove_compute_volume)
         self.stubs.Set(self.compute.driver, 'unfilter_instance',
                        stub_driver_unfilter_instance)
@@ -2972,7 +2972,7 @@ class ComputeTestCase(test.TestCase):
                        'block_device_mapping_update',
                        stub_pass)
         self.stubs.Set(volume.API, 'check_attach', stub_pass)
-        self.stubs.Set(self.compute.volume_manager,
+        self.stubs.Set(self.compute.volume_api,
                        'setup_compute_volume',
                        stub_setup_compute_volume)
         self.stubs.Set(self.compute.db, 'volume_attached', stub_pass)
