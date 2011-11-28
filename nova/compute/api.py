@@ -52,7 +52,7 @@ flags.DEFINE_integer('find_host_timeout', 30,
 
 
 def checks_instance_lock(function):
-    """Decorator to prevent action against locked instances for non-admins."""
+    """Decorator to prevent action against locked instances by non-admins"""
     @functools.wraps(function)
     def decorated_function(self, context, instance_id, *args, **kwargs):
 
