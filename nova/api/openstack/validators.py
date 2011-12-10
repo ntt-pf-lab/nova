@@ -16,7 +16,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
+import webob
 from nova import exception
 from nova import flags
 from nova import log as logging
@@ -29,9 +29,15 @@ MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
  "validators": [rules.FlavorRequire],
- "alias": {"id": "flavor_id"}}
+ "alias": {"id": "flavor_id"}},
+{"cls": "servers.Controller",
+ "method": "action",
+ "validators": [rules.InstanceRequire],
+ "alias": {"id": "instance_id"}}
 ]
 
+def handle_web_exception(self, e):
+    raise webob.exc.HTTPNotFound(explanation=e.message) 
 
 class ValidatorMiddleware(wsgi.Middleware):
 
@@ -56,10 +62,12 @@ class APIValidateMapper(object):
         return MAPPING
 
     def map(self):
-        configs = self._get_config(self)
+        configs = self._get_config()
         for config in configs:
             cls = utils.import_class(self.base + config["cls"])
             func = getattr(cls, config["method"])
+            for v in config["validators"]:
+                v.handle_exception = handle_web_exception
             # weave
             func = validation.method(*config["validators"],
                                 alias=config.get("alias", None),
