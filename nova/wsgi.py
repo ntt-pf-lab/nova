@@ -341,14 +341,19 @@ class DebugLogger(Middleware):
         end_time = time.time()
 
         #set the request_id in cookie
-        request_id = req.environ['nova.context'].request_id
+        if req.environ.get('nova.context', None):
+            request_id = req.environ['nova.context'].request_id
+        else:
+            request_id = 'NA'
         resp.set_cookie('request_id', request_id)
 
         #maximum length of response value to log.
-        MAX_RESPONSE_LEN = int(self.kwargs.get('MAX_RESPONSE_LEN', 200))
+        MAX_RESPONSE_LEN = int(self.kwargs.get('MAX_RESPONSE_LEN', -1))
         response_str = ''
         for part in resp.app_iter:
-            response_str += part[0:(MAX_RESPONSE_LEN - len(response_str))]
+            response_str += part
+        if MAX_RESPONSE_LEN != -1:
+            response_str = response_str[0:MAX_RESPONSE_LEN]
 
         log_str = "REQUEST ID: %s TIME: %.3f %s RESPONSE STATUS: '%s' "\
                     "RESPONSE: '%s'" % \
