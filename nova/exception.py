@@ -286,6 +286,10 @@ class InstanceRebootFailure(Invalid):
     message = _("Failed to reboot instance") + ": %(reason)s"
 
 
+class InstanceBootFailure(Invalid):
+    message = _("Failed to boot server") + ": %(reason)s."
+
+
 class ServiceUnavailable(Invalid):
     message = _("Service is unavailable at this time.")
 
