@@ -48,10 +48,11 @@ class ValidatorMiddleware(wsgi.Middleware):
             return cls(app, **local_config)
         return _factory
 
-    def __init__(self, applicateion):
+    def __init__(self, application):
         mapper = APIValidateMapper()
         mapper.map()
         validation.apply()
+        super(ValidatorMiddleware, self).__init__(application)
 
 
 class APIValidateMapper(object):
