@@ -35,6 +35,7 @@ class InstanceCreationResolver(validation.Resolver):
             params['instance_name'] =body['server']['name']
             params['image_id'] = body['server']['imageId']
             params['flavor_id'] = body['server']['flavorId']
+            params['zone_name']= body['server']['availability_zone']
         except KeyError:
             pass
         return params
@@ -51,7 +52,8 @@ MAPPING = [
  "alias": {"id": "instance_id"}},
 {"cls": "servers.Controller",
  "method": "create",
- "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
+ "validators": [rules.InstanceNameValid, rules.ImageRequire,
+                rules.FlavorRequire, rules.ZoneNameValid],
  "resolver": InstanceCreationResolver}
 ]
 

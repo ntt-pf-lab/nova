@@ -280,6 +280,29 @@ class ZoneRequire(BaseValidator):
     def validate_zone_id(self, zone_id):
         db.zone_get(self.context, zone_id)
 
+class ZoneNameValid(BaseValidator):
+    """
+    ZoneNameValid.
+    
+    If the specified zone is host, check the host exists.
+    If the specified zone is zone name, check the zone exists.
+    Otherwise, accept the request.
+    """
+    def validate_zone_name(self, zone_name):
+        if not zone_name:
+            return
+        zone, _x, host = zone_name.partition(':')
+        if host:
+            service = db.service_get_by_args(self.context.elevated(), host,
+                                             'nova-compute')
+            if not service:
+                raise exception.HostNotFound(host=host)
+        #check all compute.
+        services = db.service_get_all_compute_sorted(self.context.elevated())
+        founds = [s for s in services if service.availability_zone == zone_name]
+        if founds == []:
+            raise exception.ComputeHostNotFound(host=zone_name)
+
 
 class KeypairRequire(BaseValidator):
     """
