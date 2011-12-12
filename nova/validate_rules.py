@@ -27,7 +27,8 @@ from nova import db
 from nova import image
 from nova import utils
 from nova.context import RequestContext
-from nova.compute import power_state
+from nova.compute import power_state, task_states
+from nova.compute.api import vm_states
 
 FLAGS = flags
 
@@ -122,6 +123,22 @@ class InstanceRunningRequire(BaseValidator):
         instance = db.instance_get(self.context, instance_id)
         if instance["power_state"] != power_state.RUNNING:
             raise exception.InstanceNotRunning(instance_id=instance_id)
+
+
+class InstanceCanReboot(BaseValidator):
+    """
+    InstanceCanReboot.
+    
+    Validate the instance can reboot.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+        if instance["vm_state"] == vm_states.ACTIVE:
+            if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
+                return
+        raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
 
 
 class ImageNameValid(BaseValidator):
