@@ -25,6 +25,21 @@ from nova import validate_rules as rules
 from nova import validation
 from nova import utils
 
+class InstanceCreationResolver(validation.Resolver):
+    """
+    InstanceCreationResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['instance_name'] =body['server']['name']
+            params['image_id'] = body['server']['imageId']
+            params['flavor_id'] = body['server']['flavorId']
+        except KeyError:
+            pass
+        return params
+
+
 MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
@@ -33,11 +48,22 @@ MAPPING = [
 {"cls": "servers.Controller",
  "method": "action",
  "validators": [rules.InstanceRequire],
- "alias": {"id": "instance_id"}}
+ "alias": {"id": "instance_id"}},
+{"cls": "servers.Controller",
+ "method": "create",
+ "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
+ "resolver": InstanceCreationResolver}
 ]
 
 def handle_web_exception(self, e):
-    raise webob.exc.HTTPNotFound(explanation=e.message) 
+    if isinstance(e, exception.NotFound):
+        raise webob.exc.HTTPNotFound(explanation=str(e))
+    elif isinstance(e, exception.Invalid):
+        # TODO add some except pattern.
+        raise webob.exc.HTTPBadRequest(explanation=str(e))
+    elif isinstance(e, exception.Duplicate):
+        raise webob.exc.HTTPConflict(explanation=str(e))
+
 
 class ValidatorMiddleware(wsgi.Middleware):
 
