@@ -1085,7 +1085,7 @@ class SchedulerTestCase(test.TestCase):
     @attr(kind='small')
     def test_assert_compute_node_has_enough_disk_exception_inst(self):
         """Test for driver.Scheduler.assert_compute_node_has_enough_disk.
-        Raise MigrationError if migrate instance has no local_gb value"""
+        Size check is OK if migrate instance has no local_gb value"""
 
         # prepare instance without local_gb
         instance_id = self._create_instance()
@@ -1103,8 +1103,31 @@ class SchedulerTestCase(test.TestCase):
         instance_ref = db.instance_get(context.get_admin_context(),
                                        instance_id)
 
-        self.assertRaises(exception.MigrationError,
-                self.scheduler.assert_compute_node_has_enough_disk,
+        self.scheduler.assert_compute_node_has_enough_disk(
+                    context.get_admin_context(), instance_ref, dest)
+
+    @attr(kind='small')
+    def test_assert_compute_node_has_enough_disk_param_local_gb_0(self):
+        """Test for driver.Scheduler.assert_compute_node_has_enough_disk.
+        Size check is OK if migrate instance's local_gb is zero"""
+
+        # prepare instance with local_gb=0
+        instance_id = self._create_instance({'local_gb': 0})
+
+        dest = 'host2'
+        topic = 'compute'
+
+        sv = dict(host=dest, topic=topic)
+        sv_ref = db.service_create(context.get_admin_context(), values=sv)
+
+        nd = dict(service_id=sv_ref['id'], vcpus='12', memory_mb=8,
+            local_gb=20, vcpus_used='3', memory_mb_used='4', cpu_info='s',
+            local_gb_used='5', hypervisor_type='hdest', hypervisor_version='1')
+        db.compute_node_create(context.get_admin_context(), values=nd)
+        instance_ref = db.instance_get(context.get_admin_context(),
+                                       instance_id)
+
+        self.scheduler.assert_compute_node_has_enough_disk(
                     context.get_admin_context(), instance_ref, dest)
 
     @attr(kind='small')
