@@ -314,11 +314,6 @@ class ZoneNameValid(BaseValidator):
                                              'nova-compute')
             if not service:
                 raise exception.HostNotFound(host=host)
-        #check all compute.
-        services = db.service_get_all_compute_sorted(self.context.elevated())
-        founds = [s for s in services if service.availability_zone == zone_name]
-        if founds == []:
-            raise exception.ComputeHostNotFound(host=zone_name)
 
 
 class KeypairRequire(BaseValidator):

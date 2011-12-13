@@ -25,6 +25,9 @@ from nova import validate_rules as rules
 from nova import validation
 from nova import utils
 
+LOG = logging.getLogger('nova.api.openstack')
+
+
 class InstanceCreationResolver(validation.Resolver):
     """
     InstanceCreationResolver.
@@ -33,8 +36,8 @@ class InstanceCreationResolver(validation.Resolver):
         try:
             body = params['body']
             params['instance_name'] =body['server']['name']
-            params['image_id'] = body['server']['imageId']
-            params['flavor_id'] = body['server']['flavorId']
+            params['image_id'] = body['server']['imageRef']
+            params['flavor_id'] = body['server']['flavorRef']
             params['zone_name']= body['server']['availability_zone']
         except KeyError:
             pass
