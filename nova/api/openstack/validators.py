@@ -35,6 +35,7 @@ class InstanceCreationResolver(validation.Resolver):
             params['instance_name'] =body['server']['name']
             params['image_id'] = body['server']['imageId']
             params['flavor_id'] = body['server']['flavorId']
+            params['zone_name']= body['server']['availability_zone']
         except KeyError:
             pass
         return params
@@ -51,8 +52,13 @@ MAPPING = [
  "alias": {"id": "instance_id"}},
 {"cls": "servers.Controller",
  "method": "create",
- "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver}
+ "validators": [rules.InstanceNameValid, rules.ImageRequire,
+                rules.FlavorRequire, rules.ZoneNameValid],
+ "resolver": InstanceCreationResolver},
+{"cls": "servers.Controller",
+ "method": "_action_reboot",
+ "validators": [rules.InstanceCanReboot],
+ "alias": {"id": "instance_id"}}
 ]
 
 def handle_web_exception(self, e):
@@ -60,6 +66,8 @@ def handle_web_exception(self, e):
         raise webob.exc.HTTPNotFound(explanation=str(e))
     elif isinstance(e, exception.Invalid):
         # TODO add some except pattern.
+        if isinstance(e, exception.InstanceRebootFailure):
+            raise webob.exc.HTTPForbidden(explanation=str(e))
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.Duplicate):
         raise webob.exc.HTTPConflict(explanation=str(e))
