@@ -1595,3 +1595,9 @@ def eventlog_get_all_by_request_id(context, request_id, session=None):
     return IMPL.eventlog_get_all_by_request_id(context,
                                                request_id,
                                                session=None)
+
+
+def eventlog_get_all(context, filters):
+    """Get all EventLog records, after applying filters."""
+    return IMPL.eventlog_get_all(context,
+                                 filters)
