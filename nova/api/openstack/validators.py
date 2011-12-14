@@ -52,7 +52,11 @@ MAPPING = [
 {"cls": "servers.Controller",
  "method": "create",
  "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver}
+ "resolver": InstanceCreationResolver},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "delete",
+ "validators": [rules.KeypairRequire],
+ "alias": {"id": "keypair_name"}}
 ]
 
 def handle_web_exception(self, e):

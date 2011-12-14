@@ -1685,7 +1685,7 @@ def key_pair_get(context, user_id, name, session=None):
                      filter_by(deleted=can_read_deleted(context)).\
                      first()
     if not result:
-        raise exception.KeypairNotFound(user_id=user_id, name=name)
+        raise exception.KeypairNotFound(user_id=user_id, keypair_name=name)
     return result
 
 

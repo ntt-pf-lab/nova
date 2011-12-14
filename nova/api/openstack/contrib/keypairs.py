@@ -26,6 +26,8 @@ from webob import exc
 from nova import crypto
 from nova import db
 from nova import exception
+from nova import validation
+from nova import validate_rules as rules
 from nova.api.openstack import extensions
 
 
@@ -91,6 +93,8 @@ class KeypairController(object):
         db.key_pair_create(context, keypair)
         return {'keypair': keypair}
 
+    @validation.method(rules.KeypairRequire,
+                       alias={'id': 'keypair_name'})
     def delete(self, req, id):
         """
         Delete a keypair with a given name
