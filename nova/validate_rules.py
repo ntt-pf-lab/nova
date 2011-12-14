@@ -28,6 +28,7 @@ from nova import image
 from nova import utils
 from nova.context import RequestContext
 from nova.compute import power_state
+import sys
 
 FLAGS = flags
 
@@ -217,6 +218,14 @@ class ImageRequire(BaseValidator):
     Require the 'image_id' parameter.
     """
     def validate_image_id(self, image_id):
+        try:
+            num = int(image_id)
+            if num < 1:
+                raise exception.InvalidParameterValue("Specified image id is not positive value.")
+            elif num > sys.maxint:
+                raise exception.InvalidParameterValue("Specified image id is too large.")
+        except TypeError:
+            raise exception.InvalidParameterValue("Specified image id is not digit.")
         service = image.get_default_image_service()
         result = service.show(self.context, image_id)
         if result is None:
