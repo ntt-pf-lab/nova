@@ -88,6 +88,7 @@ class InstanceRequire(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
+        print "hogehoge"
         if utils.is_uuid_like(instance_id):
             db.instance_get_by_uuid(self.context, instance_id)
         else:

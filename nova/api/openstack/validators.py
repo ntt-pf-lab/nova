@@ -16,7 +16,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
+import webob
 from nova import exception
 from nova import flags
 from nova import log as logging
@@ -25,12 +25,44 @@ from nova import validate_rules as rules
 from nova import validation
 from nova import utils
 
+class InstanceCreationResolver(validation.Resolver):
+    """
+    InstanceCreationResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['instance_name'] =body['server']['name']
+            params['image_id'] = body['server']['imageId']
+            params['flavor_id'] = body['server']['flavorId']
+        except KeyError:
+            pass
+        return params
+
+
 MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
  "validators": [rules.FlavorRequire],
- "alias": {"id": "flavor_id"}}
+ "alias": {"id": "flavor_id"}},
+{"cls": "servers.Controller",
+ "method": "action",
+ "validators": [rules.InstanceRequire],
+ "alias": {"id": "instance_id"}},
+{"cls": "servers.Controller",
+ "method": "create",
+ "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
+ "resolver": InstanceCreationResolver}
 ]
+
+def handle_web_exception(self, e):
+    if isinstance(e, exception.NotFound):
+        raise webob.exc.HTTPNotFound(explanation=str(e))
+    elif isinstance(e, exception.Invalid):
+        # TODO add some except pattern.
+        raise webob.exc.HTTPBadRequest(explanation=str(e))
+    elif isinstance(e, exception.Duplicate):
+        raise webob.exc.HTTPConflict(explanation=str(e))
 
 
 class ValidatorMiddleware(wsgi.Middleware):
@@ -42,10 +74,11 @@ class ValidatorMiddleware(wsgi.Middleware):
             return cls(app, **local_config)
         return _factory
 
-    def __init__(self, applicateion):
+    def __init__(self, application):
         mapper = APIValidateMapper()
         mapper.map()
         validation.apply()
+        super(ValidatorMiddleware, self).__init__(application)
 
 
 class APIValidateMapper(object):
@@ -56,10 +89,12 @@ class APIValidateMapper(object):
         return MAPPING
 
     def map(self):
-        configs = self._get_config(self)
+        configs = self._get_config()
         for config in configs:
             cls = utils.import_class(self.base + config["cls"])
             func = getattr(cls, config["method"])
+            for v in config["validators"]:
+                v.handle_exception = handle_web_exception
             # weave
             func = validation.method(*config["validators"],
                                 alias=config.get("alias", None),
