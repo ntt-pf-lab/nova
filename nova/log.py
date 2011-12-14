@@ -30,6 +30,7 @@ import cStringIO
 import inspect
 import json
 import logging
+import logging.config
 import logging.handlers
 import os
 import stat
@@ -67,6 +68,10 @@ flags.DEFINE_list('default_log_levels',
 flags.DEFINE_bool('use_syslog', False, 'output to syslog')
 flags.DEFINE_bool('publish_errors', False, 'publish error events')
 flags.DEFINE_string('logfile', None, 'output to named file')
+flags.DEFINE_string('log-config', None, 'If this option is specified, the \
+logging configuration file specified is used and overrides any other logging \
+options specified. Please see the Python logging module documentation for \
+details on logging configuration files.')
 
 
 # A list of things we want to replicate from logging.
@@ -159,7 +164,9 @@ class NovaLogger(logging.Logger):
 
     def addHandler(self, handler):
         """Each handler gets our custom formatter."""
-        handler.setFormatter(_formatter)
+        #add custom formatter only if log configuration file is not specified.
+        if not FLAGS.get('log-config', None):
+            handler.setFormatter(_formatter)
         return logging.Logger.addHandler(self, handler)
 
     def audit(self, msg, *args, **kwargs):
@@ -245,6 +252,18 @@ class NovaRootLogger(NovaLogger):
     def setup_from_flags(self):
         """Setup logger from flags."""
         global _filelog
+
+        log_config = FLAGS.get('log-config', None)
+        if log_config:
+            #if log configuration file is provided, load the logging
+            # options from it (override any existing ones).
+            if os.path.exists(log_config):
+                logging.config.fileConfig(log_config)
+                return
+            else:
+                raise RuntimeError("Unable to locate specified logging "\
+                                   "config file: %s" % log_config)
+
         if FLAGS.use_syslog:
             self.syslog = SysLogHandler(address='/dev/log')
             self.addHandler(self.syslog)
