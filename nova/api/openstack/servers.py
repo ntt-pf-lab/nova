@@ -205,6 +205,7 @@ class Controller(object):
 
     @scheduler_api.redirect_handler
     def action(self, req, id, body):
+        print "-------------------------ACTION %s " % id 
         """Multi-purpose method used to take actions on a server"""
 
         self.actions = {

@@ -619,7 +619,18 @@ class LibvirtConnection(driver.ComputeDriver):
                 msg = _("During reboot, %s disappeared.") % instance_name
                 LOG.error(msg)
                 raise utils.LoopingCallDone
-
+            if state == power_state.SHUTDOWN:
+                msg = _("Instance %s failed to spawn.") % instance_name
+                LOG.error(msg)
+                raise exception.InstanceBootFailure(reason="Instance state is SHUTDOWN")
+            if state == power_state.SHUTOFF:
+                msg = _("Instance %s failed to spawn.") % instance_name
+                LOG.error(msg)
+                raise exception.InstanceBootFailure(reason="Instance state is SHUTOFF")
+            if state == power_state.CRASHED:
+                msg = _("Instance %s failed to spawn.") % instance_name
+                LOG.error(msg)
+                raise exception.InstanceBootFailure(reason="Instance state is CRASHED")
             if state == power_state.RUNNING:
                 msg = _("Instance %s spawned successfully.") % instance_name
                 LOG.info(msg)
