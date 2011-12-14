@@ -27,7 +27,7 @@ from nova import db
 from nova import image
 from nova import utils
 from nova.context import RequestContext
-from nova.compute import power_state
+from nova.compute import power_state, vm_states, task_states
 
 FLAGS = flags
 
@@ -88,11 +88,29 @@ class InstanceRequire(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
-        print "hogehoge"
         if utils.is_uuid_like(instance_id):
             db.instance_get_by_uuid(self.context, instance_id)
         else:
             db.instance_get(self.context, instance_id)
+
+
+class InstanceCanSnapshot(BaseValidator):
+    """
+    InstanceRequire.
+
+    Validate the instance is exists.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        vm = instance["vm_state"]
+        task = instance["task_state"]
+        if vm == vm_states.ACTIVE and task is None:
+            return
+        if vm == vm_states.ACTIVE and task == task_states.IMAGE_SNAPSHOT:
+            raise exception.InstanceSnapshotting(instance_id=instance_id) 
+        raise exception.InstanceSnapshotFailure(
+                    reason="Instance state is not suitable for snapshot")
 
 
 class InstanceNameValid(BaseValidator):

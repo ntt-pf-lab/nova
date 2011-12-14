@@ -71,7 +71,7 @@ MAPPING = [
  "resolver": InstanceCreationResolver},
 {"cls": "servers.ControllerV11",
  "method": "_action_create_image",
- "validators": [rules.ImageNameValid, rules.InstanceRequire],
+ "validators": [rules.ImageNameValid, rules.InstanceCanSnapshot],
  "resolver": CreateImageResolver},
 ]
 
