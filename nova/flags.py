@@ -423,3 +423,6 @@ DEFINE_list('monkey_patch_modules',
         'nova.compute.api:nova.notifier.api.notify_decorator'],
         'Module list representing monkey '
         'patched module and decorator')
+
+DEFINE_integer('pagination_limit', 20, 'maximum number of records \
+in API response')
