@@ -25,6 +25,7 @@ from nova import validate_rules as rules
 from nova import validation
 from nova import utils
 
+
 class InstanceCreationResolver(validation.Resolver):
     """
     InstanceCreationResolver.
@@ -35,6 +36,20 @@ class InstanceCreationResolver(validation.Resolver):
             params['instance_name'] =body['server']['name']
             params['image_id'] = body['server']['imageId']
             params['flavor_id'] = body['server']['flavorId']
+        except KeyError:
+            pass
+        return params
+
+
+class KeypairCreationResolver(validation.Resolver):
+    """
+    KeypairCreationResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['keypair_name'] = body['keypair']['name']
+            params['public_key'] = body['keypair'].get('public_key')
         except KeyError:
             pass
         return params
@@ -52,8 +67,14 @@ MAPPING = [
 {"cls": "servers.Controller",
  "method": "create",
  "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver}
+ "resolver": InstanceCreationResolver},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "create",
+ "validators": [rules.KeypairNameValid, rules.KeypairNotExist,
+                rules.PublicKeyValid],
+ "resolver": KeypairCreationResolver}
 ]
+
 
 def handle_web_exception(self, e):
     if isinstance(e, exception.NotFound):
