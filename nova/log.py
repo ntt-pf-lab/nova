@@ -44,12 +44,12 @@ from nova import version
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('logging_context_format_string',
-                    '%(asctime)s %(levelname)s %(name)s '
+                    '%(asctime)s %(server_name)s %(levelname)s %(name)s '
                     '[%(request_id)s %(user_id)s '
                     '%(project_id)s] %(message)s',
                     'format string to use for log messages with context')
 flags.DEFINE_string('logging_default_format_string',
-                    '%(asctime)s %(levelname)s %(name)s [-] '
+                    '%(asctime)s %(server_name)s %(levelname)s %(name)s [-] '
                     '%(message)s',
                     'format string to use for log messages without context')
 flags.DEFINE_string('logging_debug_format_suffix',
@@ -159,6 +159,8 @@ class NovaLogger(logging.Logger):
             extra = {}
         if context:
             extra.update(_dictify_context(context))
+        global _binary_name
+        extra['server_name'] = _binary_name
         extra.update({"nova_version": version.version_string_with_vcs()})
         return logging.Logger._log(self, level, msg, args, exc_info, extra)
 
@@ -322,6 +324,8 @@ def reset():
 def setup():
     """Setup nova logging."""
     if not isinstance(logging.root, NovaRootLogger):
+        global _binary_name
+        _binary_name = _get_binary_name()
         logging._acquireLock()
         for handler in logging.root.handlers:
             logging.root.removeHandler(handler)
