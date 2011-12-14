@@ -93,7 +93,7 @@ def handle_web_exception(self, e):
             raise webob.exc.HTTPForbidden(explanation=str(e))
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.Duplicate):
-        raise webob.exc.HTTPConflict(explanation=str(e))
+        raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))
 
