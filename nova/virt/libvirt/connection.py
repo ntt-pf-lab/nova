@@ -630,7 +630,9 @@ class LibvirtConnection(driver.ComputeDriver):
                 raise utils.LoopingCallDone
 
         timer = utils.LoopingCall(_wait_for_boot)
-        return timer.start(interval=0.5, now=True)
+        future = timer.start(interval=0.5, now=True)
+        future.wait()
+        return future
 
     def _flush_xen_console(self, virsh_output):
         LOG.info(_('virsh said: %r'), virsh_output)

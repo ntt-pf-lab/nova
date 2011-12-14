@@ -420,7 +420,17 @@ class ComputeManager(manager.SchedulerDependentManager):
         instance['admin_pass'] = kwargs.get('admin_password', None)
 
         is_vpn = instance['image_ref'] == str(FLAGS.vpn_image_id)
-        network_info = _make_network_info()
+
+        try:
+            network_info = _make_network_info()
+        except:
+            LOG.exception(_("Making network is failed"))
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=vm_states.ERROR,
+                      task_state=None)
+            raise
+
         try:
             self._instance_update(context,
                                   instance_id,
@@ -443,6 +453,10 @@ class ComputeManager(manager.SchedulerDependentManager):
                         "virtualization enabled in the BIOS? Details: "
                         "%(ex)s") % locals()
                 LOG.exception(msg)
+                self._instance_update(context,
+                          instance_id,
+                          vm_state=vm_states.ERROR,
+                          task_state=None)
                 _deallocate_network()
                 return
 
