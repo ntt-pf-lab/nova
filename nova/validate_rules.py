@@ -18,6 +18,8 @@
 #    under the License.
 
 import webob
+import base64
+import struct
 
 from nova import context
 from nova import exception
@@ -139,6 +141,24 @@ class InstanceCanReboot(BaseValidator):
             if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
                 return
         raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
+
+
+class InstanceCanSnapshot(BaseValidator):
+    """
+    InstanceCanSnapshot.
+    
+    Validate the instance can snapshot.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+        if instance["vm_state"] == vm_states.ACTIVE:
+            if instance["task_state"] == None:
+                return
+            if instance["task_state"] == task_states.IMAGE_SNAPSHOT:
+                raise exception.InstanceSnapshotting(instance_id=instance_id)
+        raise exception.InstanceSnapshotFailure(reason="Instance state is not suitable for snapshot")
 
 
 class ImageNameValid(BaseValidator):
@@ -345,3 +365,25 @@ class KeypairNameValid(BaseValidator):
             raise exception.KeyPairExists(key_name=keypair_name)
         except exception.KeypairNotFound:
             pass
+
+
+class KeypairIsRsa(BaseValidator):
+    """
+    KeypairIsRsa.
+
+    Validate the import key is rsa.
+    Require the 'public_key' parameter.
+    """
+    def validate_public_key(self, public_key):
+        try:
+            if len(public_key.split()) == 3:
+                type, key_string, comment = public_key.split()
+            else:
+                type, key_string = public_key.split()
+            data = base64.decodestring(key_string)
+            int_len = 4
+            str_len = struct.unpack('>I', data[:int_len])[0]
+            if not data[int_len:int_len+str_len] == type:
+                raise exception.PublicKeyInvalid(public_key=public_key)
+        except Exception:
+            raise exception.PublicKeyInvalid(public_key=public_key)
