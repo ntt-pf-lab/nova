@@ -794,6 +794,10 @@ class KeyPairExists(Duplicate):
     message = _("Key pair %(key_name)s already exists.")
 
 
+class KeyPairUsed(Duplicate):
+    message = _("%(key_name)s is used for active instance.")
+
+
 class UserExists(Duplicate):
     message = _("User %(user)s already exists.")
 

@@ -79,7 +79,11 @@ MAPPING = [
 {"cls": "contrib.keypairs.KeypairController",
  "method": "create",
  "validators": [rules.KeypairNameValid, rules.KeypairIsRsa],
- "resolver": KeypairCreationResolver}
+ "resolver": KeypairCreationResolver},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "delete",
+ "validators": [rules.KeypairRequire],
+ "alias": {"id": "keypair_name"}}
 ]
 
 def handle_web_exception(self, e):

@@ -349,7 +349,11 @@ class KeypairRequire(BaseValidator):
     Require the 'keypair_name' parameter.
     """
     def validate_keypair_name(self, keypair_name):
-        db.key_pair_get(self.context, self.context.user_id, keypair_name)
+        keypair = db.key_pair_get(self.context, self.context.user_id, keypair_name)
+        instances = db.instance_get_all_by_user(self.context, self.context.user_id)
+        for i in instances:
+            if i["key_name"] == keypair["name"]:
+                raise exception.KeyPairUsed(key_name=keypair_name)
 
 
 class KeypairNameValid(BaseValidator):
