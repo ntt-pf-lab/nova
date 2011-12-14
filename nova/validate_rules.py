@@ -132,8 +132,15 @@ class ImageNameValid(BaseValidator):
     Require the 'image_name' parameter.
     """
     def validate_image_name(self, image_name):
+        print image_name
         if not image_name:
-            raise exception.Invalid("Image name should be specified.")
+            raise exception.InvalidParameterValue(
+                              err="Image name should be specified.")
+        if len(image_name) > 255:
+            print len(image_name)
+            raise exception.InvalidParameterValue(
+                              err="Image name should less than 255.")
+
         service = image.get_default_image_service()
         try:
             service.show_by_name(self.context, image_name)

@@ -40,6 +40,22 @@ class InstanceCreationResolver(validation.Resolver):
         return params
 
 
+class CreateImageResolver(validation.Resolver):
+    """
+    InstanceCreationResolver.
+    params before: input_dict, req, instance_id
+    params after: input_dict, req, instance_id, image_name
+    """
+    def resolve_parameter(self, params):
+        try:
+            input_dict = params['input_dict']
+            entity = input_dict.get("createImage", {})
+            params['image_name'] = entity["name"]
+        except KeyError:
+            pass
+        return params
+
+
 MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
@@ -52,7 +68,11 @@ MAPPING = [
 {"cls": "servers.Controller",
  "method": "create",
  "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver}
+ "resolver": InstanceCreationResolver},
+{"cls": "servers.ControllerV11",
+ "method": "_action_create_image",
+ "validators": [rules.ImageNameValid, rules.InstanceRequire],
+ "resolver": CreateImageResolver},
 ]
 
 def handle_web_exception(self, e):
