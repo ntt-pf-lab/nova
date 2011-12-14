@@ -73,6 +73,10 @@ MAPPING = [
  "method": "_action_create_image",
  "validators": [rules.ImageNameValid, rules.InstanceRequire],
  "resolver": CreateImageResolver},
+{"cls": "images.Controller",
+ "method": "delete",
+ "validators": [rules.ImageRequire],
+ "alias": {"id": "image_id"}},
 ]
 
 def handle_web_exception(self, e):
