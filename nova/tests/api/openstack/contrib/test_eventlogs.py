@@ -20,9 +20,12 @@ import webob
 
 from nova import context
 from nova import db
+from nova import exception
 from nova import test
 from nova.api.openstack.contrib.eventlogs import EventLogsController
 from nova.tests.api.openstack import fakes
+
+INVALID_REQUEST_ID = '12345'
 
 
 def fake_log(id, request_id, priority='INFO'):
@@ -56,6 +59,8 @@ def get_all_logs():
 
 
 def db_eventlog_get_all_by_request_id(context, request_id, session=None):
+    if request_id == INVALID_REQUEST_ID:
+        raise exception.EventLogNotFound(request_id=request_id)
     return get_single_requestid_logs()
 
 
@@ -81,7 +86,6 @@ class EventlogsTest(test.TestCase):
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
-
         response = {'eventlogs': get_all_logs()}
         self.assertEqual(res_dict, response)
 
@@ -91,7 +95,6 @@ class EventlogsTest(test.TestCase):
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
-
         response = {'eventlogs': get_single_requestid_logs()}
         self.assertEqual(res_dict, response)
 
@@ -100,7 +103,6 @@ class EventlogsTest(test.TestCase):
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
-
         response = {'eventlogs': get_all_logs()}
         self.assertEqual(res_dict, response)
 
@@ -110,7 +112,9 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
         expected_logs = get_all_logs()
-        response = {'eventlogs': expected_logs[:5]}
+        links = [{'href': 'http://localhost/v1.1/admin/logs?limit=5&marker=5',
+                  'rel': 'next'}]
+        response = {'eventlogs': expected_logs[:5], 'eventlogs_links': links}
         self.assertEqual(res_dict, response)
 
     def test_logs_list_offset(self):
@@ -145,3 +149,45 @@ class EventlogsTest(test.TestCase):
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
         self.assertNotEqual(res.body.find('marker [555] not found'), -1)
+
+    def test_logs_list_invalid_type(self):
+        req = webob.Request.blank('/v1.1/admin/logs?type=INFOO')
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 400)
+        self.assertNotEqual(res.body.find('Invalid log type: INFOO'), -1)
+
+    def test_logs_list_invalid_request_id(self):
+        req = webob.Request.blank('/v1.1/admin/logs/%s' % INVALID_REQUEST_ID)
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 404)
+        self.assertNotEqual(res.body.find('Request id 12345 not found'), -1)
+
+    def test_logs_list_invalid_offset(self):
+        req = webob.Request.blank('/v1.1/admin/logs?offset=INFOO')
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 400)
+        self.assertNotEqual(res.body.find('Invalid offset: INFO'), -1)
+
+    def test_logs_list_invalid_offset_negative(self):
+        req = webob.Request.blank('/v1.1/admin/logs?offset=-5')
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 400)
+        self.assertNotEqual(res.body.find('Invalid offset: -5'), -1)
+
+    def test_logs_list_invalid_limit_negative(self):
+        req = webob.Request.blank('/v1.1/admin/logs?limit=-10')
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 400)
+        self.assertNotEqual(res.body.find('Invalid limit: -10'), -1)
+
+    def test_logs_list_pagination(self):
+        req = webob.Request.blank('/v1.1/admin/logs?limit=10')
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 200)
+        res_dict = json.loads(res.body)
+        expected_logs = get_all_logs()
+        links = {'href': 'http://localhost/v1.1/admin/logs?limit=10&marker=10',
+                 'rel': 'next'}
+        response = {'eventlogs': expected_logs[:10],
+                    'eventlogs_links': [links]}
+        self.assertEqual(res_dict, response)
