@@ -4058,9 +4058,12 @@ def eventlog_get_all(context, filters=None):
 
     if filters:
         type = filters.get('type', 'ALL')
-
         if type != 'ALL':
             query = query.filter_by(priority=type)
+
+        if filters.get('created_at'):
+            query = query.filter(models.EventLog.created_at >
+                                 filters['created_at'])
     query = query.order_by('created_at')
     eventlog_ref = query.all()
     return eventlog_ref

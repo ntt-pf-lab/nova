@@ -181,13 +181,49 @@ class EventlogsTest(test.TestCase):
         self.assertNotEqual(res.body.find('Invalid limit: -10'), -1)
 
     def test_logs_list_pagination(self):
-        req = webob.Request.blank('/v1.1/admin/logs?limit=10')
+        req = webob.Request.blank('/v1.1/admin/logs?limit=5')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
         expected_logs = get_all_logs()
-        links = {'href': 'http://localhost/v1.1/admin/logs?limit=10&marker=10',
+        links = {'href': 'http://localhost/v1.1/admin/logs?limit=5&marker=5',
                  'rel': 'next'}
-        response = {'eventlogs': expected_logs[:10],
+        response = {'eventlogs': expected_logs[:5],
                     'eventlogs_links': [links]}
+        self.assertEqual(res_dict, response, "Pagination failed at page#1.")
+
+        #test page-2
+        req = webob.Request.blank(res_dict['eventlogs_links'][0]['href'])
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 200)
+        res_dict = json.loads(res.body)
+        links = {'href': 'http://localhost/v1.1/admin/logs?limit=5&marker=10',
+                 'rel': 'next'}
+        response = {'eventlogs': expected_logs[5:10],
+                    'eventlogs_links': [links]}
+        self.assertEqual(res_dict, response, "Pagination failed at page#2.")
+
+        #last page
+        req = webob.Request.blank(res_dict['eventlogs_links'][0]['href'])
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 200)
+        res_dict = json.loads(res.body)
+        response = {'eventlogs': expected_logs[10:]}
+        self.assertEqual(res_dict, response, "Pagination failed at last page.")
+
+    def test_logs_list_logged_since(self):
+        req_url = '/v1.1/admin/logs?logged_since=2011-12-12T10:09:43Z'
+        req = webob.Request.blank(req_url)
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 200)
+        res_dict = json.loads(res.body)
+        response = {'eventlogs': get_all_logs()}
         self.assertEqual(res_dict, response)
+
+    def test_logs_list_invalid_logged_since(self):
+        req_url = '/v1.1/admin/logs?logged_since=2011-12-12'
+        req = webob.Request.blank(req_url)
+        res = req.get_response(fakes.wsgi_app())
+        self.assertEqual(res.status_int, 400)
+        err_msg = 'Invalid logged_since: 2011-12-12'
+        self.assertNotEqual(res.body.find(err_msg), -1)

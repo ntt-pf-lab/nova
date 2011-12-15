@@ -23,6 +23,7 @@ from nova import db
 from nova import exception
 from nova import flags
 from nova import log as logging
+from nova import utils
 from nova.api.openstack import common
 from nova.api.openstack import extensions
 
@@ -74,7 +75,14 @@ class EventLogsController(object):
                             raise webob.exc.HTTPBadRequest(explanation=err_str)
                         elif param == 'offset' and value < 0:
                             raise webob.exc.HTTPBadRequest(explanation=err_str)
-
+                if param == 'logged_since':
+                    try:
+                        parsed = utils.parse_isotime(value)
+                    except ValueError:
+                        msg = _('Invalid logged_since: %s' % str(value))
+                        raise webob.exc.HTTPBadRequest(explanation=msg)
+                    value = parsed
+                param = SUPPORTED_FILTERS[param]
                 filters[param] = value
         return filters
 
@@ -135,8 +143,8 @@ class EventLogsController(object):
         the appropriate API Logs.
         """
         params = self._get_filters(req)
-        filters = {'type': params.get('type', 'ALL')}
-        logs = self._get_eventlogs(req, filters)
+        params['type'] = params.get('type', 'ALL')
+        logs = self._get_eventlogs(req, params)
         max_limit = max(params.get('limit'), FLAGS.pagination_limit)
         if params.get('marker'):
             limited_logs = common.limited_by_marker(logs,
