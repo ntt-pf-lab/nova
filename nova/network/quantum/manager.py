@@ -528,3 +528,8 @@ class QuantumManager(manager.FlatManager):
             leases_text += text
         LOG.debug("DHCP leases: %s" % leases_text)
         return leases_text
+
+    # NOTE(oda): quick work around
+    @property
+    def _bottom_reserved_ips(self):
+        return 1  # network
