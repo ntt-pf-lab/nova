@@ -141,6 +141,9 @@ flags.DEFINE_string('default_local_format',
 flags.DEFINE_bool('libvirt_use_virtio_for_bridges',
                   False,
                   'Use virtio for bridge interfaces')
+flags.DEFINE_bool('libvirt_single_local_disk',
+                  False,
+                  'Not use disk.local like XenServer driver')
 
 
 def get_connection(read_only):
@@ -863,13 +866,22 @@ class LibvirtConnection(driver.ComputeDriver):
                                   project_id=inst['project_id'])
 
         root_fname = hashlib.sha1(disk_images['image_id']).hexdigest()
-        size = FLAGS.minimum_root_size
-
         inst_type_id = inst['instance_type_id']
         inst_type = instance_types.get_instance_type(inst_type_id)
-        if inst_type['name'] == 'm1.tiny' or suffix == '.rescue':
-            size = None
-            root_fname += "_sm"
+
+        if FLAGS.libvirt_single_local_disk:
+            local_gb = inst['local_gb']
+            if not local_gb or suffix == '.rescue':
+                size = None
+                root_fname += "_sm"
+            else:
+                size = local_gb * 1024 * 1024 * 1024
+                root_fname += "_%s" % local_gb
+        else:
+            size = FLAGS.minimum_root_size
+            if inst_type['name'] == 'm1.tiny' or suffix == '.rescue':
+                size = None
+                root_fname += "_sm"
 
         if not self._volume_in_mapping(self.default_root_device,
                                        block_device_info):
@@ -883,13 +895,14 @@ class LibvirtConnection(driver.ComputeDriver):
                               project_id=inst['project_id'],
                               size=size)
 
-        local_gb = inst['local_gb']
-        if local_gb and not self._volume_in_mapping(
-            self.default_local_device, block_device_info):
-            fn = functools.partial(self._create_ephemeral,
+        if not FLAGS.libvirt_single_local_disk:
+            local_gb = inst['local_gb']
+            if local_gb and not self._volume_in_mapping(
+                self.default_local_device, block_device_info):
+                fn = functools.partial(self._create_ephemeral,
                                    fs_label='ephemeral0',
                                    os_type=inst.os_type)
-            self._cache_image(fn=fn,
+                self._cache_image(fn=fn,
                               target=basepath('disk.local'),
                               fname="ephemeral_%s_%s_%s" %
                               ("0", local_gb, inst.os_type),
@@ -1095,13 +1108,14 @@ class LibvirtConnection(driver.ComputeDriver):
                                            block_device_info)
 
         local_device = False
-        if not (self._volume_in_mapping(self.default_local_device,
+        if not FLAGS.libvirt_single_local_disk:
+            if not (self._volume_in_mapping(self.default_local_device,
                                         block_device_info) or
-                0 in [eph['num'] for eph in
-                      driver.block_device_info_get_ephemerals(
-                          block_device_info)]):
-            if instance['local_gb'] > 0:
-                local_device = self.default_local_device
+                    0 in [eph['num'] for eph in
+                          driver.block_device_info_get_ephemerals(
+                              block_device_info)]):
+                if instance['local_gb'] > 0:
+                    local_device = self.default_local_device
 
         ephemerals = []
         for eph in driver.block_device_info_get_ephemerals(block_device_info):
@@ -1979,7 +1993,11 @@ class LibvirtConnection(driver.ComputeDriver):
         for info in disk_info:
             fname = os.path.basename(info['path'])
             if fname == 'disk':
-                disk.extend(info['path'], FLAGS.minimum_root_size)
+                if FLAGS.libvirt_single_local_disk:
+                    size = instance['local_gb'] * 1024 * 1024 * 1024
+                else:
+                    size = FLAGS.minimum_root_size
+                disk.extend(info['path'], size)
             elif fname == 'disk.local':
                 disk.extend(info['path'],
                             instance['local_gb'] * 1024 * 1024 * 1024)
