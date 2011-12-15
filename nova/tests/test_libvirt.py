@@ -353,6 +353,15 @@ class LibvirtConnTestCase(test.TestCase):
         self._check_xml_and_uri(instance_data, expect_kernel=True,
                                 expect_ramdisk=True, rescue=True)
 
+    def test_xml_and_uri_single_local_disk(self):
+        self.flags(libvirt_single_local_disk=True)
+        instance_data = dict(self.test_instance)
+        instance_data['ramdisk_id'] = 'ari-deadbeef'
+        instance_data['kernel_id'] = 'aki-deadbeef'
+        self._check_xml_and_uri(instance_data,
+                                expect_kernel=True, expect_ramdisk=True,
+                                single_local_disk=True)
+
     def test_lxc_container_and_uri(self):
         instance_data = dict(self.test_instance)
         self._check_xml_and_container(instance_data)
@@ -566,7 +575,7 @@ class LibvirtConnTestCase(test.TestCase):
         self.assertTrue(len(target) > 0)
 
     def _check_xml_and_uri(self, instance, expect_ramdisk, expect_kernel,
-                           rescue=False):
+                           rescue=False, single_local_disk=False):
         user_context = context.RequestContext(self.user_id, self.project_id)
         instance_ref = db.instance_create(user_context, instance)
         network_ref = db.project_get_networks(context.get_admin_context(),
@@ -635,8 +644,12 @@ class LibvirtConnTestCase(test.TestCase):
             common_checks += [(lambda t: t.findall(
                 './devices/disk/source')[0].get('file').split('/')[1],
                                'disk')]
-            common_checks += [(lambda t: t.findall(
-                './devices/disk/source')[1].get('file').split('/')[1],
+            if single_local_disk:
+                common_checks += [(lambda t: len(t.findall(
+                    './devices/disk/source')), 1)]
+            else:
+                common_checks += [(lambda t: t.findall(
+                    './devices/disk/source')[1].get('file').split('/')[1],
                                'disk.local')]
 
         for (libvirt_type, (expected_uri, checks)) in type_uri_map.iteritems():
@@ -2203,6 +2216,22 @@ class LibvirtConnectionTestCase(test.TestCase):
                     self.libvirtconnection.destroy, ins_ref, ni, cleanup=True)
 
     @attr(kind='small')
+    def test_destroy_confirm_resize(self):
+        """Test for nova.virt.libvirt.connection.LibvirtConnection.destroy
+           and nova.virt.libvirt.connection.LibvirtConnection._cleanup.
+           confirm_resize=True case """
+
+        ins_ref = self._create_instance()
+        target = os.path.join(flags.FLAGS.instances_path, ins_ref['name'])
+        target += "_resize"
+        utils.execute('mkdir', '-p', target)
+
+        ref = self.libvirtconnection.destroy(ins_ref, None, cleanup=True,
+                confirm_resize=True)
+        self.assertEqual(True, ref)
+        self.assertTrue(not os.path.exists(target))
+
+    @attr(kind='small')
     def test_cleanup(self):
         """Test for nova.virt.libvirt.connection.LibvirtConnection._cleanup."""
 
@@ -3236,6 +3265,47 @@ class LibvirtConnectionTestCase(test.TestCase):
         self.assertEqual(True, self.exe_flag)
 
     @attr(kind='small')
+    def test_create_image_single_local_disk(self):
+        """Test for nova.virt.libvirt.connection.LibvirtConnection
+        ._create_image."""
+
+        self.flags(libvirt_single_local_disk=True)
+        self.libvirtconnection = connection.get_connection(read_only=True)
+
+        def fake_fetch_image(context, target, image_id, user_id, project_id,
+                     size=None):
+            self.exe_flag = True
+
+        self.stubs.Set(self.libvirtconnection,
+                       '_fetch_image', fake_fetch_image)
+
+        def fake_execute(cmd, *arg, **kwargs):
+            return ('cmdok', '')
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        ins_ref = self._create_instance()
+
+        self._setup_networking(ins_ref['id'])
+        manager = network.manager.NetworkManager()
+        manager.SHOULD_CREATE_BRIDGE = True
+        ni = manager.get_instance_nw_info(
+                                    context.get_admin_context(),
+                                    ins_ref['id'],
+                                    ins_ref['instance_type_id'],
+                                    'host1')
+
+        xml = self.libvirtconnection.to_xml(instance=ins_ref, network_info=ni,
+                                            rescue=True)
+        ref = self.libvirtconnection._create_image(context.get_admin_context(),
+                inst=ins_ref, libvirt_xml=xml, suffix='',
+                      disk_images=None, network_info=ni,
+                      block_device_info=None)
+
+        self.assertEqual(None, ref)
+        self.assertEqual(True, self.exe_flag)
+
+    @attr(kind='small')
     def test_prepare_xml_info(self):
         """Test for nova.virt.libvirt.connection.LibvirtConnection
         ._prepare_xml_info."""
@@ -3256,6 +3326,7 @@ class LibvirtConnectionTestCase(test.TestCase):
         self.assertEqual('1.2.3.4', ref['nics'][0]['ip_address'])
         self.assertTrue(ref['ramdisk'].find('00000001/ramdisk'))
         self.assertEqual([], ref['volumes'])
+        self.assertTrue(ref['local_device'])
 
     @attr(kind='small')
     def test_prepare_xml_info_parameter(self):
@@ -3326,6 +3397,51 @@ class LibvirtConnectionTestCase(test.TestCase):
                   'type': 'block', 'name': None, 'mount_device': '/volume1'}
 
         self.assertEqual(result, ref['volumes'][0])
+
+    @attr(kind='small')
+    def test_prepare_xml_info_use_raw_image(self):
+        """Test for nova.virt.libvirt.connection.LibvirtConnection
+        ._prepare_xml_info."""
+
+        ins_ref = self._create_instance()
+        self._setup_networking(ins_ref['id'])
+        manager = network.manager.NetworkManager()
+        manager.SHOULD_CREATE_BRIDGE = True
+        ni = manager.get_instance_nw_info(
+                                    context.get_admin_context(),
+                                    ins_ref['id'],
+                                    ins_ref['instance_type_id'],
+                                    'host1')
+
+        ref = self.libvirtconnection._prepare_xml_info(instance=ins_ref,
+                network_info=ni, rescue=False, block_device_info=None,
+                use_raw_image=True)
+
+        self.assertEqual('raw', ref['driver_type'])
+
+    @attr(kind='small')
+    def test_prepare_xml_info_single_local_disk(self):
+        """Test for nova.virt.libvirt.connection.LibvirtConnection
+        ._prepare_xml_info."""
+
+        self.flags(libvirt_single_local_disk=True)
+        ins_ref = self._create_instance()
+        self._setup_networking(ins_ref['id'])
+        manager = network.manager.NetworkManager()
+        manager.SHOULD_CREATE_BRIDGE = True
+        ni = manager.get_instance_nw_info(
+                                    context.get_admin_context(),
+                                    ins_ref['id'],
+                                    ins_ref['instance_type_id'],
+                                    'host1')
+
+        ref = self.libvirtconnection._prepare_xml_info(instance=ins_ref,
+                network_info=ni, rescue=False, block_device_info=None)
+
+        self.assertEqual('1.2.3.4', ref['nics'][0]['ip_address'])
+        self.assertTrue(ref['ramdisk'].find('00000001/ramdisk'))
+        self.assertEqual([], ref['volumes'])
+        self.assertTrue(not ref['local_device'])
 
     @attr(kind='small')
     def test_to_xml(self):
@@ -4392,3 +4508,150 @@ class LibvirtConnectionTestCase(test.TestCase):
         .set_host_enabled. no need assert becuase it is pass implements"""
 
         self.libvirtconnection.set_host_enabled(host=None, enabled=True)
+
+    @attr(kind='small')
+    def test_migrate_disk_and_power_off(self):
+        """Test for nova.virt.libvirt.connection.LivirtConnection
+        .migrate_disk_and_power_off. """
+
+        disk_info = [{'type': 'qcow2', 'path': '/test/disk',
+                      'local_gb': 10, 'backing_file': '/base/disk'},
+                     {'type': 'raw', 'path': '/test/disk.local',
+                      'local_gb': 10, 'backing_file': '/base/disk.local'}]
+        disk_info_text = utils.dumps(disk_info)
+
+        def fake_get_instance_disk_info(instance):
+            return disk_info
+        def fake_destroy(instance, network_info, cleanup=True,
+                         confirm_resize=False):
+            pass
+        def fake_get_host_ip_addr():
+            return '10.0.0.1'
+
+        def fake_execute(*args, **kwargs):
+            pass
+
+        self.stubs.Set(self.libvirtconnection, '_get_instance_disk_info',
+                       fake_get_instance_disk_info)
+        self.stubs.Set(self.libvirtconnection, 'destroy', fake_destroy)
+        self.stubs.Set(self.libvirtconnection, 'get_host_ip_addr',
+                       fake_get_host_ip_addr)
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        ins_ref = self._create_instance()
+        """ dest is different host case """
+        out = self.libvirtconnection.migrate_disk_and_power_off( \
+               ins_ref, '10.0.0.2')
+        self.assertEquals(out, disk_info_text)
+
+        """ dest is same host case """
+        out = self.libvirtconnection.migrate_disk_and_power_off( \
+               ins_ref, '10.0.0.1')
+        self.assertEquals(out, disk_info_text)
+
+    @attr(kind='small')
+    def test_wait_for_running(self):
+        """Test for nova.virt.libvirt.connection.LivirtConnection
+        ._wait_for_running. """
+
+        def fake_get_info(instance_name):
+            if instance_name == "not_found":
+                raise exception.NotFound
+            elif instance_name == "running":
+                return {'state': power_state.RUNNING}
+            else:
+                return {'state': power_state.SHUTOFF}
+
+        self.stubs.Set(self.libvirtconnection, 'get_info',
+                       fake_get_info)
+
+        """ instance not found case """
+        self.assertRaises(utils.LoopingCallDone,
+                self.libvirtconnection._wait_for_running,
+                    "not_found")
+
+        """ instance is running case """
+        self.assertRaises(utils.LoopingCallDone,
+                self.libvirtconnection._wait_for_running,
+                    "running")
+
+        """ else case """
+        self.libvirtconnection._wait_for_running("else")
+
+    @attr(kind='small')
+    def test_finish_migration(self):
+        """Test for nova.virt.libvirt.connection.LivirtConnection
+        .finish_migration. """
+
+        disk_info = [{'type': 'qcow2', 'path': '/test/disk',
+                      'local_gb': 10, 'backing_file': '/base/disk'},
+                     {'type': 'raw', 'path': '/test/disk.local',
+                      'local_gb': 10, 'backing_file': '/base/disk.local'}]
+        disk_info_text = utils.dumps(disk_info)
+
+        def fake_extend(path, size):
+            pass
+        def fake_to_xml(instance, network_info, use_raw_image=False):
+            return ""
+        def fake_plug_vifs(instance, network_info):
+            pass
+        def fake_create_image(context, inst, libvirt_xml, suffix='',
+                      disk_images=None, network_info=None,
+                      block_device_info=None):
+            pass
+        def fake_create_new_domain(xml):
+            return None
+
+        self.stubs.Set(virt.disk, 'extend', fake_extend)
+        self.stubs.Set(self.libvirtconnection, 'to_xml', fake_to_xml)
+        self.stubs.Set(self.libvirtconnection, 'plug_vifs', fake_plug_vifs)
+        self.stubs.Set(self.libvirtconnection, '_create_image',
+                       fake_create_image)
+        self.stubs.Set(self.libvirtconnection, '_create_new_domain',
+                       fake_create_new_domain)
+        fw = virt.libvirt.firewall.NullFirewallDriver(None)
+        self.stubs.Set(self.libvirtconnection, 'firewall_driver', fw)
+
+        ins_ref = self._create_instance()
+
+        """ FLAGS.libvirt_single_local_disk == False case """
+        self.flags(libvirt_single_local_disk=False)
+        ref = self.libvirtconnection.finish_migration(
+                      context.get_admin_context(), ins_ref,
+                      disk_info_text, None, None)
+        self.assertTrue(isinstance(ref, event.Event))
+
+        """ FLAGS.libvirt_single_local_disk == True case """
+        self.flags(libvirt_single_local_disk=True)
+        ref = self.libvirtconnection.finish_migration(
+                      context.get_admin_context(), ins_ref,
+                      disk_info_text, None, None)
+        self.assertTrue(isinstance(ref, event.Event))
+
+    @attr(kind='small')
+    def test_revert_migration(self):
+        """Test for nova.virt.libvirt.connection.LivirtConnection
+        .revert_migration. """
+
+        def fake_execute(*args, **kwargs):
+            pass
+        def fake_plug_vifs(instance, network_info):
+            pass
+        def fake_create_new_domain(xml):
+            return None
+
+        self.stubs.Set(self.libvirtconnection, 'plug_vifs', fake_plug_vifs)
+        self.stubs.Set(utils, 'execute', fake_execute)
+        fw = virt.libvirt.firewall.NullFirewallDriver(None)
+        self.stubs.Set(self.libvirtconnection, 'firewall_driver', fw)
+        self.stubs.Set(self.libvirtconnection, '_create_new_domain',
+                       fake_create_new_domain)
+
+        ins_ref = self._create_instance()
+        libvirt_xml_path = os.path.join(flags.FLAGS.instances_path,
+                                         ins_ref['name'], 'libvirt.xml')
+        f = open(libvirt_xml_path, 'w')
+        f.close()
+
+        ref = self.libvirtconnection.revert_migration(ins_ref, None)
+        self.assertTrue(isinstance(ref, event.Event))

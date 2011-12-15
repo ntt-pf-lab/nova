@@ -727,6 +727,7 @@ class NetworkCommands(object):
     @args('--vpn', dest="vpn_start", help='vpn start')
     @args('--fixed_range_v6', dest="fixed_range_v6",
           help='IPv6 subnet (ex: fe80::/64')
+    @args('--gateway', dest="gateway", help='gateway')
     @args('--gateway_v6', dest="gateway_v6", help='ipv6 gateway')
     @args('--bridge', dest="bridge",
             metavar='<bridge>',
@@ -746,9 +747,10 @@ class NetworkCommands(object):
       help='Network interface priority')
     def create(self, label=None, fixed_range_v4=None, num_networks=None,
                network_size=None, multi_host=None, vlan_start=None,
-               vpn_start=None, fixed_range_v6=None, gateway_v6=None,
-               bridge=None, bridge_interface=None, dns1=None, dns2=None,
-               project_id=None, priority=None, uuid=None):
+               vpn_start=None, fixed_range_v6=None, gateway=None,
+               gateway_v6=None, bridge=None, bridge_interface=None,
+               dns1=None, dns2=None, project_id=None, priority=None,
+               uuid=None):
         """Creates fixed ips for host by range"""
 
         # check for certain required inputs
@@ -811,6 +813,7 @@ class NetworkCommands(object):
                                     vlan_start=int(vlan_start),
                                     vpn_start=int(vpn_start),
                                     cidr_v6=fixed_range_v6,
+                                    gateway=gateway,
                                     gateway_v6=gateway_v6,
                                     bridge=bridge,
                                     bridge_interface=bridge_interface,
@@ -858,14 +861,26 @@ class NetworkCommands(object):
                           network.cidr,
                           network.cidr_v6)
 
-    @args('--network', dest="fixed_range", metavar='<x.x.x.x/yy>',
+    @args('--fixed_range', dest="fixed_range", metavar='<x.x.x.x/yy>',
             help='Network to delete')
-    def delete(self, fixed_range):
+    @args('--uuid', dest='uuid', metavar='<uuid>',
+            help='UUID of network to delete')
+    def delete(self, fixed_range=None, uuid=None):
         """Deletes a network"""
 
-        # delete the network
+        if fixed_range is None and uuid is None:
+            raise Exception("Please specify either fixed_range or uuid")
+
         net_manager = utils.import_object(FLAGS.network_manager)
-        net_manager.delete_network(context.get_admin_context(), fixed_range)
+        if "QuantumManager" in FLAGS.network_manager:
+            if uuid is None:
+                raise Exception("UUID is required to delete Quantum Networks")
+            if fixed_range:
+                raise Exception("Deleting by fixed_range is not supported " \
+                    "with the QuantumManager")
+        # delete the network
+        net_manager.delete_network(context.get_admin_context(),
+            fixed_range, uuid)
 
     @args('--network', dest="fixed_range", metavar='<x.x.x.x/yy>',
             help='Network to modify')
@@ -945,8 +960,10 @@ class VmCommands(object):
                 instance['availability_zone'],
                 instance['launch_index'])
 
-    def _migration(self, ec2_id, dest, block_migration=False):
+    def _migration(self, dest, ec2_id, instance_id,
+                      block_migration=False):
         """Migrates a running instance to a new machine.
+         :param instance_id: instance id.
          :param ec2_id: instance id which comes from euca-describe-instance.
          :param dest: destination host name.
          :param block_migration: if True, do block_migration.
@@ -954,7 +971,10 @@ class VmCommands(object):
         """
 
         ctxt = context.get_admin_context()
-        instance_id = ec2utils.ec2_id_to_id(ec2_id)
+        if ec2_id is None and instance_id is None:
+            raise Exception("Please specify either ec2_id or instance_id")
+        if ec2_id:
+            instance_id = ec2utils.ec2_id_to_id(ec2_id)
 
         if (FLAGS.connection_type != 'libvirt' or
            (FLAGS.connection_type == 'libvirt' and
@@ -975,24 +995,31 @@ class VmCommands(object):
                            "topic": FLAGS.compute_topic,
                            "block_migration": block_migration}})
 
-        print _('Migration of %s initiated.'
+        if ec2_id:
+            print _('Migration of %s initiated.'
                'Check its progress using euca-describe-instances.') % ec2_id
+        else:
+            print _('Migration of %s initiated.') % instance_id
 
+    @args('--instance_id', dest='instance_id', metavar='<instance id>',
+            help='Instanc ID')
     @args('--ec2_id', dest='ec2_id', metavar='<ec2 id>', help='EC2 ID')
     @args('--dest', dest='dest', metavar='<Destanation>',
             help='destanation node')
-    def live_migration(self, ec2_id, dest):
+    def live_migration(self, dest, ec2_id=None, instance_id=None):
         """Migrates a running instance to a new machine."""
 
-        self._migration(ec2_id, dest)
+        self._migration(dest, ec2_id, instance_id)
 
+    @args('--instance_id', dest='instance_id', metavar='<instance id>',
+            help='Instanc ID')
     @args('--ec2_id', dest='ec2_id', metavar='<ec2 id>', help='EC2 ID')
     @args('--dest', dest='dest', metavar='<Destanation>',
             help='destanation node')
-    def block_migration(self, ec2_id, dest):
+    def block_migration(self, dest, ec2_id=None, instance_id=None):
         """Migrates a running instance to a new machine with storage data."""
 
-        self._migration(ec2_id, dest, True)
+        self._migration(dest, ec2_id, instance_id, True)
 
 
 class ServiceCommands(object):

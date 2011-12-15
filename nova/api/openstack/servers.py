@@ -549,12 +549,13 @@ class Controller(object):
                 error=item.error))
         return dict(actions=actions)
 
-    def resize(self, req, instance_id, flavor_id):
+    def resize(self, req, instance_id, flavor_id, availability_zone=None):
         """Begin the resize process with given instance/flavor."""
         context = req.environ["nova.context"]
 
         try:
-            self.compute_api.resize(context, instance_id, flavor_id)
+            self.compute_api.resize(context, instance_id, flavor_id,
+                                    availability_zone)
         except exception.FlavorNotFound:
             msg = _("Unable to locate requested flavor.")
             raise exc.HTTPBadRequest(explanation=msg)
@@ -745,11 +746,14 @@ class ControllerV11(Controller):
             if not flavor_ref:
                 msg = _("Resize request has invalid 'flavorRef' attribute.")
                 raise exc.HTTPBadRequest(explanation=msg)
+            availability_zone = None
+            if "availability_zone" in input_dict["resize"]:
+                availability_zone = input_dict["resize"]["availability_zone"]
         except (KeyError, TypeError):
             msg = _("Resize requests require 'flavorRef' attribute.")
             raise exc.HTTPBadRequest(explanation=msg)
 
-        return self.resize(req, id, flavor_ref)
+        return self.resize(req, id, flavor_ref, availability_zone)
 
     def _action_rebuild(self, info, request, instance_id):
         context = request.environ['nova.context']

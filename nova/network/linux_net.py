@@ -285,10 +285,10 @@ class IptablesManager(object):
         self.ipv4['nat'].add_rule('nova-postrouting-bottom', '-j $snat',
                                   wrap=False)
 
-        # And then we add a floating-snat chain and jump to first thing in
+        # And then we add a float-snat chain and jump to first thing in
         # the snat chain.
-        self.ipv4['nat'].add_chain('floating-snat')
-        self.ipv4['nat'].add_rule('snat', '-j $floating-snat')
+        self.ipv4['nat'].add_chain('float-snat')
+        self.ipv4['nat'].add_rule('snat', '-j $float-snat')
 
     @utils.synchronized('iptables', external=True)
     def apply(self):
@@ -461,7 +461,7 @@ def remove_floating_forward(floating_ip, fixed_ip):
 def floating_forward_rules(floating_ip, fixed_ip):
     return [('PREROUTING', '-d %s -j DNAT --to %s' % (floating_ip, fixed_ip)),
             ('OUTPUT', '-d %s -j DNAT --to %s' % (floating_ip, fixed_ip)),
-            ('floating-snat',
+            ('float-snat',
              '-s %s -j SNAT --to %s' % (fixed_ip, floating_ip))]
 
 
@@ -586,11 +586,30 @@ def _add_dnsmasq_accept_rules(dev):
     iptables_manager.apply()
 
 
+def update_dhcp(context, dev, network_ref):
+    conffile = _dhcp_file(dev, 'conf')
+    with open(conffile, 'w') as f:
+        f.write(get_dhcp_hosts(context, network_ref))
+    restart_dhcp(dev, network_ref)
+
+
+def update_dhcp_hostfile_with_text(dev, hosts_text):
+    conffile = _dhcp_file(dev, 'conf')
+    with open(conffile, 'w') as f:
+        f.write(hosts_text)
+
+
+def kill_dhcp(dev):
+    pid = _dnsmasq_pid_for(dev)
+    if pid:
+        _execute('kill', '-9', pid, run_as_root=True)
+
+
 # NOTE(ja): Sending a HUP only reloads the hostfile, so any
 #           configuration options (like dchp-range, vlan, ...)
 #           aren't reloaded.
 @utils.synchronized('dnsmasq_start')
-def update_dhcp(context, dev, network_ref):
+def restart_dhcp(dev, network_ref):
     """(Re)starts a dnsmasq server for a given network.
 
     If a dnsmasq instance is already running then send a HUP
@@ -598,8 +617,6 @@ def update_dhcp(context, dev, network_ref):
 
     """
     conffile = _dhcp_file(dev, 'conf')
-    with open(conffile, 'w') as f:
-        f.write(get_dhcp_hosts(context, network_ref))
 
     if FLAGS.use_single_default_gateway:
         optsfile = _dhcp_file(dev, 'opts')
@@ -616,7 +633,9 @@ def update_dhcp(context, dev, network_ref):
     if pid:
         out, _err = _execute('cat', '/proc/%d/cmdline' % pid,
                              check_exit_code=False)
-        if conffile in out:
+        # Using symlinks can cause problems here so just compare the name
+        # of the file itself
+        if conffile.split("/")[-1] in out:
             try:
                 _execute('kill', '-HUP', pid, run_as_root=True)
                 return
@@ -639,6 +658,8 @@ def update_dhcp(context, dev, network_ref):
            '--dhcp-lease-max=%s' % len(netaddr.IPNetwork(network_ref['cidr'])),
            '--dhcp-hostsfile=%s' % _dhcp_file(dev, 'conf'),
            '--dhcp-script=%s' % FLAGS.dhcpbridge,
+           '--dhcp-option=tag:nor,3',
+           '--dhcp-option=tag:!nor,3,%s' % network_ref['gateway'],
            '--leasefile-ro']
     if FLAGS.dns_server:
         cmd += ['-h', '-R', '--server=%s' % FLAGS.dns_server]
@@ -836,8 +857,8 @@ def _ip_bridge_cmd(action, params, device):
 # act as gateway/dhcp/vpn/etc. endpoints not VM interfaces.
 
 
-def plug(network, mac_address):
-    return interface_driver.plug(network, mac_address)
+def plug(network, mac_address, gateway=True):
+    return interface_driver.plug(network, mac_address, gateway)
 
 
 def unplug(network):
@@ -868,7 +889,7 @@ class LinuxNetInterfaceDriver(object):
 # plugs interfaces using Linux Bridge
 class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
 
-    def plug(self, network, mac_address):
+    def plug(self, network, mac_address, gateway=True):
         if network.get('vlan', None) is not None:
             LinuxBridgeInterfaceDriver.ensure_vlan_bridge(
                            network['vlan'],
@@ -880,7 +901,7 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
             LinuxBridgeInterfaceDriver.ensure_bridge(
                           network['bridge'],
                           network['bridge_interface'],
-                          network)
+                          network, gateway)
 
         return network['bridge']
 
@@ -920,7 +941,7 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
 
     @classmethod
     @utils.synchronized('ensure_bridge', external=True)
-    def ensure_bridge(_self, bridge, interface, net_attrs=None):
+    def ensure_bridge(_self, bridge, interface, net_attrs=None, gateway=True):
         """Create a bridge unless it already exists.
 
         :param interface: the interface to create the bridge on.
@@ -980,26 +1001,35 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
                      "can't enslave it to bridge %s.\n" % (interface, bridge)):
                 raise exception.Error('Failed to add interface: %s' % err)
 
-        iptables_manager.ipv4['filter'].add_rule('FORWARD',
+        # Don't forward traffic unless we were told to be a gateway
+        if gateway:
+            iptables_manager.ipv4['filter'].add_rule('FORWARD',
                                              '--in-interface %s -j ACCEPT' % \
                                              bridge)
-        iptables_manager.ipv4['filter'].add_rule('FORWARD',
+            iptables_manager.ipv4['filter'].add_rule('FORWARD',
                                              '--out-interface %s -j ACCEPT' % \
+                                             bridge)
+        else:
+            iptables_manager.ipv4['filter'].add_rule('FORWARD',
+                                             '--in-interface %s -j DROP' % \
+                                             bridge)
+            iptables_manager.ipv4['filter'].add_rule('FORWARD',
+                                             '--out-interface %s -j DROP' % \
                                              bridge)
 
 
 # plugs interfaces using Open vSwitch
 class LinuxOVSInterfaceDriver(LinuxNetInterfaceDriver):
 
-    def plug(self, network, mac_address):
-        dev = "gw-" + str(network['id'])
+    def plug(self, network, mac_address, gateway=True):
+        dev = "gw-" + str(network['uuid'][0:11])
         if not _device_exists(dev):
             bridge = FLAGS.linuxnet_ovs_integration_bridge
             _execute('ovs-vsctl',
                         '--', '--may-exist', 'add-port', bridge, dev,
                         '--', 'set', 'Interface', dev, "type=internal",
                         '--', 'set', 'Interface', dev,
-                                "external-ids:iface-id=nova-%s" % dev,
+                                "external-ids:iface-id=%s" % dev,
                         '--', 'set', 'Interface', dev,
                                 "external-ids:iface-status=active",
                         '--', 'set', 'Interface', dev,
@@ -1008,14 +1038,27 @@ class LinuxOVSInterfaceDriver(LinuxNetInterfaceDriver):
             _execute('ip', 'link', 'set', dev, "address", mac_address,
                         run_as_root=True)
             _execute('ip', 'link', 'set', dev, 'up', run_as_root=True)
+            if not gateway:
+                # If we weren't instructed to act as a gateway then add the
+                # appropriate flows to block all non-dhcp traffic.
+                _execute('ovs-ofctl',
+                    'add-flow', bridge, "priority=1,actions=drop")
+                _execute('ovs-ofctl', 'add-flow', bridge,
+                    "udp,tp_dst=67,dl_dst=%s,priority=2,actions=normal" %
+                    mac_address)
 
         return dev
 
     def unplug(self, network):
-        return self.get_dev(network)
+        dev = "gw-" + str(network['uuid'][0:11])
+        if _device_exists(dev):
+            bridge = FLAGS.linuxnet_ovs_integration_bridge
+            _execute('ovs-vsctl', 'del-port', bridge, dev,
+                        run_as_root=True)
+        return dev
 
     def get_dev(self, network):
-        dev = "gw-" + str(network['id'])
+        dev = "gw-" + str(network['uuid'][0:11])
         return dev
 
 iptables_manager = IptablesManager()

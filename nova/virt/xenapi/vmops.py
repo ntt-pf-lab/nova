@@ -915,9 +915,7 @@ class VMOps(object):
             self._destroy_kernel_ramdisk(instance, vm_ref)
         self._destroy_vm(instance, vm_ref)
 
-        if network_info:
-            for (network, mapping) in network_info:
-                self.vif_driver.unplug(instance, network, mapping)
+        self.unplug_vifs(instance, network_info)
 
     def _wait_with_callback(self, instance_id, task, callback):
         ret = None
@@ -1144,6 +1142,11 @@ class VMOps(object):
         """Set up VIF networking on the host."""
         for (network, mapping) in network_info:
             self.vif_driver.plug(self._session, instance, network, mapping)
+
+    def unplug_vifs(self, instance, network_info):
+        if network_info:
+            for (network, mapping) in network_info:
+                self.vif_driver.unplug(instance, network, mapping)
 
     def reset_network(self, instance, vm_ref=None):
         """Creates uuid arg to pass to make_agent_call and calls it."""

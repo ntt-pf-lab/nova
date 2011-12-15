@@ -689,6 +689,7 @@ class FixedIp(BASE, NovaBase):
     leased = Column(Boolean, default=False)
     reserved = Column(Boolean, default=False)
     host = Column(String(255))
+    use_gw = Column(Boolean, default=True)
 
 
 class FloatingIp(BASE, NovaBase):

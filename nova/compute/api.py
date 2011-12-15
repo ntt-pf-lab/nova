@@ -1184,7 +1184,8 @@ class API(base.Base):
 
     @scheduler_api.reroute_compute("resize")
     @checks_instance_lock
-    def resize(self, context, instance_id, flavor_id=None):
+    def resize(self, context, instance_id, flavor_id=None,
+               availability_zone=None):
         """Resize (ie, migrate) a running instance.
 
         If flavor_id is None, the process is considered a migration, keeping
@@ -1216,6 +1217,10 @@ class API(base.Base):
 
         if (current_memory_mb == new_memory_mb) and flavor_id:
             raise exception.CannotResizeToSameSize()
+
+        if availability_zone:
+            self.db.instance_update(context, instance_id,
+                    {'availability_zone': availability_zone})
 
         self.update(context,
                     instance_id,

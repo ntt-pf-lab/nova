@@ -374,7 +374,8 @@ class HyperVConnection(driver.ComputeDriver):
             raise exception.InstanceNotFound(instance_id=instance.id)
         self._set_vm_state(instance.name, 'Reboot')
 
-    def destroy(self, instance, network_info, cleanup=True):
+    def destroy(self, instance, network_info, cleanup=True,
+                  confirm_resize=False):
         """Destroy the VM. Also destroy the associated VHD disk files"""
         LOG.debug(_("Got request to destroy vm %s"), instance.name)
         vm = self._lookup(instance.name)
@@ -505,4 +506,12 @@ class HyperVConnection(driver.ComputeDriver):
 
     def set_host_enabled(self, host, enabled):
         """Sets the specified host's ability to accept new instances."""
+        pass
+
+    def plug_vifs(self, instance, network_info):
+        """Plug VIFs into networks."""
+        pass
+
+    def unplug_vifs(self, instance, network_info):
+        """Unplug VIFs from networks."""
         pass

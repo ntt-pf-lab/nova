@@ -231,15 +231,16 @@ class FlatNetworkTestCase(test.TestCase):
         self.stubs.Set(db, 'fixed_ip_get_by_address',
                        stub_fixed_ip_get_by_address)
 
-        requested_networks = [("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                               "192.168.1.100")]
+        requested_networks = [{'uuid': "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                               'fixed_ip': "192.168.1.100",
+                               'gw': True}]
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
 
         self.mox.ReplayAll()
         self.network.validate_networks(self.context, requested_networks)
         self.assertTrue(self._context)
-        self.assertEqual(requested_networks[0][1], self._address)
+        self.assertEqual(requested_networks[0]['fixed_ip'], self._address)
 
     @attr(kind='small')
     def test_validate_networks_none_requested_networks(self):
@@ -261,7 +262,8 @@ class FlatNetworkTestCase(test.TestCase):
 
     def test_validate_networks_invalid_fixed_ip(self):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
-        requested_networks = [(1, "192.168.0.100.1")]
+        requested_networks = [{'uuid': 1, 'fixed_ip': "192.168.0.100.1",
+                               'gw': True}]
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
         self.mox.ReplayAll()
@@ -273,7 +275,7 @@ class FlatNetworkTestCase(test.TestCase):
     def test_validate_networks_empty_fixed_ip(self):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
 
-        requested_networks = [(1, "")]
+        requested_networks = [{'uuid': 1, 'fixed_ip': "", 'gw': True}]
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
         self.mox.ReplayAll()
@@ -290,7 +292,7 @@ class FlatNetworkTestCase(test.TestCase):
         self._context = None
         self._network_uuids = None
         self._project_id = None
-        requested_networks = [(1, None)]
+        requested_networks = [{'uuid': 1, 'fixed_ip': None, 'gw': True}]
 
         def stub_network_get_all_by_uuids(
                         context, network_uuids, project_id=None):
@@ -315,8 +317,10 @@ class FlatNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
         self.mox.StubOutWithMock(db, "fixed_ip_get_by_address")
 
-        requested_networks = [("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                               "192.168.1.100")]
+        requested_networks = [{'uuid': "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                               'fixed_ip': "192.168.1.100",
+                               'gw': True}]
+
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
 
@@ -340,8 +344,10 @@ class FlatNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
         self.mox.StubOutWithMock(db, "fixed_ip_get_by_address")
 
-        requested_networks = [("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                               "192.168.1.100")]
+        requested_networks = [{'uuid': "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                               'fixed_ip': "192.168.1.100",
+                               'gw': True}]
+
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
 
@@ -1808,7 +1814,8 @@ class FlatNetworkTestCase(test.TestCase):
         self.mox.ReplayAll()
 
         cidr = '192.168.0.0/16'
-        args = [None, 'fake', cidr, False, 2, 256, None, None, None, None]
+        args = [None, 'fake', cidr, False, 2, 256, None, None, None, None,
+                None]
         res = self.network.create_networks(*args)
         self.assertEqual([networks[0]], res)
         self.assertEqual(2, self._network_create_count)
@@ -1838,7 +1845,8 @@ class FlatNetworkTestCase(test.TestCase):
         self.mox.ReplayAll()
 
         cidr = '192.168.0.0/24'
-        args = [None, 'fake', cidr, False, 1, 256, None, None, None, None]
+        args = [None, 'fake', cidr, False, 1, 256, None, None, None, None,
+                None]
         self.assertRaises(exception.NetworkCreateException,
                           self.network.create_networks,
                           *args)
@@ -1864,7 +1872,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.stubs.Set(db, 'network_delete_safe', stub_network_delete_safe)
         self.mox.ReplayAll()
 
-        self.network.delete_network(self.context, '10.0.0.0/29', True)
+        self.network.delete_network(self.context, '10.0.0.0/29', None, True)
         self.assertTrue(self._context)
         self.assertEqual(network.id, self._network_id)
 
@@ -1881,7 +1889,7 @@ class FlatNetworkTestCase(test.TestCase):
 
         self.assertRaises(ValueError,
                           self.network.delete_network,
-                          self.context, '10.0.0.0/29', True)
+                          self.context, '10.0.0.0/29', None, True)
 
     @attr(kind='small')
     def test_delete_network_db_network_not_found(self):
@@ -1894,7 +1902,7 @@ class FlatNetworkTestCase(test.TestCase):
 
         self.assertRaises(exception.NetworkNotFound,
                           self.network.delete_network,
-                          self.context, '10.0.0.0/29', True)
+                          self.context, '10.0.0.0/29', None, True)
 
     @attr(kind='small')
     def test_allocate_for_instance_param_requested_networks_is_none(self):
@@ -1985,15 +1993,16 @@ class FlatNetworkTestCase(test.TestCase):
         kwargs['project_id'] = 'fake_project'
         kwargs['instance_type_id'] = 1
         kwargs['requested_networks'] = [
-                        ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-                         '192.168.0.100')]
+                        {'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                         'fixed_ip': '192.168.0.100',
+                         'gw': True}]
         kwargs['vpn'] = False
         res = self.network.allocate_for_instance(self.context, **kwargs)
         self.assertEqual([], res)
         self.assertTrue(self._context)
         self.assertEqual(kwargs['instance_id'], self._instance_id)
         self.assertEqual(network, self._network)
-        self.assertEqual(kwargs['requested_networks'][0][1],
+        self.assertEqual(kwargs['requested_networks'][0]['fixed_ip'],
                          self._kwargs['address'])
 
     @attr(kind='small')
@@ -2037,8 +2046,9 @@ class FlatNetworkTestCase(test.TestCase):
         kwargs['project_id'] = 'fake_project'
         kwargs['instance_type_id'] = 1
         kwargs['requested_networks'] = [
-                        ('cccccccc-cccc-cccc-cccc-cccccccccccc',
-                         '192.168.0.100')]
+                        {'uuid': 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+                         'fixed_ip': '192.168.0.100',
+                         'gw': True}]
         kwargs['vpn'] = False
         res = self.network.allocate_for_instance(self.context, **kwargs)
         self.assertEqual([], res)
@@ -2167,6 +2177,7 @@ class VlanNetworkTestCase(test.TestCase):
                         num_networks=flags.FLAGS.num_networks,
                         network_size=flags.FLAGS.network_size,
                         cidr_v6=flags.FLAGS.fixed_range_v6,
+                        gateway=flags.FLAGS.gateway,
                         gateway_v6=flags.FLAGS.gateway_v6,
                         bridge=flags.FLAGS.flat_network_bridge,
                         bridge_interface=flags.FLAGS.vlan_interface,
@@ -2188,8 +2199,10 @@ class VlanNetworkTestCase(test.TestCase):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
         self.mox.StubOutWithMock(db, "fixed_ip_get_by_address")
 
-        requested_networks = [("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-                               "192.168.1.100")]
+        requested_networks = [{'uuid': "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                               'fixed_ip': "192.168.1.100",
+                               'gw': True}]
+
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
@@ -2213,7 +2226,8 @@ class VlanNetworkTestCase(test.TestCase):
 
     def test_validate_networks_invalid_fixed_ip(self):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
-        requested_networks = [(1, "192.168.0.100.1")]
+        requested_networks = [{'uuid': 1, 'fixed_ip': "192.168.0.100.1",
+                                'gw': True}]
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
@@ -2226,7 +2240,7 @@ class VlanNetworkTestCase(test.TestCase):
     def test_validate_networks_empty_fixed_ip(self):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
 
-        requested_networks = [(1, "")]
+        requested_networks = [{'uuid': 1, 'fixed_ip': "", 'gw': True}]
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
@@ -2239,7 +2253,7 @@ class VlanNetworkTestCase(test.TestCase):
     def test_validate_networks_none_fixed_ip(self):
         self.mox.StubOutWithMock(db, 'network_get_all_by_uuids')
 
-        requested_networks = [(1, None)]
+        requested_networks = [{'uuid': 1, 'fixed_ip': None, 'gw': True}]
         db.network_get_all_by_uuids(mox.IgnoreArg(),
                                 mox.IgnoreArg(),
                                 mox.IgnoreArg()).AndReturn(networks)
@@ -2394,8 +2408,9 @@ class VlanNetworkTestCase(test.TestCase):
         kwargs['project_id'] = 'fake_project'
         kwargs['instance_type_id'] = 1
         kwargs['requested_networks'] = [
-                        ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-                         '192.168.0.100')]
+                        {'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                         'fixed_ip': '192.168.0.100',
+                         'gw': True}]
         kwargs['vpn'] = False
         res = self.network.allocate_for_instance(self.context, **kwargs)
         self.assertEqual([], res)
@@ -2405,7 +2420,7 @@ class VlanNetworkTestCase(test.TestCase):
         self.assertEqual('_rpc_allocate_fixed_ip', self._method)
         self.assertEqual(kwargs['instance_id'], self._args['instance_id'])
         self.assertEqual(network['id'], self._args['network_id'])
-        self.assertEqual(kwargs['requested_networks'][0][1],
+        self.assertEqual(kwargs['requested_networks'][0]['fixed_ip'],
                          self._args['address'])
         self.assertEqual(kwargs['vpn'], self._args['vpn'])
 
@@ -3950,13 +3965,14 @@ class VlanNetworkTestCase(test.TestCase):
         kwargs['project_id'] = 'fake_project'
         kwargs['instance_type_id'] = 1
         kwargs['requested_networks'] = [
-                        ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-                         '192.168.0.100')]
+                        {'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                         'fixed_ip': '192.168.0.100',
+                         'gw': True}]
         kwargs['vpn'] = False
         res = self.network.allocate_for_instance(self.context, **kwargs)
         self.assertEqual([], res)
         self.assertTrue(self._context)
-        self.assertEqual([kwargs['requested_networks'][0][0]],
+        self.assertEqual([kwargs['requested_networks'][0]['uuid']],
                          self._network_uuids)
         self.assertEqual(kwargs['project_id'], self._project_id)
 
@@ -4090,7 +4106,7 @@ class CommonNetworkTestCase(test.TestCase):
         manager = self.FakeNetworkManager()
         nets = manager.create_networks(None, 'fake', '192.168.0.0/24',
                                        False, 1, 256, None, None, None,
-                                       None)
+                                       None, None)
         self.assertEqual(1, len(nets))
         cidrs = [str(net['cidr']) for net in nets]
         self.assertTrue('192.168.0.0/24' in cidrs)
@@ -4099,7 +4115,7 @@ class CommonNetworkTestCase(test.TestCase):
         manager = self.FakeNetworkManager()
         nets = manager.create_networks(None, 'fake', '192.168.0.0/24',
                                        False, 2, 128, None, None, None,
-                                       None)
+                                       None, None)
         self.assertEqual(2, len(nets))
         cidrs = [str(net['cidr']) for net in nets]
         self.assertTrue('192.168.0.0/25' in cidrs)
@@ -4114,7 +4130,7 @@ class CommonNetworkTestCase(test.TestCase):
         self.mox.ReplayAll()
         nets = manager.create_networks(None, 'fake', '192.168.0.0/16',
                                        False, 4, 256, None, None, None,
-                                       None)
+                                       None, None)
         self.assertEqual(4, len(nets))
         cidrs = [str(net['cidr']) for net in nets]
         exp_cidrs = ['192.168.0.0/24', '192.168.1.0/24', '192.168.3.0/24',
@@ -4133,7 +4149,7 @@ class CommonNetworkTestCase(test.TestCase):
         # ValueError: requested cidr (192.168.2.0/24) conflicts with
         #             existing smaller cidr
         args = (None, 'fake', '192.168.2.0/24', False, 1, 256, None, None,
-                None, None)
+                None, None, None)
         self.assertRaises(ValueError, manager.create_networks, *args)
 
     def test_validate_cidrs_split_smaller_cidr_in_use(self):
@@ -4144,7 +4160,8 @@ class CommonNetworkTestCase(test.TestCase):
                                      'cidr': '192.168.2.0/25'}])
         self.mox.ReplayAll()
         nets = manager.create_networks(None, 'fake', '192.168.0.0/16',
-                                       False, 4, 256, None, None, None, None)
+                                       False, 4, 256, None, None, None, None,
+                                       None)
         self.assertEqual(4, len(nets))
         cidrs = [str(net['cidr']) for net in nets]
         exp_cidrs = ['192.168.0.0/24', '192.168.1.0/24', '192.168.3.0/24',
@@ -4161,7 +4178,8 @@ class CommonNetworkTestCase(test.TestCase):
                                      'cidr': '192.168.2.9/29'}])
         self.mox.ReplayAll()
         nets = manager.create_networks(None, 'fake', '192.168.2.0/24',
-                                       False, 3, 32, None, None, None, None)
+                                       False, 3, 32, None, None, None, None,
+                                       None)
         self.assertEqual(3, len(nets))
         cidrs = [str(net['cidr']) for net in nets]
         exp_cidrs = ['192.168.2.32/27', '192.168.2.64/27', '192.168.2.96/27']
@@ -4179,7 +4197,7 @@ class CommonNetworkTestCase(test.TestCase):
         manager.db.network_get_all(ctxt).AndReturn(in_use)
         self.mox.ReplayAll()
         args = (None, 'fake', '192.168.2.0/24', False, 3, 64, None, None,
-                None, None)
+                None, None, None)
         # ValueError: Not enough subnets avail to satisfy requested num_
         #             networks - some subnets in requested range already
         #             in use
@@ -4188,7 +4206,7 @@ class CommonNetworkTestCase(test.TestCase):
     def test_validate_cidrs_one_in_use(self):
         manager = self.FakeNetworkManager()
         args = (None, 'fake', '192.168.0.0/24', False, 2, 256, None, None,
-                None, None)
+                None, None, None)
         # ValueError: network_size * num_networks exceeds cidr size
         self.assertRaises(ValueError, manager.create_networks, *args)
 
@@ -4201,13 +4219,13 @@ class CommonNetworkTestCase(test.TestCase):
         self.mox.ReplayAll()
         # ValueError: cidr already in use
         args = (None, 'fake', '192.168.0.0/24', False, 1, 256, None, None,
-                None, None)
+                None, None, None)
         self.assertRaises(ValueError, manager.create_networks, *args)
 
     def test_validate_cidrs_too_many(self):
         manager = self.FakeNetworkManager()
         args = (None, 'fake', '192.168.0.0/24', False, 200, 256, None, None,
-                None, None)
+                None, None, None)
         # ValueError: Not enough subnets avail to satisfy requested
         #             num_networks
         self.assertRaises(ValueError, manager.create_networks, *args)
@@ -4215,7 +4233,8 @@ class CommonNetworkTestCase(test.TestCase):
     def test_validate_cidrs_split_partial(self):
         manager = self.FakeNetworkManager()
         nets = manager.create_networks(None, 'fake', '192.168.0.0/16',
-                                       False, 2, 256, None, None, None, None)
+                                       False, 2, 256, None, None, None, None,
+                                       None)
         returned_cidrs = [str(net['cidr']) for net in nets]
         self.assertTrue('192.168.0.0/24' in returned_cidrs)
         self.assertTrue('192.168.1.0/24' in returned_cidrs)
@@ -4228,7 +4247,7 @@ class CommonNetworkTestCase(test.TestCase):
         manager.db.network_get_all(ctxt).AndReturn(fakecidr)
         self.mox.ReplayAll()
         args = (None, 'fake', '192.168.0.0/24', False, 1, 256, None, None,
-                None, None)
+                None, None, None)
         # ValueError: requested cidr (192.168.0.0/24) conflicts
         #             with existing supernet
         self.assertRaises(ValueError, manager.create_networks, *args)
@@ -4239,7 +4258,7 @@ class CommonNetworkTestCase(test.TestCase):
         self.stubs.Set(manager, '_create_fixed_ips',
                                 self.fake_create_fixed_ips)
         args = [None, 'foo', cidr, None, 1, 256, 'fd00::/48', None, None,
-                None]
+                None, None, None]
         self.assertTrue(manager.create_networks(*args))
 
     def test_create_networks_cidr_already_used(self):
@@ -4250,7 +4269,7 @@ class CommonNetworkTestCase(test.TestCase):
         manager.db.network_get_all(ctxt).AndReturn(fakecidr)
         self.mox.ReplayAll()
         args = [None, 'foo', '192.168.0.0/24', None, 1, 256,
-                 'fd00::/48', None, None, None]
+                 'fd00::/48', None, None, None, None, None]
         self.assertRaises(ValueError, manager.create_networks, *args)
 
     def test_create_networks_many(self):
@@ -4259,7 +4278,7 @@ class CommonNetworkTestCase(test.TestCase):
         self.stubs.Set(manager, '_create_fixed_ips',
                                 self.fake_create_fixed_ips)
         args = [None, 'foo', cidr, None, 10, 256, 'fd00::/48', None, None,
-                None]
+                None, None, None]
         self.assertTrue(manager.create_networks(*args))
 
     @attr(kind='small')
@@ -4284,7 +4303,7 @@ class CommonNetworkTestCase(test.TestCase):
         self.stubs.Set(manager, '_create_fixed_ips',
                                 self.fake_create_fixed_ips)
         args = [None, 'foo', None, None, 1, 256, 'fd00::/48', None, None,
-                None]
+                None, None]
         self.assertTrue(manager.create_networks(*args))
         self.assertTrue(self._values.get('cidr') is None)
         self.assertTrue(self._values.get('netmask') is None)
@@ -4314,8 +4333,8 @@ class CommonNetworkTestCase(test.TestCase):
                                 fake_network_create_safe)
         self.stubs.Set(manager, '_create_fixed_ips',
                                 self.fake_create_fixed_ips)
-        args = [None, 'foo', cidr, None, 1, 256, 'fd00::/48', gateway_v6, None,
-                None]
+        args = [None, 'foo', cidr, None, 1, 256, 'fd00::/48', None,
+                gateway_v6, None, None]
         self.assertTrue(manager.create_networks(*args))
         self.assertEqual(gateway_v6, self._values['gateway_v6'])
 

@@ -137,7 +137,8 @@ class VMWareESXConnection(driver.ComputeDriver):
         """Reboot VM instance."""
         self._vmops.reboot(instance, network_info)
 
-    def destroy(self, instance, network_info, cleanup=True):
+    def destroy(self, instance, network_info, cleanup=True,
+                 confirm_resize=False):
         """Destroy VM instance."""
         self._vmops.destroy(instance, network_info)
 
@@ -200,8 +201,12 @@ class VMWareESXConnection(driver.ComputeDriver):
         pass
 
     def plug_vifs(self, instance, network_info):
-        """Plugs in VIFs to networks."""
+        """Plug VIFs into networks."""
         self._vmops.plug_vifs(instance, network_info)
+
+    def unplug_vifs(self, instance, network_info):
+        """Unplug VIFs from networks."""
+        self._vmops.unplug_vifs(instance, network_info)
 
 
 class VMWareAPISession(object):

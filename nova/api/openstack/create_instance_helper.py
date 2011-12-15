@@ -351,16 +351,18 @@ class CreateInstanceHelper(object):
                 if address is not None and not utils.is_valid_ipv4(address):
                     msg = _("Invalid fixed IP address (%s)") % address
                     raise exc.HTTPBadRequest(explanation=msg)
+                network['fixed_ip'] = address
+                network['gw'] = network.get('gw', True)
                 # check if the network id is already present in the list,
                 # we don't want duplicate networks to be passed
                 # at the boot time
-                for id, ip in networks:
+                for id in (net['uuid'] for net in networks):
                     if id == network_uuid:
                         expl = _("Duplicate networks (%s) are not allowed")\
                                 % network_uuid
                         raise exc.HTTPBadRequest(explanation=expl)
 
-                networks.append((network_uuid, address))
+                networks.append(network)
             except KeyError as key:
                 expl = _('Bad network format: missing %s') % key
                 raise exc.HTTPBadRequest(explanation=expl)
