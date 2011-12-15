@@ -139,6 +139,8 @@ class QuantumManager(manager.FlatManager):
            The fixed_range parameter is kept here for interface compatibility
            but is not used.
         """
+        # TODO(oda): should check whether the network is used or not
+        # and go forward only if the network is not used.
         quantum_net_id = uuid
         project_id = context.project_id
         # TODO(bgh): The project_id isn't getting populated here for some
@@ -152,9 +154,23 @@ class QuantumManager(manager.FlatManager):
                     project_id = p['id']
                     break
         LOG.debug("Deleting network for tenant: %s" % project_id)
+        q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
+        if FLAGS.quantum_use_dhcp:
+            # delete gw device for dhcp and delete the port from quantum
+            # so that the network can be deleted.
+            # do this while network_ref exists.
+            admin_context = context.elevated()
+            network = db.network_get_by_uuid(admin_context, quantum_net_id)
+            self.driver.unplug(network)
+            dev = self.driver.get_dev(network)
+            port = self.q_conn.get_port_by_attachment(q_tenant_id,
+                    quantum_net_id, dev)
+            if port is not None:
+                self.q_conn.detach_and_delete_port(q_tenant_id,
+                        quantum_net_id, port)
+            self.driver.kill_dhcp(dev)
         self.ipam.delete_subnets_by_net_id(context, quantum_net_id,
                 project_id)
-        q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
         self.q_conn.delete_network(q_tenant_id, quantum_net_id)
 
     def allocate_for_instance(self, context, **kwargs):

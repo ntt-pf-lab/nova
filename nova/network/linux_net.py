@@ -1049,7 +1049,12 @@ class LinuxOVSInterfaceDriver(LinuxNetInterfaceDriver):
         return dev
 
     def unplug(self, network):
-        return self.get_dev(network)
+        dev = "gw-" + str(network['uuid'][0:11])
+        if _device_exists(dev):
+            bridge = FLAGS.linuxnet_ovs_integration_bridge
+            _execute('ovs-vsctl', 'del-port', bridge, dev,
+                        run_as_root=True)
+        return dev
 
     def get_dev(self, network):
         dev = "gw-" + str(network['uuid'][0:11])
