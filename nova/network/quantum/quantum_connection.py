@@ -113,6 +113,7 @@ class QuantumClientConnection(object):
                 port_id = p["id"]
                 port_get_resdict = self.client.show_port_attachment(net_id,
                                 port_id, tenant=tenant_id)
-                if attachment_id == port_get_resdict["attachment"]["id"]:
+                if ("id" in port_get_resdict["attachment"]) \
+                    and (attachment_id == port_get_resdict["attachment"]["id"]):
                     return (net_id, port_id)
         return (None, None)
