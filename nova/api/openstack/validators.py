@@ -120,8 +120,6 @@ def handle_web_exception(self, e):
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))
-    elif isinstance(e, exception.InstanceBusy):
-        raise webob.exc.HTTPConflict(explanation=str(e))
 
 
 class ValidatorMiddleware(wsgi.Middleware):
