@@ -468,6 +468,7 @@ class ValidateRulesTestCase(test.TestCase):
         # assertion
         self.assertEqual("meth", actual)
         self.assertRaises(exception.Duplicate, target.meth, "fakeimage123456")
+        self.assertRaises(exception.Invalid, target.meth, "1".zfill(256))
 
     def test_image_metadata_require(self):
         # setup validation
