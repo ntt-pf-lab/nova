@@ -18,6 +18,8 @@
 #    under the License.
 
 import webob
+import base64
+import struct
 
 from nova import context
 from nova import exception
@@ -27,7 +29,8 @@ from nova import db
 from nova import image
 from nova import utils
 from nova.context import RequestContext
-from nova.compute import power_state
+from nova.compute import power_state, task_states
+from nova.compute.api import vm_states
 
 FLAGS = flags
 
@@ -122,6 +125,40 @@ class InstanceRunningRequire(BaseValidator):
         instance = db.instance_get(self.context, instance_id)
         if instance["power_state"] != power_state.RUNNING:
             raise exception.InstanceNotRunning(instance_id=instance_id)
+
+
+class InstanceCanReboot(BaseValidator):
+    """
+    InstanceCanReboot.
+    
+    Validate the instance can reboot.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+        if instance["vm_state"] == vm_states.ACTIVE:
+            if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
+                return
+        raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
+
+
+class InstanceCanSnapshot(BaseValidator):
+    """
+    InstanceCanSnapshot.
+    
+    Validate the instance can snapshot.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+        if instance["vm_state"] == vm_states.ACTIVE:
+            if instance["task_state"] == None:
+                return
+            if instance["task_state"] == task_states.IMAGE_SNAPSHOT:
+                raise exception.InstanceSnapshotting(instance_id=instance_id)
+        raise exception.InstanceSnapshotFailure(reason="Instance state is not suitable for snapshot")
 
 
 class ImageNameValid(BaseValidator):
@@ -280,6 +317,29 @@ class ZoneRequire(BaseValidator):
     def validate_zone_id(self, zone_id):
         db.zone_get(self.context, zone_id)
 
+class ZoneNameValid(BaseValidator):
+    """
+    ZoneNameValid.
+    
+    If the specified zone is host, check the host exists.
+    If the specified zone is zone name, check the zone exists.
+    Otherwise, accept the request.
+    """
+    def validate_zone_name(self, zone_name):
+        if not zone_name:
+            return
+        zone, _x, host = zone_name.partition(':')
+        if host:
+            service = db.service_get_by_args(self.context.elevated(), host,
+                                             'nova-compute')
+            if not service:
+                raise exception.HostNotFound(host=host)
+        #check all compute.
+        services = db.service_get_all_compute_sorted(self.context.elevated())
+        founds = [s for s in services if service.availability_zone == zone_name]
+        if founds == []:
+            raise exception.ComputeHostNotFound(host=zone_name)
+
 
 class KeypairRequire(BaseValidator):
     """
@@ -289,7 +349,11 @@ class KeypairRequire(BaseValidator):
     Require the 'keypair_name' parameter.
     """
     def validate_keypair_name(self, keypair_name):
-        db.key_pair_get(self.context, self.context.user_id, keypair_name)
+        keypair = db.key_pair_get(self.context, self.context.user_id, keypair_name)
+        instances = db.instance_get_all_by_user(self.context, self.context.user_id)
+        for i in instances:
+            if i["key_name"] == keypair["name"]:
+                raise exception.KeyPairUsed(key_name=keypair_name)
 
 
 class KeypairNameValid(BaseValidator):
@@ -305,3 +369,25 @@ class KeypairNameValid(BaseValidator):
             raise exception.KeyPairExists(key_name=keypair_name)
         except exception.KeypairNotFound:
             pass
+
+
+class KeypairIsRsa(BaseValidator):
+    """
+    KeypairIsRsa.
+
+    Validate the import key is rsa.
+    Require the 'public_key' parameter.
+    """
+    def validate_public_key(self, public_key):
+        try:
+            if len(public_key.split()) == 3:
+                type, key_string, comment = public_key.split()
+            else:
+                type, key_string = public_key.split()
+            data = base64.decodestring(key_string)
+            int_len = 4
+            str_len = struct.unpack('>I', data[:int_len])[0]
+            if not data[int_len:int_len+str_len] == type:
+                raise exception.PublicKeyInvalid(public_key=public_key)
+        except Exception:
+            raise exception.PublicKeyInvalid(public_key=public_key)

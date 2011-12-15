@@ -35,9 +35,23 @@ class InstanceCreationResolver(validation.Resolver):
             params['instance_name'] =body['server']['name']
             params['image_id'] = body['server']['imageId']
             params['flavor_id'] = body['server']['flavorId']
+            params['zone_name']= body['server']['availability_zone']
         except KeyError:
             pass
         return params
+
+
+class KeypairCreationResolver(validation.Resolver):
+    """
+    KeypairCreationResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['keypair_name'] =body['keypair']['name']
+            params['public_key'] = body['keypair']['public_key']
+        except KeyError:
+            pass
 
 
 MAPPING = [
@@ -51,8 +65,25 @@ MAPPING = [
  "alias": {"id": "instance_id"}},
 {"cls": "servers.Controller",
  "method": "create",
- "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver}
+ "validators": [rules.InstanceNameValid, rules.ImageRequire,
+                rules.FlavorRequire, rules.ZoneNameValid],
+ "resolver": InstanceCreationResolver},
+{"cls": "servers.Controller",
+ "method": "_action_reboot",
+ "validators": [rules.InstanceCanReboot],
+ "alias": {"id": "instance_id"}},
+{"cls": "servers.ControllerV11",
+ "method": "_action_create_image",
+ "validators": [rules.InstanceCanSnapshot],
+ "alias": {"id": "instance_id"}},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "create",
+ "validators": [rules.KeypairNameValid, rules.KeypairIsRsa],
+ "resolver": KeypairCreationResolver},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "delete",
+ "validators": [rules.KeypairRequire],
+ "alias": {"id": "keypair_name"}}
 ]
 
 def handle_web_exception(self, e):
@@ -60,8 +91,14 @@ def handle_web_exception(self, e):
         raise webob.exc.HTTPNotFound(explanation=str(e))
     elif isinstance(e, exception.Invalid):
         # TODO add some except pattern.
+        if isinstance(e, exception.InstanceRebootFailure):
+            raise webob.exc.HTTPForbidden(explanation=str(e))
+        if isinstance(e, exception.InstanceSnapshotFailure):
+            raise webob.exc.HTTPForbidden(explanation=str(e))
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.Duplicate):
+        raise webob.exc.HTTPConflict(explanation=str(e))
+    elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))
 
 
