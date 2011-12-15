@@ -32,6 +32,7 @@ from nova import utils
 from nova.context import RequestContext
 from nova.compute import power_state, vm_states, task_states
 from nova import log as logger
+from nova.exception import Duplicate
 FLAGS = flags
 
 
@@ -105,15 +106,20 @@ class InstanceCanSnapshot(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
-        instance = db.instance_get(self.context, instance_id)
-        vm = instance["vm_state"]
-        task = instance["task_state"]
-        if vm == vm_states.ACTIVE and task is None:
-            return
-        if vm == vm_states.ACTIVE and task == task_states.IMAGE_SNAPSHOT:
-            raise exception.InstanceSnapshotting(instance_id=instance_id) 
-        raise exception.InstanceSnapshotFailure(
-                    reason="Instance state is not suitable for snapshot")
+        try:
+            instance = db.instance_get(self.context, instance_id)
+            vm = instance["vm_state"]
+            task = instance["task_state"]
+            if vm == vm_states.ACTIVE and task is None:
+                return
+            if vm == vm_states.ACTIVE and task == task_states.IMAGE_SNAPSHOT:
+                raise exception.InstanceSnapshotting(instance_id=instance_id) 
+            raise exception.InstanceSnapshotFailure(
+                        reason="Instance state is not suitable for snapshot")
+        except exception.InstanceSnapshotting as e:
+            raise webob.exc.HTTPConflict(explanation=str(e))
+        except Exception as e:
+            raise webob.exc.HTTPForbidden(explanation=str(e))
 
 
 class InstanceNameValid(BaseValidator):
@@ -169,7 +175,6 @@ class ImageNameValid(BaseValidator):
     Require the 'image_name' parameter.
     """
     def validate_image_name(self, image_name):
-        print image_name
         if not image_name:
             raise exception.InvalidParameterValue(
                               err="Image name should be specified.")
@@ -184,6 +189,35 @@ class ImageNameValid(BaseValidator):
             raise exception.Duplicate()
         except exception.ImageNotFound:
             pass
+
+
+class ImageNameValidAPI(BaseValidator):
+    """
+    ImageNameValid.
+
+    Validate the image name is valid and unique.
+    Require the 'image_name' parameter.
+    """
+    def validate_image_name(self, image_name):
+        try:
+            if not image_name:
+                raise exception.InvalidParameterValue(
+                                  err="Image name should be specified.")
+            if len(image_name) > 255:
+                print len(image_name)
+                raise exception.InvalidParameterValue(
+                                  err="Image name should less than 255.")
+    
+            service = image.get_default_image_service()
+            try:
+                service.show_by_name(self.context, image_name)
+                raise exception.Duplicate()
+            except exception.ImageNotFound:
+                pass
+        except exception.Duplicate as e:
+            raise webob.exc.HTTPConflict(explanation=str(e))
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
 class NetworkRequire(BaseValidator):

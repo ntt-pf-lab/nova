@@ -21,13 +21,13 @@ from webob import exc
 from xml.dom import minidom
 import webob
 
-from nova import compute
+from nova import compute, validation, validate_rules
 from nova import db
 from nova import exception
 from nova import flags
 from nova import log as logging
 from nova import utils
-from nova.api.openstack import common
+from nova.api.openstack import common, validators
 from nova.api.openstack import create_instance_helper as helper
 from nova.api.openstack import ips
 from nova.api.openstack import wsgi
@@ -788,6 +788,8 @@ class ControllerV11(Controller):
         return view
 
     @common.check_snapshots_enabled
+    @validation.method(validate_rules.ImageNameValidAPI, validate_rules.InstanceCanSnapshot,
+                       resolver=validators.CreateImageResolver)
     def _action_create_image(self, input_dict, req, instance_id):
         """Snapshot a server instance."""
         entity = input_dict.get("createImage", {})
