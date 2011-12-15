@@ -23,6 +23,7 @@ from nova import db
 from nova import exception
 from nova import flags
 from nova import log as logging
+from nova.api.openstack import common
 from nova.api.openstack import extensions
 
 LOG = logging.getLogger("nova.api.contrib.eventlogs")
@@ -40,7 +41,7 @@ RESPONSE_FIELDS = ['request_id', 'priority', 'message', 'status', 'event_type',
                  'user_id', 'id']
 
 #expected filter field values
-LOG_TYPES = ['DEBUG', 'INFO', 'ERROR']
+LOG_TYPES = ['DEBUG', 'INFO', 'ERROR', 'ALL']
 
 
 class EventLogsController(object):
@@ -93,26 +94,41 @@ class EventLogsController(object):
         eventlogs = db.api.eventlog_get_all(ctxt, filters)
         return eventlogs
 
-    def limited_by_marker_or_offset(self, items, pagination_params):
-        """Return a slice of items according to the requested marker and
-        limit."""
-        limit = pagination_params.get('limit', FLAGS.pagination_limit)
-        offset = pagination_params.get('offset', 0)
-        marker = pagination_params.get('marker')
+    def generate_href(self, req, eventlog_id):
+        base_path = req.url
+        query_params = []
+        if req.query_string:
+            base_path = req.path_url
+            for param in req.query_string.split('&'):
+                if param.find('marker') == -1:
+                    query_params.append(param)
 
-        start_index = offset
-        if marker:
-            start_index = -1
-            for i, item in enumerate(items):
-                if item['id'] == marker:
-                    start_index = i + 1
-                    break
-            if start_index < 0:
-                msg = _('marker [%s] not found') % marker
-                raise webob.exc.HTTPBadRequest(explanation=msg)
+        query_params.append("marker=%d" % eventlog_id)
+        next_href = base_path + "?" + '&'.join(query_params)
+        return next_href
 
-        range_end = start_index + limit
-        return items[start_index:range_end]
+    def _build_links(self, req, logs, limited_logs):
+        """Build the pagination links"""
+        last_id = -1
+        resultset_last_id = -1
+        if limited_logs:
+            last_id = limited_logs[-1]['id']
+        if logs:
+            resultset_last_id = logs[-1]['id']
+
+        if last_id == -1 or last_id == resultset_last_id:
+            return []
+        link_dict = {'href': self.generate_href(req, last_id), 'rel': 'next'}
+        return [link_dict]
+
+    def _build(self, req, logs, limited_logs):
+        """Build the paginated response body"""
+        links = self._build_links(req, logs, limited_logs)
+        result = {'eventlogs': self._build_response(limited_logs)}
+
+        if links:
+            result['eventlogs_links'] = links
+        return result
 
     def index(self, req):
         """Validate the filters provided in request, apply filters and return
@@ -121,8 +137,14 @@ class EventLogsController(object):
         params = self._get_filters(req)
         filters = {'type': params.get('type', 'ALL')}
         logs = self._get_eventlogs(req, filters)
-        logs = self.limited_by_marker_or_offset(logs, params)
-        result = {'eventlogs': self._build_response(logs)}
+        max_limit = max(params.get('limit'), FLAGS.pagination_limit)
+        if params.get('marker'):
+            limited_logs = common.limited_by_marker(logs,
+                                                    req,
+                                                    max_limit=max_limit)
+        else:
+            limited_logs = common.limited(logs, req, max_limit=max_limit)
+        result = self._build(req, logs, limited_logs)
         return result
 
     def show(self, req, id):
@@ -131,7 +153,8 @@ class EventLogsController(object):
             ctxt = req.environ['nova.context']
             eventlogs = db.api.eventlog_get_all_by_request_id(ctxt, id)
         except exception.NotFound:
-            return webob.exc.HTTPNotFound()
+            msg = _('Request id %s not found') % id
+            raise webob.exc.HTTPNotFound(explanation=msg)
 
         result = {'eventlogs': self._build_response(eventlogs)}
         return result
