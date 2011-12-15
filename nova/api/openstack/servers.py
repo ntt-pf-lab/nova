@@ -788,7 +788,8 @@ class ControllerV11(Controller):
         return view
 
     @common.check_snapshots_enabled
-    @validation.method(validate_rules.ImageNameValidAPI, validate_rules.InstanceCanSnapshot,
+    @validation.method(validate_rules.InstanceCanSnapshot,
+                       validate_rules.ImageNameValidAPI,
                        resolver=validators.CreateImageResolver)
     def _action_create_image(self, input_dict, req, instance_id):
         """Snapshot a server instance."""

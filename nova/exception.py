@@ -899,3 +899,7 @@ class InvalidRPCConnectionReuse(NovaException):
 
 class EventLogNotFound(NotFound):
     message = _("EventLog Not Found.")
+
+
+class ImageExist(Duplicate):
+    message = _("Image %(image_id)s already exist.")
