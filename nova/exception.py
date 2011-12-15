@@ -863,6 +863,10 @@ class ImageTooLarge(NovaException):
     message = _("Image is larger than instance type allows")
 
 
+class PublicKeyInvalid(Invalid):
+    message = _("Import key is not ssh-rsa format. %(public_key)")
+
+
 class ZoneRequestError(Error):
     def __init__(self, message=None):
         if message is None:

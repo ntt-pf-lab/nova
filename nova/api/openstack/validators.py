@@ -97,8 +97,7 @@ MAPPING = [
  "resolver": CreateImageResolver},
 {"cls": "contrib.keypairs.KeypairController",
  "method": "create",
- "validators": [rules.KeypairNameValid, rules.KeypairNotExist,
-                rules.PublicKeyValid],
+ "validators": [rules.KeypairNameValid, rules.KeypairIsRsa],
  "resolver": KeypairCreationResolver},
 {"cls": "images.Controller",
  "method": "delete",
@@ -118,6 +117,8 @@ def handle_web_exception(self, e):
             raise webob.exc.HTTPForbidden(explanation=str(e))
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.Duplicate):
+        raise webob.exc.HTTPBadRequest(explanation=str(e))
+    elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))
     elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))

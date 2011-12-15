@@ -19,6 +19,8 @@
 
 import webob
 import sys
+import base64
+import struct
 
 from nova import context
 from nova import exception
@@ -391,19 +393,23 @@ class KeypairNotExist(BaseValidator):
             pass
 
 
-class PublicKeyValid(BaseValidator):
+class KeypairIsRsa(BaseValidator):
     """
-    PublicKeyValid.
+    KeypairIsRsa.
 
-    Validate the public key is valid.
+    Validate the import key is rsa.
     Require the 'public_key' parameter.
     """
     def validate_public_key(self, public_key):
-        if public_key is None:
-            return
-        elif not public_key.startswith('ssh-rsa '):
-            raise exception.InvalidParameterValue(
-                              err="public_key parameter is not rsa format.")
-        elif len(public_key.encode() * 8) > 16384:
-            raise exception.InvalidParameterValue(
-                              err="public_key parameter exceeds 16384 bits.")
+        try:
+            if len(public_key.split()) == 3:
+                type, key_string, comment = public_key.split()
+            else:
+                type, key_string = public_key.split()
+            data = base64.decodestring(key_string)
+            int_len = 4
+            str_len = struct.unpack('>I', data[:int_len])[0]
+            if not data[int_len:int_len+str_len] == type:
+                raise exception.PublicKeyInvalid(public_key=public_key)
+        except Exception:
+            raise exception.PublicKeyInvalid(public_key=public_key)
