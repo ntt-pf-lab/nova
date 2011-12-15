@@ -88,6 +88,12 @@ class QuantumMelangeIPAMLib(object):
                                      mac_address=vif_ref['address'])
         return ip[0]['address']
 
+    def reserve_fixed_ip(self, context, address, quantum_net_id, tenant_id):
+        """Reserve a single fixed IPv4 address for not to allocate to 
+           a virtual interface."""
+        # TODO(oda): implement
+        pass
+
     def get_network_id_by_cidr(self, context, cidr, project_id):
         """Find the Quantum UUID associated with a IPv4 CIDR
            address for the specified tenant.

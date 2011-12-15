@@ -130,6 +130,13 @@ class QuantumManager(manager.FlatManager):
             priority, cidr, gateway, gateway_v6,
             cidr_v6, dns1, dns2)
 
+        # reserve dhcp_server ip address
+        # TODO(oda): dhcp_server ip address can be specified via 
+        # the nova-manage network create.
+        dhcp_server = str(IPAddress(IPNetwork(cidr).first + 2))
+        self.ipam.reserve_fixed_ip(context, dhcp_server, quantum_net_id,
+                  ipam_tenant_id)
+
         return [{'uuid': quantum_net_id}]
 
     def delete_network(self, context, fixed_range, uuid):
@@ -297,11 +304,11 @@ class QuantumManager(manager.FlatManager):
             # passed to the linux_net functions).
             network_ref['cidr'] = subnet['cidr']
             n = IPNetwork(subnet['cidr'])
-            network_ref['dhcp_server'] = IPAddress(n.last - 1)
+            network_ref['dhcp_server'] = IPAddress(n.first + 2)
             # TODO(bgh): Melange should probably track dhcp_start
             if not 'dhcp_start' in network_ref or \
                     network_ref['dhcp_start'] is None:
-                network_ref['dhcp_start'] = IPAddress(n.first + 2)
+                network_ref['dhcp_start'] = IPAddress(n.first + 1)
             network_ref['broadcast'] = IPAddress(n.broadcast)
             network_ref['gateway'] = subnet['gateway']
             # Construct the interface id that we'll use for the bridge
@@ -484,8 +491,8 @@ class QuantumManager(manager.FlatManager):
             # passed to the linux_net functions).
             network_ref['cidr'] = subnet['cidr']
             n = IPNetwork(subnet['cidr'])
-            network_ref['dhcp_server'] = IPAddress(n.last - 1)
-            network_ref['dhcp_start'] = IPAddress(n.first + 2)
+            network_ref['dhcp_server'] = IPAddress(n.first + 2)
+            network_ref['dhcp_start'] = IPAddress(n.first + 1)
             network_ref['broadcast'] = IPAddress(n.broadcast)
             network_ref['gateway'] = subnet['gateway']
             dev = "gw-" + str(network_ref['uuid'][0:11])

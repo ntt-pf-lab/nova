@@ -134,6 +134,22 @@ class QuantumNovaIPAMLib(object):
             db.fixed_ip_update(admin_context, address, values)
         return address
 
+    def reserve_fixed_ip(self, context, address, quantum_net_id, tenant_id):
+        """Reserve a single fixed IPv4 address for not to allocate to 
+           a virtual interface."""
+        admin_context = context.elevated()
+        fixed_ip_ref = db.fixed_ip_get_by_address(admin_context, address)
+
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=address)
+        if fixed_ip_ref['network']['uuid'] != quantum_net_id:
+            raise exception.FixedIpNotFoundForNetwork(address=address,
+                                    network_uuid=quantum_net_id)
+        if fixed_ip_ref['allocated']:
+            raise exception.FixedIpAlreadyInUse(address=address)
+
+        db.fixed_ip_update(admin_context, address, {'reserved': True})
+
     def get_tenant_id_by_net_id(self, context, net_id, vif_id, project_id):
         """Returns tenant_id for this network.  This is only necessary
            in the melange IPAM case.
