@@ -511,9 +511,14 @@ class ComputeManager(manager.SchedulerDependentManager):
                   {'action_str': action_str, 'instance_id': instance_id},
                   context=context)
 
-        network_info = self._get_instance_nw_info(context, instance)
-        if not FLAGS.stub_network:
-            self.network_api.deallocate_for_instance(context, instance)
+        try:
+            network_info = self._get_instance_nw_info(context, instance)
+            if not FLAGS.stub_network:
+                self.network_api.deallocate_for_instance(context, instance)
+        except:
+            network_info = []
+            LOG.exception(_("Failed to deallocate network of instance %(instance_id)s.") %
+                          {'instance_id': instance_id}, context=context)
 
         volumes = instance.get('volumes') or []
         for volume in volumes:

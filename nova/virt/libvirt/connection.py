@@ -266,7 +266,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
         try:
             virt_dom = self._lookup_by_name(instance_name)
-        except exception.NotFound:
+        except (exception.NotFound, exception.Error):
             virt_dom = None
 
         # If the instance is already terminated, we're still happy
@@ -290,7 +290,6 @@ class LibvirtConnection(driver.ComputeDriver):
                                   "%(instance_name)s. Code=%(errcode)s "
                                   "Error=%(e)s") %
                                 locals())
-                    raise
 
             try:
                 # NOTE(justinsb): We remove the domain definition. We probably
@@ -303,7 +302,6 @@ class LibvirtConnection(driver.ComputeDriver):
                               "%(instance_name)s. Code=%(errcode)s "
                               "Error=%(e)s") %
                             locals())
-                raise
 
             for (network, mapping) in network_info:
                 self.vif_driver.unplug(instance, network, mapping)
