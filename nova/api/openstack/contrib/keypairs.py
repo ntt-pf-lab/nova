@@ -26,7 +26,10 @@ from webob import exc
 from nova import crypto
 from nova import db
 from nova import exception
+from nova import validation
+from nova import validate_rules as rules
 from nova.api.openstack import extensions
+from nova.api.openstack import validators
 
 
 class KeypairController(object):
@@ -44,6 +47,9 @@ class KeypairController(object):
                 'public_key': public_key,
                 'fingerprint': fingerprint}
 
+    @validation.method(rules.KeypairNameValid, rules.KeypairNotExist,
+                       rules.PublicKeyValid,
+                       resolver=validators.KeypairCreationResolver)
     def create(self, req, body):
         """
         Create or import keypair.
@@ -91,6 +97,8 @@ class KeypairController(object):
         db.key_pair_create(context, keypair)
         return {'keypair': keypair}
 
+    @validation.method(rules.KeypairRequire,
+                       alias={'id': 'keypair_name'})
     def delete(self, req, id):
         """
         Delete a keypair with a given name

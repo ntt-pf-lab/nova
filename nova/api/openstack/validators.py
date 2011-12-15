@@ -25,6 +25,8 @@ from nova import validate_rules as rules
 from nova import validation
 from nova import utils
 
+LOG = logging.getLogger('nova.api.openstack')
+
 class InstanceCreationResolver(validation.Resolver):
     """
     InstanceCreationResolver.
@@ -33,8 +35,39 @@ class InstanceCreationResolver(validation.Resolver):
         try:
             body = params['body']
             params['instance_name'] =body['server']['name']
-            params['image_id'] = body['server']['imageId']
-            params['flavor_id'] = body['server']['flavorId']
+            params['image_id'] = body['server']['imageRef']
+            params['flavor_id'] = body['server']['flavorRef']
+            params['zone_name']= body['server']['availability_zone']
+        except KeyError:
+            pass
+        return params
+
+
+class CreateImageResolver(validation.Resolver):
+    """
+    InstanceCreationResolver.
+    params before: input_dict, req, instance_id
+    params after: input_dict, req, instance_id, image_name
+    """
+    def resolve_parameter(self, params):
+        try:
+            input_dict = params['input_dict']
+            entity = input_dict.get("createImage", {})
+            params['image_name'] = entity["name"]
+        except KeyError:
+            pass
+        return params
+
+
+class KeypairCreationResolver(validation.Resolver):
+    """
+    KeypairCreationResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['keypair_name'] = body['keypair']['name']
+            params['public_key'] = body['keypair'].get('public_key')
         except KeyError:
             pass
         return params
@@ -51,17 +84,43 @@ MAPPING = [
  "alias": {"id": "instance_id"}},
 {"cls": "servers.Controller",
  "method": "create",
- "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver}
+ "validators": [rules.InstanceNameValid, rules.ImageRequire,
+                rules.FlavorRequire, rules.ZoneNameValid],
+ "resolver": InstanceCreationResolver},
+{"cls": "servers.Controller",
+ "method": "_action_reboot",
+ "validators": [rules.InstanceCanReboot],
+ "alias": {"id": "instance_id"}},
+{"cls": "servers.ControllerV11",
+ "method": "_action_create_image",
+ "validators": [rules.ImageNameValid, rules.InstanceCanSnapshot],
+ "resolver": CreateImageResolver},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "create",
+ "validators": [rules.KeypairNameValid, rules.KeypairIsRsa],
+ "resolver": KeypairCreationResolver},
+{"cls": "images.Controller",
+ "method": "delete",
+ "validators": [rules.ImageRequire],
+ "alias": {"id": "image_id"}}
 ]
+
 
 def handle_web_exception(self, e):
     if isinstance(e, exception.NotFound):
         raise webob.exc.HTTPNotFound(explanation=str(e))
     elif isinstance(e, exception.Invalid):
         # TODO add some except pattern.
+        if isinstance(e, exception.InstanceRebootFailure):
+            raise webob.exc.HTTPForbidden(explanation=str(e))
+        if isinstance(e, exception.InstanceSnapshotFailure):
+            raise webob.exc.HTTPForbidden(explanation=str(e))
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.Duplicate):
+        raise webob.exc.HTTPBadRequest(explanation=str(e))
+    elif isinstance(e, exception.InstanceBusy):
+        raise webob.exc.HTTPConflict(explanation=str(e))
+    elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))
 
 

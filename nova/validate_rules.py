@@ -18,6 +18,9 @@
 #    under the License.
 
 import webob
+import sys
+import base64
+import struct
 
 from nova import context
 from nova import exception
@@ -27,7 +30,7 @@ from nova import db
 from nova import image
 from nova import utils
 from nova.context import RequestContext
-from nova.compute import power_state
+from nova.compute import power_state, vm_states, task_states
 
 FLAGS = flags
 
@@ -88,11 +91,29 @@ class InstanceRequire(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
-        print "hogehoge"
         if utils.is_uuid_like(instance_id):
             db.instance_get_by_uuid(self.context, instance_id)
         else:
             db.instance_get(self.context, instance_id)
+
+
+class InstanceCanSnapshot(BaseValidator):
+    """
+    InstanceRequire.
+
+    Validate the instance is exists.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        vm = instance["vm_state"]
+        task = instance["task_state"]
+        if vm == vm_states.ACTIVE and task is None:
+            return
+        if vm == vm_states.ACTIVE and task == task_states.IMAGE_SNAPSHOT:
+            raise exception.InstanceSnapshotting(instance_id=instance_id) 
+        raise exception.InstanceSnapshotFailure(
+                    reason="Instance state is not suitable for snapshot")
 
 
 class InstanceNameValid(BaseValidator):
@@ -124,6 +145,22 @@ class InstanceRunningRequire(BaseValidator):
             raise exception.InstanceNotRunning(instance_id=instance_id)
 
 
+class InstanceCanReboot(BaseValidator):
+    """
+    InstanceCanReboot.
+    
+    Validate the instance can reboot.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+        if instance["vm_state"] == vm_states.ACTIVE:
+            if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
+                return
+        raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
+
+
 class ImageNameValid(BaseValidator):
     """
     ImageNameValid.
@@ -132,8 +169,15 @@ class ImageNameValid(BaseValidator):
     Require the 'image_name' parameter.
     """
     def validate_image_name(self, image_name):
+        print image_name
         if not image_name:
-            raise exception.Invalid("Image name should be specified.")
+            raise exception.InvalidParameterValue(
+                              err="Image name should be specified.")
+        if len(image_name) > 255:
+            print len(image_name)
+            raise exception.InvalidParameterValue(
+                              err="Image name should less than 255.")
+
         service = image.get_default_image_service()
         try:
             service.show_by_name(self.context, image_name)
@@ -210,6 +254,14 @@ class ImageRequire(BaseValidator):
     Require the 'image_id' parameter.
     """
     def validate_image_id(self, image_id):
+        try:
+            num = int(image_id)
+            if num < 1:
+                raise exception.InvalidParameterValue("Specified image id is not positive value.")
+            elif num > sys.maxint:
+                raise exception.InvalidParameterValue("Specified image id is too large.")
+        except TypeError:
+            raise exception.InvalidParameterValue("Specified image id is not digit.")
         service = image.get_default_image_service()
         result = service.show(self.context, image_id)
         if result is None:
@@ -280,28 +332,84 @@ class ZoneRequire(BaseValidator):
     def validate_zone_id(self, zone_id):
         db.zone_get(self.context, zone_id)
 
-
-class KeypairRequire(BaseValidator):
+class ZoneNameValid(BaseValidator):
     """
-    keypairRequire.
-
-    Validate the keypair is exists.
-    Require the 'keypair_name' parameter.
+    ZoneNameValid.
+    
+    If the specified zone is host, check the host exists.
+    If the specified zone is zone name, check the zone exists.
+    Otherwise, accept the request.
     """
-    def validate_keypair_name(self, keypair_name):
-        db.key_pair_get(self.context, self.context.user_id, keypair_name)
+    def validate_zone_name(self, zone_name):
+        if not zone_name:
+            return
+        zone, _x, host = zone_name.partition(':')
+        if host:
+            service = db.service_get_by_args(self.context.elevated(), host,
+                                             'nova-compute')
+            if not service:
+                raise exception.HostNotFound(host=host)
 
 
 class KeypairNameValid(BaseValidator):
     """
-    keypairNameRequire.
+    KeypairNameValid.
+
+    Validate the keypair name is valid.
+    Require the 'keypair_name' parameter.
+    """
+    def validate_keypair_name(self, keypair_name):
+        if not keypair_name:
+            raise exception.InvalidParameterValue(
+                              err="name parameter required.")
+        if len(keypair_name) > 255:
+            raise exception.InvalidParameterValue(
+                              err="name parameter over 255 length.")
+
+
+class KeypairExists(BaseValidator):
+    """
+    KeypairExists.
+
+    Validate the keypair exists.
+    Require the 'keypair_name' parameter.
+    """
+    def validate_keypair_exists(self, keypair_name):
+        db.key_pair_get(self.context, self.context.user_id, keypair_name)
+
+
+class KeypairNotExist(BaseValidator):
+    """
+    KeypairNotExist.
 
     Validate the keypair is not duplicate.
     Require the 'keypair_name' parameter.
     """
-    def validate_keypair_name(self, keypair_name):
+    def validate_keypair_not_exist(self, keypair_name):
         try:
             db.key_pair_get(self.context, self.context.user_id, keypair_name)
             raise exception.KeyPairExists(key_name=keypair_name)
         except exception.KeypairNotFound:
             pass
+
+
+class KeypairIsRsa(BaseValidator):
+    """
+    KeypairIsRsa.
+
+    Validate the import key is rsa.
+    Require the 'public_key' parameter.
+    """
+    def validate_public_key(self, public_key):
+        try:
+            if len(public_key.split()) == 3:
+                type, key_string, comment = public_key.split()
+            else:
+                type, key_string = public_key.split()
+            data = base64.decodestring(key_string)
+            int_len = 4
+            str_len = struct.unpack('>I', data[:int_len])[0]
+            if not data[int_len:int_len+str_len] == type:
+                raise exception.PublicKeyInvalid(public_key=public_key)
+        except Exception:
+            raise exception.PublicKeyInvalid(public_key=public_key)

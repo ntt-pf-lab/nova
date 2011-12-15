@@ -468,6 +468,7 @@ class ValidateRulesTestCase(test.TestCase):
         # assertion
         self.assertEqual("meth", actual)
         self.assertRaises(exception.Duplicate, target.meth, "fakeimage123456")
+        self.assertRaises(exception.Invalid, target.meth, "1".zfill(256))
 
     def test_image_metadata_require(self):
         # setup validation
@@ -542,3 +543,26 @@ class ValidateRulesTestCase(test.TestCase):
         # assertion
         self.assertEqual("meth", actual)
         self.assertRaises(exception.KeyPairExists, target.meth, 'key1')
+
+    def test_keypair_public_key_invalid(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairIsRsa)
+            def meth(self, public_key):
+                return "meth"
+
+        validation.apply()
+        valid_key1="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcsnT+yXD1Y2h7IU47TyBUJZf8HmHyzpwyuzGxu5512XM7xhHM5aWjQVEccsxvg242MDUbwGWGa69j68cW9XR8fpDWzZLaGEmIbpdVbGUVajwDBgwMSANPQG2H0jQOMUSptiW4xMq5lzWLtm3cCvBmuaTMhRqRSuizAvCdPuuUNdvcszOtYIa+I6uFzmlqJVH63egEeBe+Z5TuY+HdKyyi9zp36sPYM47xKf0LKD+mc07xgDzjEVI0fiTbrEWhsUUDEHKNcVvGP7w2r8CZqEQYWqpTqbE7XJsXCM+iq52Y2slqvhO+Dv8xltFQqu3crqzzxsR/PwGiOAeH45/sWNpt openstack@ubuntu"
+        valid_key2="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcsnT+yXD1Y2h7IU47TyBUJZf8HmHyzpwyuzGxu5512XM7xhHM5aWjQVEccsxvg242MDUbwGWGa69j68cW9XR8fpDWzZLaGEmIbpdVbGUVajwDBgwMSANPQG2H0jQOMUSptiW4xMq5lzWLtm3cCvBmuaTMhRqRSuizAvCdPuuUNdvcszOtYIa+I6uFzmlqJVH63egEeBe+Z5TuY+HdKyyi9zp36sPYM47xKf0LKD+mc07xgDzjEVI0fiTbrEWhsUUDEHKNcVvGP7w2r8CZqEQYWqpTqbE7XJsXCM+iq52Y2slqvhO+Dv8xltFQqu3crqzzxsR/PwGiOAeH45/sWNpt"
+        invalid_key="AAAAB3NzaC1yc2EAAAADAQABAAABAQDcsnT+yXD1Y2h7IU47TyBUJZf8HmHyzpwyuzGxu5512XM7xhHM5aWjQVEccsxvg242MDUbwGWGa69j68cW9XR8fpDWzZLaGEmIbpdVbGUVajwDBgwMSANPQG2H0jQOMUSptiW4xMq5lzWLtm3cCvBmuaTMhRqRSuizAvCdPuuUNdvcszOtYIa+I6uFzmlqJVH63egEeBe+Z5TuY+HdKyyi9zp36sPYM47xKf0LKD+mc07xgDzjEVI0fiTbrEWhsUUDEHKNcVvGP7w2r8CZqEQYWqpTqbE7XJsXCM+iq52Y2slqvhO+Dv8xltFQqu3crqzzxsR/PwGiOAeH45/sWNpt openstack@ubuntu"
+
+        # do test
+        target = TargetClass()
+        actual = target.meth(valid_key1)
+        self.assertEqual("meth", actual)
+        actual = target.meth(valid_key2)
+        self.assertEqual("meth", actual)
+
+        self.assertRaises(exception.PublicKeyInvalid, target.meth, invalid_key)
+        self.assertRaises(exception.PublicKeyInvalid, target.meth, 'key1')
+        
