@@ -698,7 +698,28 @@ class ComputeManager(manager.SchedulerDependentManager):
                        'instance: %(instance_id)s (state: %(state)s '
                        'expected: %(running)s)') % locals())
 
-        self.driver.snapshot(context, instance_ref, image_id)
+        try:
+            self.driver.snapshot(context, instance_ref, image_id)
+        except exception.InstanceNotFound:
+            LOG.exception(_("libvirtError at lookup instance by name"))
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=instance_ref['vm_state'],
+                      task_state=instance_ref['task_state'])
+            raise
+        except exception.Error:
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=instance_ref['vm_state'],
+                      task_state=instance_ref['task_state'])
+            raise
+        except Exception, e:
+            LOG.exception(_("snapshot instance error: %s") % e)
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=instance_ref['vm_state'],
+                      task_state=instance_ref['task_state'])
+            raise
         self._instance_update(context, instance_id, task_state=None)
 
         if image_type == 'snapshot' and rotation:

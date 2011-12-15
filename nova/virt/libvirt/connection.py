@@ -473,7 +473,11 @@ class LibvirtConnection(driver.ComputeDriver):
 
         finally:
             # Clean up
-            shutil.rmtree(temp_dir)
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception, e:
+                snapshot_ptr.delete(0)
+                raise
             snapshot_ptr.delete(0)
 
     @exception.wrap_exception()
