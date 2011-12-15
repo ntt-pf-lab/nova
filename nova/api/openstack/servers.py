@@ -205,6 +205,7 @@ class Controller(object):
 
     @scheduler_api.redirect_handler
     def action(self, req, id, body):
+        print "-------------------------ACTION %s " % id 
         """Multi-purpose method used to take actions on a server"""
 
         self.actions = {
@@ -305,6 +306,9 @@ class Controller(object):
     def _action_confirm_resize(self, input_dict, req, id):
         try:
             self.compute_api.confirm_resize(req.environ['nova.context'], id)
+        except exception.MigrationNotFound:
+            msg = _("Instance has not been resized.")
+            raise exc.HTTPBadRequest(explanation=msg)
         except Exception, e:
             LOG.exception(_("Error in confirm-resize %s"), e)
             raise exc.HTTPBadRequest()
@@ -313,6 +317,9 @@ class Controller(object):
     def _action_revert_resize(self, input_dict, req, id):
         try:
             self.compute_api.revert_resize(req.environ['nova.context'], id)
+        except exception.MigrationNotFound:
+            msg = _("Instance has not been resized.")
+            raise exc.HTTPBadRequest(explanation=msg)
         except Exception, e:
             LOG.exception(_("Error in revert-resize %s"), e)
             raise exc.HTTPBadRequest()
@@ -811,14 +818,21 @@ class ControllerV11(Controller):
             msg = _("Invalid metadata")
             raise webob.exc.HTTPBadRequest(explanation=msg)
 
-        image = self.compute_api.snapshot(context,
-                                          instance_id,
-                                          image_name,
-                                          extra_properties=props)
+        try:
+            image = self.compute_api.snapshot(context,
+                                              instance_id,
+                                              image_name,
+                                              extra_properties=props)
+        except exception.InstanceBusy:
+            msg = _("Server is currently creating an image. Please wait.")
+            raise webob.exc.HTTPConflict(explanation=msg)
 
         # build location of newly-created image entity
         image_id = str(image['id'])
-        image_ref = os.path.join(req.application_url, 'images', image_id)
+        image_ref = os.path.join(req.application_url,
+                                 context.project_id,
+                                 'images',
+                                 image_id)
 
         resp = webob.Response(status_int=202)
         resp.headers['Location'] = image_ref

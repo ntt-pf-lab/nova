@@ -7,6 +7,9 @@
 #
 # All Rights Reserved.
 #
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -29,6 +32,7 @@ import json
 import os
 import tempfile
 import time
+import shutil
 
 from nova import context
 from nova import db
@@ -96,13 +100,31 @@ def mkfs(os_type, fs_label, target):
 
 def extend(image, size):
     """Increase image to size"""
-    file_size = os.path.getsize(image)
+    try:
+        file_size = os.path.getsize(image)
+    except OSError, e:
+        desc = _("Failed to get size of image: %s") % image
+        raise exception.ProcessExecutionError(stderr=e,
+                                              description=desc)
+
     if file_size >= size:
         return
-    utils.execute('qemu-img', 'resize', image, size)
-    # NOTE(vish): attempts to resize filesystem
-    utils.execute('e2fsck', '-fp', image, check_exit_code=False)
-    utils.execute('resize2fs', image, check_exit_code=False)
+
+    # backup image
+    image_org = image + '.org'
+    shutil.copyfile(image, image_org)
+
+    try:
+        utils.execute('qemu-img', 'resize', image, size)
+        # NOTE(vish): attempts to resize filesystem
+        utils.execute('e2fsck', '-fp', image, check_exit_code=False)
+        utils.execute('resize2fs', image, check_exit_code=False)
+        os.remove(image_org)
+    except exception.ProcessExecutionError, e:
+        # rollback
+        os.remove(image)
+        os.rename(image_org, image)
+        raise e
 
 
 def inject_data(image, key=None, net=None, metadata=None,
@@ -121,7 +143,12 @@ def inject_data(image, key=None, net=None, metadata=None,
             # create partition
             out, err = utils.execute('kpartx', '-a', device, run_as_root=True)
             if err:
-                raise exception.Error(_('Failed to load partition: %s') % err)
+                cmd = ('kpartx', '-a', device)
+                desc = _('Failed to load partition')
+                raise exception.ProcessExecutionError(stdout=out,
+                                                      stderr=err,
+                                                      cmd=cmd,
+                                                      description=desc)
             mapped_device = '/dev/mapper/%sp%s' % (device.split('/')[-1],
                                                    partition)
         else:
@@ -131,22 +158,34 @@ def inject_data(image, key=None, net=None, metadata=None,
             # We can only loopback mount raw images. If the device isn't there,
             # it's normally because it's a .vmdk or a .vdi etc
             if not os.path.exists(mapped_device):
-                raise exception.Error('Mapped device was not found (we can'
-                                      ' only inject raw disk images): %s' %
+                desc = _('Mapped device was not found (we can only inject'
+                                     ' raw disk images): %s' %
                                       mapped_device)
+                raise exception.ProcessExecutionError(description=desc)
 
             if tune2fs:
                 # Configure ext2fs so that it doesn't auto-check every N boots
                 out, err = utils.execute('tune2fs', '-c', 0, '-i', 0,
                                          mapped_device, run_as_root=True)
+                if err:
+                    cmd = ('tune2fs', '-c', 0, '-i', 0, mapped_device)
+                    desc = _('Failed to tune2fs')
+                    raise exception.ProcessExecutionError(stdout=out,
+                                                          stderr=err,
+                                                          cmd=cmd,
+                                                          description=desc)
             tmpdir = tempfile.mkdtemp()
             try:
                 # mount loopback to dir
                 out, err = utils.execute('mount', mapped_device, tmpdir,
                                          run_as_root=True)
                 if err:
-                    raise exception.Error(_('Failed to mount filesystem: %s')
-                                          % err)
+                    cmd = ('mount', mapped_device, tmpdir)
+                    desc = _('Failed to mount filesystem')
+                    raise exception.ProcessExecutionError(stdout=out,
+                                                          stderr=err,
+                                                          cmd=cmd,
+                                                          description=desc)
 
                 try:
                     inject_data_into_fs(tmpdir, key, net, metadata,
@@ -174,6 +213,7 @@ def setup_container(image, container_dir=None, nbd=False):
     LXC does not support qcow2 images yet.
     """
     try:
+        device = []
         device = _link_device(image, nbd)
         utils.execute('mount', device, container_dir, run_as_root=True)
     except Exception, exn:
@@ -189,13 +229,24 @@ def destroy_container(target, instance, nbd=False):
 
     LXC does not support qcow2 images yet.
     """
-    out, err = utils.execute('mount', run_as_root=True)
-    for loop in out.splitlines():
-        if instance['name'] in loop:
-            device = loop.split()[0]
+    if not instance:
+        LOG.exception(_('instance is invalid'))
+        return
 
     try:
         container_dir = '%s/rootfs' % target
+        out, err = utils.execute('mount', run_as_root=True)
+    except Exception, exn:
+        LOG.exception(_('Failed to remove container: %s'), exn)
+        return
+
+    for loop in out.splitlines():
+        for loop_split in loop.split():
+            if container_dir == loop_split:
+                if instance['name'] in loop_split:
+                    device = loop.split()[0]
+
+    try:
         utils.execute('umount', container_dir, run_as_root=True)
         _unlink_device(device, nbd)
     except Exception, exn:
@@ -214,13 +265,17 @@ def _link_device(image, nbd):
             if os.path.exists("/sys/block/%s/pid" % os.path.basename(device)):
                 return device
             time.sleep(1)
-        raise exception.Error(_('nbd device %s did not show up') % device)
+        raise exception.InvalidDevicePath(path=device)
     else:
         out, err = utils.execute('losetup', '--find', '--show', image,
                                  run_as_root=True)
         if err:
-            raise exception.Error(_('Could not attach image to loopback: %s')
-                                  % err)
+            cmd = ('losetup', '--find', '--show', image)
+            desc = _('Could not attach image to loopback')
+            raise exception.ProcessExecutionError(stdout=out,
+                                                  stderr=err,
+                                                  cmd=cmd,
+                                                  description=desc)
         return out.strip()
 
 
@@ -259,12 +314,13 @@ def inject_data_into_fs(fs, key, net, metadata, execute):
     Virt connections can call this directly if they mount their fs
     in a different way to inject_data
     """
-    if key:
-        _inject_key_into_fs(key, fs, execute=execute)
-    if net:
-        _inject_net_into_fs(net, fs, execute=execute)
-    if metadata:
-        _inject_metadata_into_fs(metadata, fs, execute=execute)
+    if fs:
+        if key:
+            _inject_key_into_fs(key, fs, execute=execute)
+        if net:
+            _inject_net_into_fs(net, fs, execute=execute)
+        if metadata:
+            _inject_metadata_into_fs(metadata, fs, execute=execute)
 
 
 def _inject_metadata_into_fs(metadata, fs, execute=None):

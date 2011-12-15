@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -536,9 +538,16 @@ def floating_ip_fixed_ip_associate(context, floating_address,
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      floating_address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(
+                                                address=floating_address)
+
         fixed_ip_ref = fixed_ip_get_by_address(context,
                                                fixed_address,
                                                session=session)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=fixed_address)
+
         floating_ip_ref.fixed_ip = fixed_ip_ref
         floating_ip_ref.host = host
         floating_ip_ref.save(session=session)
@@ -551,6 +560,9 @@ def floating_ip_deallocate(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         floating_ip_ref['project_id'] = None
         floating_ip_ref['host'] = None
         floating_ip_ref['auto_assigned'] = False
@@ -564,6 +576,9 @@ def floating_ip_destroy(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         floating_ip_ref.delete(session=session)
 
 
@@ -574,6 +589,9 @@ def floating_ip_disassociate(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         fixed_ip_ref = floating_ip_ref.fixed_ip
         if fixed_ip_ref:
             fixed_ip_address = fixed_ip_ref['address']
@@ -592,6 +610,9 @@ def floating_ip_set_auto_assigned(context, address):
         floating_ip_ref = floating_ip_get_by_address(context,
                                                      address,
                                                      session=session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         floating_ip_ref.auto_assigned = True
         floating_ip_ref.save(session=session)
 
@@ -649,7 +670,7 @@ def floating_ip_get_by_address(context, address, session=None):
                 first()
 
     if not result:
-        raise exception.FloatingIpNotFoundForAddress(address=address)
+        return result
 
     # If the floating IP has a project ID set, check to make sure
     # the non-admin user has access.
@@ -664,6 +685,9 @@ def floating_ip_update(context, address, values):
     session = get_session()
     with session.begin():
         floating_ip_ref = floating_ip_get_by_address(context, address, session)
+        if not floating_ip_ref:
+            raise exception.FloatingIpNotFoundForAddress(address=address)
+
         for (key, value) in values.iteritems():
             floating_ip_ref[key] = value
         floating_ip_ref.save(session=session)
@@ -756,6 +780,9 @@ def fixed_ip_disassociate(context, address):
         fixed_ip_ref = fixed_ip_get_by_address(context,
                                                address,
                                                session=session)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=address)
+
         fixed_ip_ref.instance = None
         fixed_ip_ref.save(session=session)
 
@@ -820,7 +847,7 @@ def fixed_ip_get_by_address(context, address, session=None):
                      options(joinedload('instance')).\
                      first()
     if not result:
-        raise exception.FixedIpNotFoundForAddress(address=address)
+        return result
 
     if is_user_context(context):
         authorize_project_context(context, result.instance.project_id)
@@ -849,9 +876,6 @@ def fixed_ip_get_by_network_host(context, network_id, host):
                  filter_by(host=host).\
                  filter_by(deleted=False).\
                  first()
-    if not rv:
-        raise exception.FixedIpNotFoundForNetworkHost(network_id=network_id,
-                                                      host=host)
     return rv
 
 
@@ -871,6 +895,8 @@ def fixed_ip_get_by_virtual_interface(context, vif_id):
 @require_admin_context
 def fixed_ip_get_network(context, address):
     fixed_ip_ref = fixed_ip_get_by_address(context, address)
+    if not fixed_ip_ref:
+        raise exception.FixedIpNotFoundForAddress(address=address)
     return fixed_ip_ref.network
 
 
@@ -881,6 +907,9 @@ def fixed_ip_update(context, address, values):
         fixed_ip_ref = fixed_ip_get_by_address(context,
                                                address,
                                                session=session)
+        if not fixed_ip_ref:
+            raise exception.FixedIpNotFoundForAddress(address=address)
+
         fixed_ip_ref.update(values)
         fixed_ip_ref.save(session=session)
 
@@ -934,6 +963,8 @@ def virtual_interface_get(context, vif_id, session=None):
                       options(joinedload('instance')).\
                       options(joinedload('fixed_ips')).\
                       first()
+    if not vif_ref:
+        raise exception.NotFound
     return vif_ref
 
 
@@ -1446,6 +1477,8 @@ def instance_get_all_by_reservation(context, reservation_id):
 def instance_get_by_fixed_ip(context, address):
     """Return instance ref by exact match of FixedIP"""
     fixed_ip_ref = fixed_ip_get_by_address(context, address)
+    if not fixed_ip_ref:
+        raise exception.FixedIpNotFoundForAddress(address=address)
     return fixed_ip_ref.instance
 
 
@@ -1535,12 +1568,10 @@ def instance_get_floating_address(context, instance_id):
 @require_context
 def instance_update(context, instance_id, values):
     session = get_session()
-    metadata = values.get('metadata')
-    if metadata is not None:
-        instance_metadata_update(context,
-                                 instance_id,
-                                 values.pop('metadata'),
-                                 delete=True)
+    metadata = None
+    if 'metadata' in values:
+        metadata = values.pop('metadata')
+
     with session.begin():
         if utils.is_uuid_like(instance_id):
             instance_ref = instance_get_by_uuid(context, instance_id,
@@ -1549,7 +1580,13 @@ def instance_update(context, instance_id, values):
             instance_ref = instance_get(context, instance_id, session=session)
         instance_ref.update(values)
         instance_ref.save(session=session)
-        return instance_ref
+
+    if metadata is not None:
+        instance_metadata_update(context,
+                                 instance_ref.id,
+                                 metadata,
+                                 delete=True)
+    return instance_ref
 
 
 def instance_add_security_group(context, instance_id, security_group_id):
@@ -1648,7 +1685,7 @@ def key_pair_get(context, user_id, name, session=None):
                      filter_by(deleted=can_read_deleted(context)).\
                      first()
     if not result:
-        raise exception.KeypairNotFound(user_id=user_id, name=name)
+        raise exception.KeypairNotFound(user_id=user_id, keypair_name=name)
     return result
 
 
@@ -1903,9 +1940,6 @@ def network_get_by_cidr(context, cidr):
                            models.Network.cidr_v6 == cidr)).\
                 filter_by(deleted=False).\
                 first()
-
-    if not result:
-        raise exception.NetworkNotFoundForCidr(cidr=cidr)
     return result
 
 
@@ -2433,18 +2467,6 @@ def volume_metadata_delete(context, volume_id, key):
 
 @require_context
 @require_volume_exists
-def volume_metadata_delete_all(context, volume_id):
-    session = get_session()
-    session.query(models.VolumeMetadata).\
-        filter_by(volume_id=volume_id).\
-        filter_by(deleted=False).\
-        update({'deleted': True,
-                'deleted_at': utils.utcnow(),
-                'updated_at': literal_column('updated_at')})
-
-
-@require_context
-@require_volume_exists
 def volume_metadata_get_item(context, volume_id, key, session=None):
     if not session:
         session = get_session()
@@ -2828,14 +2850,13 @@ def security_group_rule_get_by_security_group(context, security_group_id,
         result = session.query(models.SecurityGroupIngressRule).\
                          filter_by(deleted=can_read_deleted(context)).\
                          filter_by(parent_group_id=security_group_id).\
-                         options(joinedload_all('grantee_group')).\
+                         options(joinedload_all('grantee_group.instances')).\
                          all()
     else:
-        # TODO(vish): Join to group and check for project_id
         result = session.query(models.SecurityGroupIngressRule).\
                          filter_by(deleted=False).\
                          filter_by(parent_group_id=security_group_id).\
-                         options(joinedload_all('grantee_group')).\
+                         options(joinedload_all('grantee_group.instances')).\
                          all()
     return result
 
@@ -3531,18 +3552,6 @@ def instance_metadata_delete(context, instance_id, key):
 
 @require_context
 @require_instance_exists
-def instance_metadata_delete_all(context, instance_id):
-    session = get_session()
-    session.query(models.InstanceMetadata).\
-        filter_by(instance_id=instance_id).\
-        filter_by(deleted=False).\
-        update({'deleted': True,
-                'deleted_at': utils.utcnow(),
-                'updated_at': literal_column('updated_at')})
-
-
-@require_context
-@require_instance_exists
 def instance_metadata_get_item(context, instance_id, key, session=None):
     if not session:
         session = get_session()
@@ -3990,3 +3999,68 @@ def vsa_get_all_by_project(context, project_id):
 
 
     ####################
+
+@require_context
+def eventlog_create(context, values):
+    eventlog_ref = models.EventLog()
+    eventlog_ref.update(values)
+    eventlog_ref.save()
+    return eventlog_ref
+
+
+@require_context
+def eventlog_update(context, message_id, values):
+    session = get_session()
+    with session.begin():
+        eventlog_ref = eventlog_get(context, message_id, session=session)
+        eventlog_ref.update(values)
+        eventlog_ref.save(session=session)
+        return eventlog_ref
+
+
+@require_context
+def eventlog_get(context, message_id, session=None):
+    if not session:
+        session = get_session()
+    eventlog_ref = None
+    eventlog_ref = session.query(models.EventLog).\
+                     filter_by(message_id=message_id).\
+                     first()
+    if not eventlog_ref:
+        raise exception.EventLogNotFound(message_id=message_id)
+
+    return eventlog_ref
+
+
+@require_context
+def eventlog_get_all_by_request_id(context, request_id, session=None):
+    if not session:
+        session = get_session()
+    eventlog_ref = None
+    eventlog_ref = session.query(models.EventLog).\
+                     filter_by(request_id=request_id).\
+                     order_by('id').\
+                     all()
+    if not eventlog_ref:
+        raise exception.EventLogNotFound(request_id=request_id)
+
+    return eventlog_ref
+
+
+@require_context
+def eventlog_get_all(context, filters=None):
+    """
+    Get all eventlog records.
+    """
+    session = get_session()
+    query = session.query(models.EventLog).\
+                filter_by(deleted=False)
+
+    if filters:
+        type = filters.get('type', 'ALL')
+
+        if type != 'ALL':
+            query = query.filter_by(priority=type)
+    query = query.order_by('created_at')
+    eventlog_ref = query.all()
+    return eventlog_ref

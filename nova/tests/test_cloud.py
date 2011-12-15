@@ -1153,7 +1153,8 @@ class CloudTestCase(test.TestCase):
     def test_terminate_instances(self):
         inst1 = db.instance_create(self.context, {'reservation_id': 'a',
                                                   'image_ref': 1,
-                                                  'host': 'host1'})
+                                                  'host': 'host1',
+                                                'vm_state': vm_states.ACTIVE})
         terminate_instances = self.cloud.terminate_instances
         # valid instance_id
         result = terminate_instances(self.context, ['i-00000001'])
@@ -1247,28 +1248,54 @@ class CloudTestCase(test.TestCase):
 
         kwargs = {'image_id': 'ami-1',
                   'instance_type': FLAGS.default_instance_type,
-                  'max_count': 1, }
+                  'max_count': 1,
+                  'vm_state': vm_states.STOPPED}
         instance_id = self._run_instance_wait(**kwargs)
+
+        self.cloud.compute_api.update(self.context,
+                    1,
+                    vm_state=vm_states.STOPPED,
+                    terminated_at=utils.utcnow())
 
         # a running instance can't be started. It is just ignored.
         result = self.cloud.start_instances(self.context, [instance_id])
         greenthread.sleep(0.3)
         self.assertTrue(result)
 
+        self.cloud.compute_api.update(self.context,
+                    1,
+                    vm_state=vm_states.ACTIVE,
+                    terminated_at=utils.utcnow())
+
         result = self.cloud.stop_instances(self.context, [instance_id])
         greenthread.sleep(0.3)
         self.assertTrue(result)
         self._wait_for_stopped(instance_id)
+
+        self.cloud.compute_api.update(self.context,
+                    1,
+                    vm_state=vm_states.STOPPED,
+                    terminated_at=utils.utcnow())
 
         result = self.cloud.start_instances(self.context, [instance_id])
         greenthread.sleep(0.3)
         self.assertTrue(result)
         self._wait_for_running(instance_id)
 
+        self.cloud.compute_api.update(self.context,
+                    1,
+                    vm_state=vm_states.ACTIVE,
+                    terminated_at=utils.utcnow())
+
         result = self.cloud.stop_instances(self.context, [instance_id])
         greenthread.sleep(0.3)
         self.assertTrue(result)
         self._wait_for_stopped(instance_id)
+
+        self.cloud.compute_api.update(self.context,
+                    1,
+                    vm_state=vm_states.ACTIVE,
+                    terminated_at=utils.utcnow())
 
         result = self.cloud.terminate_instances(self.context, [instance_id])
         greenthread.sleep(0.3)
@@ -1358,7 +1385,6 @@ class CloudTestCase(test.TestCase):
         self.assertFalse(vol['deleted'])
         db.volume_destroy(self.context, vol1['id'])
 
-        greenthread.sleep(0.3)
         admin_ctxt = context.get_admin_context(read_deleted=True)
         vol = db.volume_get(admin_ctxt, vol2['id'])
         self.assertTrue(vol['deleted'])

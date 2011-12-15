@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import commands
 import errno
 import os
 import select
@@ -40,6 +41,7 @@ class ExceptionTestCase(test.TestCase):
 
 
 class ProjectTestCase(test.TestCase):
+    @test.skip_test("Depends on git environment")
     def test_authors_up_to_date(self):
         topdir = os.path.normpath(os.path.dirname(__file__) + '/../../')
         missing = set()
@@ -67,19 +69,13 @@ class ProjectTestCase(test.TestCase):
                 tree.unlock()
 
         elif os.path.exists(os.path.join(topdir, '.git')):
-            import git
-            repo = git.Repo(topdir)
-            for commit in repo.head.commit.iter_parents():
-                email = commit.author.email
-                if email is None:
-                    email = commit.author.name
-                if 'nova-core' in email:
+            for email in commands.getoutput('git log --format=%ae').split():
+                if not email:
                     continue
-                if email.split(' ')[-1] == '<>':
-                    email = email.split(' ')[-2]
+                if "jenkins" in email and "openstack.org" in email:
+                    continue
                 email = '<' + email + '>'
                 contributors.add(str_dict_replace(email, mailmap))
-
         else:
             return
 

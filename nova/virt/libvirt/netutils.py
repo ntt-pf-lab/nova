@@ -5,6 +5,9 @@
 # All Rights Reserved.
 # Copyright (c) 2010 Citrix Systems, Inc.
 #
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -24,21 +27,31 @@
 import netaddr
 
 from nova import flags
+from nova import exception
 
 
 FLAGS = flags.FLAGS
 
 
 def get_net_and_mask(cidr):
-    net = netaddr.IPNetwork(cidr)
+    try:
+        net = netaddr.IPNetwork(cidr)
+    except UnboundLocalError:
+        raise exception.InvalidCidr(cidr=cidr)
     return str(net.ip), str(net.netmask)
 
 
 def get_net_and_prefixlen(cidr):
-    net = netaddr.IPNetwork(cidr)
+    try:
+        net = netaddr.IPNetwork(cidr)
+    except UnboundLocalError:
+        raise exception.InvalidCidr(cidr=cidr)
     return str(net.ip), str(net._prefixlen)
 
 
 def get_ip_version(cidr):
-    net = netaddr.IPNetwork(cidr)
+    try:
+        net = netaddr.IPNetwork(cidr)
+    except UnboundLocalError:
+        raise exception.InvalidCidr(cidr=cidr)
     return int(net.version)

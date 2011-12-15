@@ -62,8 +62,8 @@ def import_class(import_str):
         __import__(mod_str)
         return getattr(sys.modules[mod_str], class_str)
     except (ImportError, ValueError, AttributeError), exc:
-        LOG.debug(_('Inner Exception: %s'), exc)
-        raise exception.ClassNotFound(class_name=class_str)
+        LOG.error(_('Inner Exception: %s'), exc)
+        raise exception.ClassNotFound(class_name=class_str, exception=exc)
 
 
 def import_object(import_str):
@@ -101,25 +101,28 @@ def vpn_ping(address, port, timeout=0.05, session_id=None):
     bit 9 was 1 and the rest were 0 in testing
 
     """
-    if session_id is None:
-        session_id = random.randint(0, 0xffffffffffffffff)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    data = struct.pack('!BQxxxxxx', 0x38, session_id)
-    sock.sendto(data, (address, port))
-    sock.settimeout(timeout)
     try:
-        received = sock.recv(2048)
-    except socket.timeout:
+        if session_id is None:
+            session_id = random.randint(0, 0xffffffffffffffff)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        data = struct.pack('!BQxxxxxx', 0x38, session_id)
+        sock.sendto(data, (address, port))
+        sock.settimeout(timeout)
+        try:
+            received = sock.recv(2048)
+        except socket.timeout:
+            return False
+        finally:
+            sock.close()
+        fmt = '!BQxxxxxQxxxx'
+        if len(received) != struct.calcsize(fmt):
+            print struct.calcsize(fmt)
+            return False
+        (identifier, server_sess, client_sess) = struct.unpack(fmt, received)
+        if identifier == 0x40 and client_sess == session_id:
+            return server_sess
+    except socket.error:
         return False
-    finally:
-        sock.close()
-    fmt = '!BQxxxxxQxxxx'
-    if len(received) != struct.calcsize(fmt):
-        print struct.calcsize(fmt)
-        return False
-    (identifier, server_sess, client_sess) = struct.unpack(fmt, received)
-    if identifier == 0x40 and client_sess == session_id:
-        return server_sess
 
 
 def fetchfile(url, target):
@@ -142,7 +145,7 @@ def execute(*cmd, **kwargs):
                         the command is prefixed by the command specified
                         in the root_helper FLAG.
 
-    :raises exception.Error on receiving unknown arguments
+    :raises exception.InvalidInput on receiving unknown arguments
     :raises exception.ProcessExecutionError
     """
 
@@ -152,8 +155,10 @@ def execute(*cmd, **kwargs):
     attempts = kwargs.pop('attempts', 1)
     run_as_root = kwargs.pop('run_as_root', False)
     if len(kwargs):
-        raise exception.Error(_('Got unknown keyword args '
-                                'to utils.execute: %r') % kwargs)
+        msg = _('Got unknown keyword args '
+                                'to utils.execute: %r') % kwargs
+        LOG.error(msg)
+        raise exception.InvalidInput(reason=msg)
 
     if run_as_root:
         cmd = shlex.split(FLAGS.root_helper) + list(cmd)
@@ -181,6 +186,9 @@ def execute(*cmd, **kwargs):
                 if type(check_exit_code) == types.IntType \
                         and _returncode != check_exit_code:
                     (stdout, stderr) = result
+                    LOG.error(
+                        _('%(cmd)r failed.Result was %(_returncode)s')
+                                    % locals())
                     raise exception.ProcessExecutionError(
                             exit_code=_returncode,
                             stdout=stdout,
@@ -190,6 +198,18 @@ def execute(*cmd, **kwargs):
         except exception.ProcessExecutionError:
             if not attempts:
                 raise
+            else:
+                LOG.debug(_('%r failed. Retrying.'), cmd)
+                if delay_on_retry:
+                    greenthread.sleep(random.randint(20, 200) / 100.0)
+        except EnvironmentError, e:
+            if not attempts:
+                LOG.error(_('%(cmd)r failed.exception: %(e)s') % locals())
+                raise exception.ProcessExecutionError(
+                            exit_code=e.errno,
+                            stdout=None,
+                            stderr=e.strerror,
+                            cmd=' '.join(cmd))
             else:
                 LOG.debug(_('%r failed. Retrying.'), cmd)
                 if delay_on_retry:
@@ -205,11 +225,15 @@ def ssh_execute(ssh, cmd, process_input=None,
                 addl_env=None, check_exit_code=True):
     LOG.debug(_('Running cmd (SSH): %s'), ' '.join(cmd))
     if addl_env:
-        raise exception.Error(_('Environment not supported over SSH'))
+        LOG.error(_('Environment not supported over SSH'))
+        raise exception.InvalidInput(
+                            reason=_('Environment not supported over SSH'))
 
     if process_input:
         # This is (probably) fixable if we need it...
-        raise exception.Error(_('process_input not supported over SSH'))
+        LOG.error(_('process_input not supported over SSH'))
+        raise exception.InvalidInput(
+                            reason=_('process_input not supported over SSH'))
 
     stdin_stream, stdout_stream, stderr_stream = ssh.exec_command(cmd)
     channel = stdout_stream.channel
@@ -229,6 +253,9 @@ def ssh_execute(ssh, cmd, process_input=None,
     if exit_status != -1:
         LOG.debug(_('Result was %s') % exit_status)
         if check_exit_code and exit_status != 0:
+            scmd = ' '.join(cmd)
+            LOG.error(_('Command(%(scmd)s ) failed.\
+                         Result was %(exit_status)s') % locals())
             raise exception.ProcessExecutionError(exit_code=exit_status,
                                                   stdout=stdout,
                                                   stderr=stderr,
@@ -273,7 +300,9 @@ def debug(arg):
 
 def runthis(prompt, *cmd, **kwargs):
     LOG.debug(_('Running %s'), (' '.join(cmd)))
+    LOG.debug(_('prompt is %s') % (prompt))
     rv, err = execute(*cmd, **kwargs)
+    return (rv, err)
 
 
 def generate_uid(topic, size=8):
@@ -330,14 +359,20 @@ def  get_my_linklocal(interface):
         condition = '\s+inet6\s+([0-9a-f:]+)/\d+\s+scope\s+link'
         links = [re.search(condition, x) for x in if_str[0].split('\n')]
         address = [w.group(1) for w in links if w is not None]
-        if address[0] is not None:
+        if address and address[0] is not None:
             return address[0]
         else:
-            raise exception.Error(_('Link Local address is not found.:%s')
-                                  % if_str)
+            LOG.error(_('Link Local address is not found.:%s') % address)
+            msg_part1 = _("%(interface)s") % locals()
+            raise exception.LinkIpNotFound(interface=msg_part1, reason='')
+    except exception.LinkIpNotFound:
+        raise
     except Exception as ex:
-        raise exception.Error(_("Couldn't get Link Local IP of %(interface)s"
-                                " :%(ex)s") % locals())
+        LOG.error(_("Couldn't get Link Local IP of %(interface)s"
+                    " :%(ex)s") % locals())
+        msg_part1 = _("%(interface)s") % locals()
+        msg_part2 = _("exception:%(ex)s") % locals()
+        raise exception.LinkIpNotFound(interface=msg_part1, reason=msg_part2)
 
 
 def utcnow():
@@ -433,7 +468,9 @@ class LazyPluggable(object):
         if not self.__backend:
             backend_name = self.__pivot.value
             if backend_name not in self.__backends:
-                raise exception.Error(_('Invalid backend: %s') % backend_name)
+                LOG.error(_('Invalid backend: %s') % backend_name)
+                raise exception.InvalidInput(
+                            reason=_('Invalid backend: %s') % backend_name)
 
             backend = self.__backends[backend_name]
             if type(backend) == type(tuple()):
@@ -518,7 +555,7 @@ def xhtml_escape(value):
     http://github.com/facebook/tornado/blob/master/tornado/escape.py
 
     """
-    return saxutils.escape(value, {'"': '&quot;'})
+    return saxutils.escape(value, {'"': '&quot;', '\'': '&apos;'})
 
 
 def utf8(value):
@@ -706,12 +743,14 @@ def get_from_path(items, path):
 
     """
     if path is None:
-        raise exception.Error('Invalid mini_xpath')
+        LOG.error(_('Invalid mini_xpath'))
+        raise exception.InvalidInput(reason='Invalid mini_xpath')
 
     (first_token, sep, remainder) = path.partition('/')
 
     if first_token == '':
-        raise exception.Error('Invalid mini_xpath')
+        LOG.error(_('Invalid mini_xpath'))
+        raise exception.InvalidInput(reason='Invalid mini_xpath')
 
     results = []
 
@@ -787,7 +826,9 @@ def check_isinstance(obj, cls):
     """Checks that obj is of type cls, and lets PyLint infer types."""
     if isinstance(obj, cls):
         return obj
-    raise Exception(_('Expected object of type: %s') % (str(cls)))
+    LOG.error(_('Expected object of type: %s') % (str(cls)))
+    raise exception.InvalidInput(
+                        reason=_('Expected object of type: %s') % (str(cls)))
     # TODO(justinsb): Can we make this better??
     return cls()  # Ugly PyLint hack
 
@@ -833,6 +874,12 @@ def is_uuid_like(val):
     """
     if not isinstance(val, basestring):
         return False
+
+    uuid_fmt = '[0-9A-Fa-f]{8}\-[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{4}\-' \
+                '[0-9A-Fa-f]{4}\-[0-9A-Fa-f]{12}'
+    if not re.search(uuid_fmt, val):
+        return False
+
     return (len(val) == 36) and (val.count('-') == 4)
 
 

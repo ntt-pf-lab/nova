@@ -26,6 +26,7 @@ import os
 import shutil
 import tempfile
 import xml.dom.minidom as minidom
+from nose.plugins.attrib import attr
 
 import mox
 import stubout
@@ -71,7 +72,14 @@ class _BaseImageServiceTests(test.TestCase):
                           self.context,
                           'bad image id')
 
+    @attr(kind='small')
     def test_create_and_show_non_existing_image_by_name(self):
+
+        def stub_detail(*args, **kwargs):
+            return []
+
+        self.stubs.Set(self.service, 'detail', stub_detail)
+
         fixture = self._make_fixture('test image')
         num_images = len(self.service.index(self.context))
 

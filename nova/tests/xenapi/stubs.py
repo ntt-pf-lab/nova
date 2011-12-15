@@ -152,6 +152,13 @@ def stubout_loopingcall_delay(stubs):
     stubs.Set(utils.LoopingCall, 'start', fake_start)
 
 
+def _make_fake_vdi():
+    sr_ref = fake.get_all('SR')[0]
+    vdi_ref = fake.create_vdi('', False, sr_ref, False)
+    vdi_rec = fake.get_record('VDI', vdi_ref)
+    return vdi_rec['uuid']
+
+
 class FakeSessionForVMTests(fake.SessionBase):
     """ Stubs out a XenAPISession for VM tests """
     def __init__(self, uri):
@@ -281,9 +288,6 @@ class FakeSessionForMigrationTests(fake.SessionBase):
 
     def VDI_get_by_uuid(self, *args):
         return 'hurr'
-
-    def VDI_resize_online(self, *args):
-        pass
 
     def VM_start(self, _1, ref, _2, _3):
         vm = fake.get_record('VM', ref)

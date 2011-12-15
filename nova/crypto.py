@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -39,6 +41,7 @@ gettext.install('nova', unicode=1)
 
 from nova import context
 from nova import db
+from nova import exception
 from nova import flags
 from nova import log as logging
 
@@ -95,12 +98,18 @@ def fetch_ca(project_id=None, chain=True):
         project_id = None
     buffer = ''
     if project_id:
-        with open(ca_path(project_id), 'r') as cafile:
-            buffer += cafile.read()
+        try:
+            with open(ca_path(project_id), 'r') as cafile:
+                buffer += cafile.read()
+        except IOError as ex:
+            raise exception.FileError(ex)
         if not chain:
             return buffer
-    with open(ca_path(None), 'r') as cafile:
-        buffer += cafile.read()
+    try:
+        with open(ca_path(None), 'r') as cafile:
+            buffer += cafile.read()
+    except IOError as ex:
+        raise exception.FileError(ex)
     return buffer
 
 
@@ -113,15 +122,24 @@ def generate_fingerprint(public_key):
 def generate_key_pair(bits=1024):
     # what is the magic 65537?
 
-    tmpdir = tempfile.mkdtemp()
+    try:
+        tmpdir = tempfile.mkdtemp()
+    except OSError as ex:
+        raise exception.FileError(ex)
     keyfile = os.path.join(tmpdir, 'temp')
     utils.execute('ssh-keygen', '-q', '-b', bits, '-N', '',
                   '-f', keyfile)
     fingerprint = generate_fingerprint('%s.pub' % (keyfile))
-    private_key = open(keyfile).read()
-    public_key = open(keyfile + '.pub').read()
+    try:
+        private_key = open(keyfile).read()
+        public_key = open(keyfile + '.pub').read()
+    except IOError as ex:
+        raise exception.FileError(ex)
 
-    shutil.rmtree(tmpdir)
+    try:
+        shutil.rmtree(tmpdir)
+    except OSError, ex:
+        LOG.warn(_('Failed to remove dir %(tmpdir)s: %(ex)s') % locals())
     # code below returns public key in pem format
     # key = M2Crypto.RSA.gen_key(bits, 65537, callback=lambda: None)
     # private_key = key.as_pem(cipher=None)
@@ -164,8 +182,19 @@ def revoke_cert(project_id, file_name):
 def revoke_certs_by_user(user_id):
     """Revoke all user certs."""
     admin = context.get_admin_context()
+    ex_flag = False
     for cert in db.certificate_get_all_by_user(admin, user_id):
-        revoke_cert(cert['project_id'], cert['file_name'])
+        try:
+            revoke_cert(cert['project_id'], cert['file_name'])
+        except Exception as ex:
+            ex_flag = True
+            pid = cert['project_id']
+            fname = cert['file_name']
+            LOG.error(_('Exception occurred in revoking user cert '
+                        '|project_id=%(pid)s, file_name=%(fname)s|: %(ex)s')
+                     % locals())
+    if ex_flag:
+        raise exception.RevokeCertException()
 
 
 def revoke_certs_by_project(project_id):
@@ -173,16 +202,39 @@ def revoke_certs_by_project(project_id):
     # NOTE(vish): This is somewhat useless because we can just shut down
     #             the vpn.
     admin = context.get_admin_context()
+    ex_flag = False
     for cert in db.certificate_get_all_by_project(admin, project_id):
-        revoke_cert(cert['project_id'], cert['file_name'])
+        try:
+            revoke_cert(cert['project_id'], cert['file_name'])
+        except Exception as ex:
+            ex_flag = True
+            pid = cert['project_id']
+            fname = cert['file_name']
+            LOG.error(_('Exception occurred in revoking project cert '
+                        '|project_id=%(pid)s, file_name=%(fname)s|: %(ex)s')
+                     % locals())
+    if ex_flag:
+        raise exception.RevokeCertException()
 
 
 def revoke_certs_by_user_and_project(user_id, project_id):
     """Revoke certs for user in project."""
     admin = context.get_admin_context()
+    ex_flag = False
     for cert in db.certificate_get_all_by_user_and_project(admin,
                                             user_id, project_id):
-        revoke_cert(cert['project_id'], cert['file_name'])
+        try:
+            revoke_cert(cert['project_id'], cert['file_name'])
+        except Exception as ex:
+            ex_flag = True
+            pid = cert['project_id']
+            fname = cert['file_name']
+            LOG.error(_('Exception occurred in revoking cert '
+                        'for user in project '
+                        '|project_id=%(pid)s, file_name=%(fname)s|: %(ex)s')
+                      % locals())
+    if ex_flag:
+        raise exception.RevokeCertException()
 
 
 def _project_cert_subject(project_id):
@@ -203,15 +255,24 @@ def _user_cert_subject(user_id, project_id):
 def generate_x509_cert(user_id, project_id, bits=1024):
     """Generate and sign a cert for user in project."""
     subject = _user_cert_subject(user_id, project_id)
-    tmpdir = tempfile.mkdtemp()
+    try:
+        tmpdir = tempfile.mkdtemp()
+    except OSError as ex:
+        raise exception.FileError(ex)
     keyfile = os.path.abspath(os.path.join(tmpdir, 'temp.key'))
     csrfile = os.path.join(tmpdir, 'temp.csr')
     utils.execute('openssl', 'genrsa', '-out', keyfile, str(bits))
     utils.execute('openssl', 'req', '-new', '-key', keyfile, '-out', csrfile,
                   '-batch', '-subj', subject)
-    private_key = open(keyfile).read()
-    csr = open(csrfile).read()
-    shutil.rmtree(tmpdir)
+    try:
+        private_key = open(keyfile).read()
+        csr = open(csrfile).read()
+    except IOError as ex:
+        raise exception.FileError(ex)
+    try:
+        shutil.rmtree(tmpdir)
+    except OSError, ex:
+        LOG.warn(_('Failed to remove dir %(tmpdir)s: %(ex)s') % locals())
     (serial, signed_csr) = sign_csr(csr, project_id)
     fname = os.path.join(ca_folder(project_id), 'newcerts/%s.pem' % serial)
     cert = {'user_id': user_id,
@@ -249,11 +310,17 @@ def generate_vpn_files(project_id):
     # TODO(vish): the shell scripts could all be done in python
     utils.execute('sh', genvpn_sh_path,
                   project_id, _vpn_cert_subject(project_id))
-    with open(csr_fn, 'r') as csrfile:
-        csr_text = csrfile.read()
+    try:
+        with open(csr_fn, 'r') as csrfile:
+            csr_text = csrfile.read()
+    except IOError as ex:
+        raise exception.FileError(ex)
     (serial, signed_csr) = sign_csr(csr_text, project_id)
-    with open(crt_fn, 'w') as crtfile:
-        crtfile.write(signed_csr)
+    try:
+        with open(crt_fn, 'w') as crtfile:
+            crtfile.write(signed_csr)
+    except IOError as ex:
+        raise exception.FileError(ex)
     os.chdir(start)
 
 
@@ -268,17 +335,26 @@ def sign_csr(csr_text, project_id=None):
 
 
 def _sign_csr(csr_text, ca_folder):
-    tmpfolder = tempfile.mkdtemp()
+    try:
+        tmpfolder = tempfile.mkdtemp()
+    except OSError as ex:
+        raise exception.FileError(ex)
     inbound = os.path.join(tmpfolder, 'inbound.csr')
     outbound = os.path.join(tmpfolder, 'outbound.csr')
-    csrfile = open(inbound, 'w')
-    csrfile.write(csr_text)
-    csrfile.close()
+    try:
+        csrfile = open(inbound, 'w')
+        csrfile.write(csr_text)
+        csrfile.close()
+    except IOError as ex:
+        raise exception.FileError(ex)
     LOG.debug(_('Flags path: %s'), ca_folder)
     start = os.getcwd()
     # Change working dir to CA
     if not os.path.exists(ca_folder):
-        os.makedirs(ca_folder)
+        try:
+            os.makedirs(ca_folder)
+        except OSError as ex:
+            raise exception.FileError(ex)
     os.chdir(ca_folder)
     utils.execute('openssl', 'ca', '-batch', '-out', outbound, '-config',
                   './openssl.cnf', '-infiles', inbound)
@@ -286,55 +362,16 @@ def _sign_csr(csr_text, ca_folder):
                               '-serial', '-noout')
     serial = string.strip(out.rpartition('=')[2])
     os.chdir(start)
-    with open(outbound, 'r') as crtfile:
-        return (serial, crtfile.read())
-
-
-def mkreq(bits, subject='foo', ca=0):
-    pk = M2Crypto.EVP.PKey()
-    req = M2Crypto.X509.Request()
-    rsa = M2Crypto.RSA.gen_key(bits, 65537, callback=lambda: None)
-    pk.assign_rsa(rsa)
-    rsa = None  # should not be freed here
-    req.set_pubkey(pk)
-    req.set_subject(subject)
-    req.sign(pk, 'sha512')
-    assert req.verify(pk)
-    pk2 = req.get_pubkey()
-    assert req.verify(pk2)
-    return req, pk
-
-
-def mkcacert(subject='nova', years=1):
-    req, pk = mkreq(2048, subject, ca=1)
-    pkey = req.get_pubkey()
-    sub = req.get_subject()
-    cert = M2Crypto.X509.X509()
-    cert.set_serial_number(1)
-    cert.set_version(2)
-    # FIXME subject is not set in mkreq yet
-    cert.set_subject(sub)
-    t = long(time.time()) + time.timezone
-    now = M2Crypto.ASN1.ASN1_UTCTIME()
-    now.set_time(t)
-    nowPlusYear = M2Crypto.ASN1.ASN1_UTCTIME()
-    nowPlusYear.set_time(t + (years * 60 * 60 * 24 * 365))
-    cert.set_not_before(now)
-    cert.set_not_after(nowPlusYear)
-    issuer = M2Crypto.X509.X509_Name()
-    issuer.C = 'US'
-    issuer.CN = subject
-    cert.set_issuer(issuer)
-    cert.set_pubkey(pkey)
-    ext = M2Crypto.X509.new_extension('basicConstraints', 'CA:TRUE')
-    cert.add_ext(ext)
-    cert.sign(pk, 'sha512')
-
-    # print 'cert', dir(cert)
-    print cert.as_pem()
-    print pk.get_rsa().as_pem()
-
-    return cert, pk, pkey
+    try:
+        with open(outbound, 'r') as crtfile:
+            signed_csr = crtfile.read()
+    except IOError as ex:
+        raise exception.FileError(ex)
+    try:
+        shutil.rmtree(tmpfolder)
+    except OSError, ex:
+        LOG.warn(_('Failed to remove dir %(tmpfolder)s: %(ex)s') % locals())
+    return (serial, signed_csr)
 
 
 def _build_cipher(key, iv, encode=True):

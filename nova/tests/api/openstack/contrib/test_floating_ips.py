@@ -61,7 +61,7 @@ def compute_api_associate(self, context, instance_id, floating_ip):
     pass
 
 
-def network_api_associate(self, context, floating_ip, fixed_ip):
+def network_api_associate(self, context, floating_address, fixed_address):
     pass
 
 

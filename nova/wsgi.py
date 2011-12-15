@@ -4,6 +4,8 @@
 # Administrator of the National Aeronautics and Space Administration.
 # Copyright 2010 OpenStack LLC.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -21,7 +23,7 @@
 
 import os
 import sys
-
+import time
 from xml.dom import minidom
 
 import eventlet
@@ -86,8 +88,12 @@ class Server(object):
 
         :param backlog: Maximum number of queued connections.
         :returns: None
+        :raises: nova.exception.InvalidInput
 
         """
+        if backlog < 1:
+            raise exception.InvalidInput(
+                    reason='The backlog must be more than 1')
         self._socket = eventlet.listen((self.host, self.port), backlog=backlog)
         self._server = eventlet.spawn(self._start)
         (self.host, self.port) = self._socket.getsockname()
@@ -102,8 +108,10 @@ class Server(object):
         :returns: None
 
         """
-        LOG.info(_("Stopping WSGI server."))
-        self._server.kill()
+
+        if self._server is not None:
+            LOG.info(_("Stopping WSGI server."))
+            self._server.kill()
         if self._tcp_server is not None:
             LOG.info(_("Stopping raw TCP server."))
             self._tcp_server.kill()
@@ -245,7 +253,7 @@ class Middleware(Application):
             return cls(app, **local_config)
         return _factory
 
-    def __init__(self, application):
+    def __init__(self, application, **kwargs):
         self.application = application
 
     def process_request(self, req):
@@ -305,6 +313,57 @@ class Debug(Middleware):
             sys.stdout.flush()
             yield part
         print
+
+
+class DebugLogger(Middleware):
+    """Helper class for debugging a WSGI application.
+
+    Can be inserted into any WSGI application chain to log information
+    about the request and response.
+
+    """
+
+    def __init__(self, application, **kwargs):
+        self.application = application
+        self.kwargs = kwargs
+
+    @webob.dec.wsgify(RequestClass=Request)
+    def __call__(self, req):
+        if len(req.body):
+            body = req.body
+        else:
+            body = '-'
+        input_params = "METHOD: %s URL: %s BODY: '%s'" % (req.method,
+                                                        req.url,
+                                                        body)
+        start_time = time.time()
+        resp = req.get_response(self.application)
+        end_time = time.time()
+
+        #set the request_id in cookie
+        if req.environ.get('nova.context', None):
+            request_id = req.environ['nova.context'].request_id
+        else:
+            request_id = 'NA'
+        resp.set_cookie('request_id', request_id)
+
+        #maximum length of response value to log.
+        MAX_RESPONSE_LEN = int(self.kwargs.get('MAX_RESPONSE_LEN', -1))
+        response_str = ''
+        for part in resp.app_iter:
+            response_str += part
+        if MAX_RESPONSE_LEN != -1:
+            response_str = response_str[0:MAX_RESPONSE_LEN]
+
+        log_str = "REQUEST ID: %s TIME: %.3f %s RESPONSE STATUS: '%s' "\
+                    "RESPONSE: '%s'" % \
+                  (request_id,
+                   end_time - start_time,
+                   input_params,
+                   resp.status,
+                   response_str)
+        LOG.info(log_str)
+        return resp
 
 
 class Router(object):
@@ -372,8 +431,10 @@ class Loader(object):
 
         :param config_path: Full or relative path to the paste config.
         :returns: None
-
+        :raises: 'nova.exception.PasteConfigNotFound'
         """
+        if not config_path and not FLAGS.api_paste_config:
+            raise exception.PasteConfigNotFound
         config_path = config_path or FLAGS.api_paste_config
         self.config_path = self._find_config(config_path)
 

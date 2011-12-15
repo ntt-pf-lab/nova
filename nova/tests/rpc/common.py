@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -18,12 +20,13 @@
 """
 Unit Tests for remote procedure calls shared between all implementations
 """
-
+import uuid
+from nose.plugins.attrib import attr
 from nova import context
 from nova import log as logging
 from nova.rpc.common import RemoteError
 from nova import test
-
+from carrot import messaging
 
 LOG = logging.getLogger('nova.tests.rpc')
 
@@ -80,6 +83,17 @@ class _BaseRpcTestCase(test.TestCase):
                                "args": {"value": value}})
         for i, x in enumerate(result):
             self.assertEqual(value + i, x)
+
+    def test_multicall_three_nones(self):
+        value = 42
+        result = self.rpc.multicall(self.context,
+                              'test',
+                              {"method": "multicall_three_nones",
+                               "args": {"value": value}})
+        for i, x in enumerate(result):
+            self.assertEqual(x, None)
+        # i should have been 0, 1, and finally 2:
+        self.assertEqual(i, 2)
 
     def test_multicall_succeed_three_times_yield(self):
         value = 42
@@ -151,6 +165,20 @@ class _BaseRpcTestCase(test.TestCase):
         conn.close()
         self.assertEqual(value, result)
 
+    @attr(kind='small')
+    def test_cast_succeed(self):
+        value = 42
+        result = self.rpc.cast(self.context, 'test', {"method": "echo",
+                                                 "args": {"value": value}})
+        self.assertEqual(None, result)
+
+    @attr(kind='small')
+    def test_fanout_cast_succeed(self):
+        value = 20
+        result = self.rpc.fanout_cast(self.context, 'test', {"method": "echo",
+                                                 "args": {"value": value}})
+        self.assertEqual(None, result)
+
 
 class TestReceiver(object):
     """Simple Proxy class so the consumer has methods to call.
@@ -176,6 +204,13 @@ class TestReceiver(object):
         context.reply(value)
         context.reply(value + 1)
         context.reply(value + 2)
+        context.reply(ending=True)
+
+    @staticmethod
+    def multicall_three_nones(context, value):
+        yield None
+        yield None
+        yield None
 
     @staticmethod
     def echo_three_times_yield(context, value):

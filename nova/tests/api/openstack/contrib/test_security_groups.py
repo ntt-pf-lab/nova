@@ -55,11 +55,11 @@ def _create_security_group_request_dict(security_group):
 
 
 def return_server(context, server_id):
-    return {'id': server_id, 'state': 0x01, 'host': "localhost"}
+    return {'id': server_id, 'power_state': 0x01, 'host': "localhost"}
 
 
 def return_non_running_server(context, server_id):
-    return {'id': server_id, 'state': 0x02,
+    return {'id': server_id, 'power_state': 0x02,
                         'host': "localhost"}
 
 

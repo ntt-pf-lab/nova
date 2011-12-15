@@ -72,6 +72,7 @@ class TestS3ImageService(test.TestCase):
                     for k in keys:
                         self.assertEqual(x[k], y[k])
 
+    @test.skip_test("S3 create need internet access")
     def test_s3_create(self):
         metadata = {'properties': {
             'root_device_name': '/dev/sda1',

@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -35,12 +37,17 @@ from nova import service
 from nova import test
 from nova import rpc
 from nova import utils
+from nova import log
 from nova.scheduler import api
 from nova.scheduler import driver
 from nova.scheduler import manager
 from nova.scheduler import multi
+from nova.scheduler import zone_manager
+from nova.scheduler import simple
 from nova.compute import power_state
 from nova.compute import vm_states
+from nova.scheduler import abstract_scheduler
+from nose.plugins.attrib import attr
 
 
 FLAGS = flags.FLAGS
@@ -188,6 +195,166 @@ class SchedulerTestCase(test.TestCase):
         db.instance_destroy(ctxt, i_ref1['id'])
         db.instance_destroy(ctxt, i_ref2['id'])
 
+    @attr(kind='small')
+    def test_periodic_tasks(self):
+        """Test for nova.scheduler.manager.SchedulerManager.periodic_tasks. """
+        self.stub_flg = False
+
+        def fake_ping(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(zone_manager.ZoneManager,
+                       'ping',
+                       fake_ping)
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.periodic_tasks(ctxt)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_periodic_tasks_parameter_scheduler_driver_is_not_none(self):
+        """Test for nova.scheduler.manager.SchedulerManager.__init__. """
+        scheduler = manager.SchedulerManager(
+                    scheduler_driver='nova.scheduler.simple.SimpleScheduler')
+        ctxt = context.get_admin_context()
+        scheduler.periodic_tasks(ctxt)
+        self.assertEquals("<class 'nova.scheduler.simple.SimpleScheduler'>",
+                          str(scheduler.driver.__class__))
+        self.assertEquals(FLAGS.scheduler_driver,
+                          'nova.tests.scheduler.test_scheduler.TestDriver')
+
+    @attr(kind='small')
+    def test_get_host_list(self):
+        """Test for nova.scheduler.manager.SchedulerManager.get_host_list. """
+        self.stub_flg = False
+
+        def fake_get_host_list(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(zone_manager.ZoneManager,
+                       'get_host_list',
+                       fake_get_host_list)
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.get_host_list(ctxt)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_get_zone_list(self):
+        """Test for nova.scheduler.manager.SchedulerManager.get_zone_list. """
+        self.stub_flg = False
+
+        def fake_get_zone_list(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(zone_manager.ZoneManager,
+                       'get_zone_list',
+                       fake_get_zone_list)
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.get_zone_list(ctxt)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_get_zone_capabilities(self):
+        """Test for nova.scheduler.manager.SchedulerManager.
+        get_zone_capabilities. """
+        self.stub_flg = False
+
+        def fake_get_zone_capabilities(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(zone_manager.ZoneManager,
+                       'get_zone_capabilities',
+                       fake_get_zone_capabilities)
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.get_zone_capabilities(ctxt)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_update_service_capabilities(self):
+        """Test for nova.scheduler.manager.SchedulerManager.
+        update_service_capabilities. """
+        self.stub_flg = False
+
+        def fake_update_service_capabilities(*args, **kwargs):
+            if args[3] == {}:
+                self.stub_flg = True
+
+        self.stubs.Set(zone_manager.ZoneManager,
+                       'update_service_capabilities',
+                       fake_update_service_capabilities)
+
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.update_service_capabilities(ctxt)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_update_service_parameter_capabilities_not_none(self):
+        """Test for nova.scheduler.manager.SchedulerManager.
+        update_service_capabilities. """
+        self.stub_flg = False
+
+        def fake_update_service_capabilities_not_none(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(zone_manager.ZoneManager,
+                       'update_service_capabilities',
+                       fake_update_service_capabilities_not_none)
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.update_service_capabilities(ctxt,
+                                              capabilities='aaa')
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_select(self):
+        """Test for nova.scheduler.manager.SchedulerManager.select. """
+        self.stub_flg = False
+
+        def fake_select(*args, **kwargs):
+            self.stub_flg = True
+
+        self.stubs.Set(abstract_scheduler.AbstractScheduler,
+                       'select',
+                       fake_select)
+
+        self.flags(
+        scheduler_driver='nova.scheduler.abstract_scheduler.AbstractScheduler')
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        scheduler.select(ctxt)
+        self.assert_(self.stub_flg)
+
+    @attr(kind='small')
+    def test_schedule_parameter_host_is_none(self):
+        """Test for nova.scheduler.manager.SchedulerManager._schedule. """
+        self.stub_flg = False
+
+        def fake_log(msg, *args):
+            self.stub_flg = True
+
+        def fake_schedule_set_network_host(*args, **kwargs):
+            tmp = {}
+            tmp['host'] = None
+            return tmp.get('host')
+
+        self.stubs.Set(log.logging.Logger, 'debug', fake_log)
+        self.stubs.Set(simple.SimpleScheduler,
+                       'schedule_set_network_host',
+                       fake_schedule_set_network_host)
+        method = 'set_network_host'
+        scheduler_driver = 'nova.scheduler.simple.SimpleScheduler'
+        self.flags(scheduler_driver=scheduler_driver)
+        scheduler = manager.SchedulerManager()
+        ctxt = context.get_admin_context()
+        topic = 'fake_topic'
+        result = scheduler._schedule(method=method, context=ctxt, topic=topic)
+        self.assert_(self.stub_flg)
+        self.assertEqual(result, None)
+
 
 class ZoneSchedulerTestCase(test.TestCase):
     """Test case for zone scheduler"""
@@ -325,7 +492,9 @@ class SimpleDriverTestCase(test.TestCase):
                                    'compute',
                                    FLAGS.compute_manager)
         compute2.start()
-        s1 = db.service_get_by_args(self.context, 'host1', 'nova-compute')
+        s1 = db.service_get_by_args(self.context,
+                                    'host1',
+                                    'nova-compute')
         s2 = db.service_get_by_args(self.context, 'host2', 'nova-compute')
         db.service_update(self.context, s1['id'], {'disabled': True})
         db.service_update(self.context, s2['id'], {'disabled': True})
@@ -1064,7 +1233,7 @@ class ZoneRedirectTest(test.TestCase):
         self.assertEquals(decorator.get_collection_context_and_id(
             (None, 10, 20), {}), ("servers", 10, 20))
         self.assertEquals(decorator.get_collection_context_and_id(
-            (None, 11,),  dict(instance_id=21)), ("servers", 11, 21))
+            (None, 11,), dict(instance_id=21)), ("servers", 11, 21))
         self.assertEquals(decorator.get_collection_context_and_id(
             (None,), dict(context=12, instance_id=22)), ("servers", 12, 22))
 

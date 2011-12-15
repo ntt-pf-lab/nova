@@ -259,9 +259,10 @@ class NovaRootLogger(NovaLogger):
                 self.addHandler(self.filelog)
                 self.logpath = logpath
 
+                mode = int(FLAGS.logfile_mode, 8)
                 st = os.stat(self.logpath)
-                if st.st_mode != (stat.S_IFREG | FLAGS.logfile_mode):
-                    os.chmod(self.logpath, FLAGS.logfile_mode)
+                if st.st_mode != (stat.S_IFREG | mode):
+                    os.chmod(self.logpath, mode)
         else:
             self.removeHandler(self.filelog)
             self.addHandler(self.streamlog)
@@ -275,8 +276,14 @@ class NovaRootLogger(NovaLogger):
 
 class PublishErrorsHandler(logging.Handler):
     def emit(self, record):
+        if 'list_notifier_drivers' in FLAGS:
+            if 'nova.notifier.log_notifier' in  FLAGS.list_notifier_drivers:
+                return
+
         nova.notifier.api.notify('nova.error.publisher', 'error_notification',
             nova.notifier.api.ERROR, dict(error=record.msg))
+
+origin_emit = PublishErrorsHandler.emit
 
 
 def handle_exception(type, value, tb):

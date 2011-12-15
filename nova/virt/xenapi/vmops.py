@@ -140,6 +140,11 @@ class VMOps(object):
                 instance, instance.image_ref,
                 instance.user_id, instance.project_id,
                 disk_image_type)
+
+        for vdi in vdis:
+            if vdi["vdi_type"] == "os":
+                self.resize_instance(instance, vdi["vdi_uuid"])
+
         return vdis
 
     def spawn(self, context, instance, network_info):
@@ -169,12 +174,7 @@ class VMOps(object):
 
         #ensure enough free memory is available
         if not VMHelper.ensure_free_mem(self._session, instance):
-            LOG.exception(_('instance %(instance_name)s: not enough free '
-                          'memory') % locals())
-            db.instance_set_state(nova_context.get_admin_context(),
-                                  instance['id'],
-                                  power_state.SHUTDOWN)
-            return
+            raise exception.InsufficientFreeMemory(uuid=instance.uuid)
 
         disk_image_type = VMHelper.determine_disk_image_type(instance, context)
         kernel = None

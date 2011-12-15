@@ -1,6 +1,9 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2011 Ken Pepple
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -27,6 +30,7 @@ from nova import utils
 from nova.compute import instance_types
 from nova.db.sqlalchemy.session import get_session
 from nova.db.sqlalchemy import models
+from nose.plugins.attrib import attr
 
 FLAGS = flags.FLAGS
 LOG = logging.getLogger('nova.tests.compute')
@@ -49,7 +53,7 @@ class InstanceTypeTestCase(test.TestCase):
 
     def _nonexistent_flavor_name(self):
         """return an instance type name not in the DB"""
-        nonexistent_flavor = "sdfsfsdf"
+        nonexistent_flavor = "foo"
         flavors = instance_types.get_all_types()
         while nonexistent_flavor in flavors:
             nonexistent_flavor += "z"
@@ -139,10 +143,11 @@ class InstanceTypeTestCase(test.TestCase):
                           instance_types.purge,
                           self._nonexistent_flavor_name())
 
+    @attr(kind='small')
     def test_will_not_get_bad_default_instance_type(self):
         """ensures error raised on bad default instance type"""
         FLAGS.default_instance_type = self._nonexistent_flavor_name()
-        self.assertRaises(exception.InstanceTypeNotFoundByName,
+        self.assertRaises(exception.ApiError,
                           instance_types.get_default_instance_type)
 
     def test_will_not_get_instance_type_by_name_with_no_name(self):
@@ -150,14 +155,66 @@ class InstanceTypeTestCase(test.TestCase):
         self.assertEqual(instance_types.get_default_instance_type(),
                               instance_types.get_instance_type_by_name(None))
 
+    @attr(kind='small')
     def test_will_not_get_instance_type_with_bad_name(self):
         """Ensure get by name returns default flavor with bad name"""
-        self.assertRaises(exception.InstanceTypeNotFound,
+        self.assertRaises(exception.ApiError,
                           instance_types.get_instance_type,
                           self._nonexistent_flavor_name())
 
+    @attr(kind='small')
     def test_will_not_get_flavor_by_bad_flavor_id(self):
         """Ensure get by flavor raises error with wrong flavorid"""
-        self.assertRaises(exception.InstanceTypeNotFound,
+        self.assertRaises(exception.ApiError,
                           instance_types.get_instance_type_by_name,
                           self._nonexistent_flavor_id())
+
+    @attr(kind='small')
+    def test_destroy_parameter_blank_name(self):
+        """Ensure raises error when destroy with blank name"""
+        self.assertRaises(exception.InvalidInstanceType,
+                          instance_types.destroy,
+                          name=None)
+        self.assertRaises(exception.ApiError,
+                          instance_types.destroy,
+                          name='')
+
+    @attr(kind='small')
+    def test_purge_exception(self):
+        """Ensure raises ApiError if can not get specified instance type"""
+        type_name = self._nonexistent_flavor_name()
+        self.assertRaises(exception.ApiError,
+                          instance_types.purge,
+                          name=type_name)
+
+    @attr(kind='small')
+    def test_get_default_instance_type_exception(self):
+        """Ensure raises ApiError if can not get default instance type"""
+        type_name = "test_type_of_instance"
+        self.flags(default_instance_type=type_name)
+        self.assertRaises(exception.ApiError,
+                          instance_types.get_default_instance_type)
+
+    @attr(kind='small')
+    def test_get_instance_type_by_name_exception(self):
+        """Ensure raises ApiError if can not get specified instance type"""
+        type_name = self._nonexistent_flavor_name()
+        self.assertRaises(exception.ApiError,
+                          instance_types.get_instance_type_by_name,
+                          name=type_name)
+
+    @attr(kind='small')
+    def test_get_instance_type_exception(self):
+        """Ensure raises ApiError if can not get specified instance type"""
+        type_id = self._nonexistent_flavor_name()
+        self.assertRaises(exception.ApiError,
+                          instance_types.get_instance_type,
+                          id=type_id)
+
+    @attr(kind='small')
+    def test_get_instance_type_by_flavor_id_exception(self):
+        """Ensure raises ApiError if can not get specified instance type"""
+        flave_id = self._nonexistent_flavor_id()
+        self.assertRaises(exception.FlavorNotFound,
+                          instance_types.get_instance_type_by_flavor_id,
+                          flave_id)

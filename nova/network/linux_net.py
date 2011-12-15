@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -42,9 +44,6 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('dhcpbridge_flagfile',
                     '/etc/nova/nova-dhcpbridge.conf',
                     'location of flagfile for dhcpbridge')
-flags.DEFINE_string('dhcp_domain',
-                    'novalocal',
-                    'domain to use for building the hostnames')
 flags.DEFINE_string('networks_path', '$state_path/networks',
                     'Location to keep network config files')
 flags.DEFINE_string('public_interface', 'eth0',
@@ -486,11 +485,24 @@ def initialize_gateway_device(dev, network_ref):
             if ip_params[0] != full_ip:
                 new_ip_params.append(ip_params)
     if not old_ip_params or old_ip_params[0][0] != full_ip:
+        gateway = None
+        out, err = _execute('route', '-n', run_as_root=True)
+        for line in out.split('\n'):
+            fields = line.split()
+            if fields and fields[0] == '0.0.0.0' and \
+                            fields[-1] == dev:
+                gateway = fields[1]
+                _execute('route', 'del', 'default', 'gw', gateway,
+                         'dev', dev, check_exit_code=False,
+                         run_as_root=True)
         for ip_params in old_ip_params:
             _execute(*_ip_bridge_cmd('del', ip_params, dev),
                         run_as_root=True)
         for ip_params in new_ip_params:
             _execute(*_ip_bridge_cmd('add', ip_params, dev),
+                        run_as_root=True)
+        if gateway:
+            _execute('route', 'add', 'default', 'gw', gateway,
                         run_as_root=True)
         if FLAGS.send_arp_for_ha:
             _execute('arping', '-U', network_ref['dhcp_server'],
@@ -735,6 +747,10 @@ def _execute(*cmd, **kwargs):
         return utils.execute(*cmd, **kwargs)
 
 
+def device_exists(device):
+    return _device_exists(device)
+
+
 def _device_exists(device):
     """Check if ethernet device exists."""
     (_out, err) = _execute('ip', 'link', 'show', 'dev', device,
@@ -783,8 +799,11 @@ def _dnsmasq_pid_for(dev):
     pid_file = _dhcp_file(dev, 'pid')
 
     if os.path.exists(pid_file):
-        with open(pid_file, 'r') as f:
-            return int(f.read())
+        try:
+            with open(pid_file, 'r') as f:
+                return int(f.read())
+        except (ValueError, IOError):
+            return None
 
 
 def _ra_pid_for(dev):

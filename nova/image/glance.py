@@ -2,6 +2,8 @@
 
 # Copyright 2010 OpenStack LLC.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -107,7 +109,7 @@ def get_glance_client(context, image_href):
         return (glance_client, int(image_href))
 
     try:
-        (image_id, host, port) = _parse_image_ref(image_href)
+        (image_id, glance_host, glance_port) = _parse_image_ref(image_href)
     except ValueError:
         raise exception.InvalidImageRef(image_href=image_href)
     glance_client = _create_glance_client(context, glance_host, glance_port)
@@ -231,11 +233,10 @@ class GlanceImageService(service.BaseImageService):
         """Returns a dict containing image data for the given name."""
         # TODO(vish): replace this with more efficient call when glance
         #             supports it.
-        image_metas = self.detail(context)
-        for image_meta in image_metas:
-            if name == image_meta.get('name'):
-                return image_meta
-        raise exception.ImageNotFound(image_id=name)
+        image_meta = self.detail(context, filters={'name': name})
+        if not image_meta:
+            raise exception.ImageNotFound(image_id=name)
+        return image_meta[0]
 
     def get(self, context, image_id, data):
         """Calls out to Glance for metadata and data and writes data."""

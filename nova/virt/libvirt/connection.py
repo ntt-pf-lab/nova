@@ -420,13 +420,16 @@ class LibvirtConnection(driver.ComputeDriver):
             metadata['properties']['architecture'] = arch
 
         source_format = base.get('disk_format') or 'raw'
+        if source_format in ('ami', 'ari', 'aki'):
+            source_format = 'raw'
         image_format = FLAGS.snapshot_image_format or source_format
         if FLAGS.use_cow_images:
             source_format = 'qcow2'
         metadata['disk_format'] = image_format
 
         if 'container_format' in base:
-            metadata['container_format'] = base['container_format']
+            if base.get('disk_format') not in ('ami', 'ari', 'aki'):
+                metadata['container_format'] = base['container_format']
 
         # Make the snapshot
         snapshot_name = uuid.uuid4().hex
@@ -445,29 +448,31 @@ class LibvirtConnection(driver.ComputeDriver):
 
         # Export the snapshot to a raw image
         temp_dir = tempfile.mkdtemp()
-        out_path = os.path.join(temp_dir, snapshot_name)
-        qemu_img_cmd = ('qemu-img',
-                        'convert',
-                        '-f',
-                        source_format,
-                        '-O',
-                        image_format,
-                        '-s',
-                        snapshot_name,
-                        disk_path,
-                        out_path)
-        utils.execute(*qemu_img_cmd)
+        try:
+            out_path = os.path.join(temp_dir, snapshot_name)
+            qemu_img_cmd = ('qemu-img',
+                            'convert',
+                            '-f',
+                            source_format,
+                            '-O',
+                            image_format,
+                            '-s',
+                            snapshot_name,
+                            disk_path,
+                            out_path)
+            utils.execute(*qemu_img_cmd)
 
-        # Upload that image to the image service
-        with open(out_path) as image_file:
-            image_service.update(context,
-                                 image_href,
-                                 metadata,
-                                 image_file)
+            # Upload that image to the image service
+            with open(out_path) as image_file:
+                image_service.update(context,
+                                     image_href,
+                                     metadata,
+                                     image_file)
 
-        # Clean up
-        shutil.rmtree(temp_dir)
-        snapshot_ptr.delete(0)
+        finally:
+            # Clean up
+            shutil.rmtree(temp_dir)
+            snapshot_ptr.delete(0)
 
     @exception.wrap_exception()
     def reboot(self, instance, network_info, xml=None):
@@ -614,7 +619,18 @@ class LibvirtConnection(driver.ComputeDriver):
                 msg = _("During reboot, %s disappeared.") % instance_name
                 LOG.error(msg)
                 raise utils.LoopingCallDone
-
+            if state == power_state.SHUTDOWN:
+                msg = _("Instance %s failed to spawn.") % instance_name
+                LOG.error(msg)
+                raise exception.InstanceBootFailure(reason="Instance state is SHUTDOWN")
+            if state == power_state.SHUTOFF:
+                msg = _("Instance %s failed to spawn.") % instance_name
+                LOG.error(msg)
+                raise exception.InstanceBootFailure(reason="Instance state is SHUTOFF")
+            if state == power_state.CRASHED:
+                msg = _("Instance %s failed to spawn.") % instance_name
+                LOG.error(msg)
+                raise exception.InstanceBootFailure(reason="Instance state is CRASHED")
             if state == power_state.RUNNING:
                 msg = _("Instance %s spawned successfully.") % instance_name
                 LOG.info(msg)
@@ -924,6 +940,7 @@ class LibvirtConnection(driver.ComputeDriver):
         if config_drive_id:
             fname = '%08x' % int(config_drive_id)
             self._cache_image(fn=self._fetch_image,
+                              context=context,
                               target=basepath('disk.config'),
                               fname=fname,
                               image_id=config_drive_id,
@@ -967,7 +984,7 @@ class LibvirtConnection(driver.ComputeDriver):
                    'broadcast': mapping['broadcast'],
                    'dns': ' '.join(mapping['dns']),
                    'address_v6': address_v6,
-                   'gateway6': gateway_v6,
+                   'gateway_v6': gateway_v6,
                    'netmask_v6': netmask_v6}
             nets.append(net_info)
 
@@ -1722,9 +1739,31 @@ class LibvirtConnection(driver.ComputeDriver):
 
         for info in disk_info:
             base = os.path.basename(info['path'])
-            # Get image type and create empty disk image.
+            # Get image type and create empty disk image, and
+            # create backing file in case of qcow2.
             instance_disk = os.path.join(instance_dir, base)
-            utils.execute('qemu-img', 'create', '-f', info['type'],
+            if not info['backing_file']:
+                utils.execute('qemu-img', 'create', '-f', info['type'],
+                              instance_disk, info['local_gb'])
+
+            else:
+                # Creating backing file follows same way as spawning instances.
+                backing_file = os.path.join(FLAGS.instances_path,
+                                            '_base', info['backing_file'])
+
+                if not os.path.exists(backing_file):
+                    self._cache_image(fn=self._fetch_image,
+                        context=ctxt,
+                        target=info['path'],
+                        fname=info['backing_file'],
+                        cow=FLAGS.use_cow_images,
+                        image_id=instance_ref['image_ref'],
+                        user_id=instance_ref['user_id'],
+                        project_id=instance_ref['project_id'],
+                        size=instance_ref['local_gb'])
+
+                utils.execute('qemu-img', 'create', '-f', info['type'],
+                          '-o', 'backing_file=%s' % backing_file,
                           instance_disk, info['local_gb'])
 
         # if image has kernel and ramdisk, just download
@@ -1815,11 +1854,16 @@ class LibvirtConnection(driver.ComputeDriver):
                 driver_nodes[cnt].get_properties().get_next().getContent()
             if disk_type == 'raw':
                 size = int(os.path.getsize(path))
+                backing_file = ""
             else:
                 out, err = utils.execute('qemu-img', 'info', path)
                 size = [i.split('(')[1].split()[0] for i in out.split('\n')
                     if i.strip().find('virtual size') >= 0]
                 size = int(size[0])
+
+                backing_file = [i.split('actual path:')[1].strip()[:-1]
+                    for i in out.split('\n') if 0 <= i.find('backing file')]
+                backing_file = os.path.basename(backing_file[0])
 
             # block migration needs same/larger size of empty image on the
             # destination host. since qemu-img creates bit smaller size image
@@ -1836,7 +1880,7 @@ class LibvirtConnection(driver.ComputeDriver):
                 break
 
             disk_info.append({'type': disk_type, 'path': path,
-                              'local_gb': size})
+                              'local_gb': size, 'backing_file': backing_file})
 
         return utils.dumps(disk_info)
 

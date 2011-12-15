@@ -1,4 +1,8 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 # Copyright 2011 OpenStack LLC.
+# All Rights Reserved.
+# Copyright 2011 NTT
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -28,6 +32,18 @@ from nova.scheduler import driver
 from nova.scheduler import abstract_scheduler
 from nova.scheduler import base_scheduler
 from nova.scheduler import zone_manager
+
+from nova import db
+from nova.scheduler import api
+
+from nose.plugins.attrib import attr
+import stubout
+import M2Crypto
+from novaclient import v1_1 as novaclient
+from novaclient.v1_1 import servers
+from novaclient import exceptions as novaclient_exceptions
+from nova.db import base
+from nova import context
 
 
 def _host_caps(multiplier):
@@ -394,29 +410,280 @@ class AbstractSchedulerTestCase(test.TestCase):
         # 0 from local zones, 12 from remotes
         self.assertEqual(12, len(build_plan))
 
+    @attr(kind='small')
+    def test_call_zone_method(self):
 
-class BaseSchedulerTestCase(test.TestCase):
-    """Test case for Base Scheduler."""
+        class StubCallZoneMethod(object):
 
-    def test_weigh_hosts(self):
-        """
-        Try to weigh a short list of hosts and make sure enough
-        entries for a larger number instances are returned.
-        """
+            count_ck = 0
 
-        sched = FakeBaseScheduler()
+            def call_zone_method(self, context, method_name,
+                                 errors_to_ignore=None,
+                                 novaclient_collection_name='zones',
+                                 zones=None, *args, **kwargs):
+                self.count_ck += 1
+                sc_count = self.count_ck
+                return sc_count
 
-        # Fake out a list of hosts
-        zm = FakeZoneManager()
-        hostlist = [(host, services['compute'])
-                    for host, services in zm.service_states.items()
-                    if 'compute' in services]
+        def mock_success(cls, *args):
+            self.success_count += 1
 
-        # Call weigh_hosts()
-        num_instances = len(hostlist) * 2 + len(hostlist) / 2
-        instlist = sched.weigh_hosts('compute',
-                                     dict(num_instances=num_instances),
-                                     hostlist)
+        sched = FakeAbstractScheduler()
+        self.success_count = 0
+        self.stubs.Set(abstract_scheduler, 'api', StubCallZoneMethod())
 
-        # Should be enough entries to cover all instances
-        self.assertEqual(len(instlist), num_instances)
+        self.success_count = sched._call_zone_method(None, None, None, None)
+        self.assertEqual(1, self.success_count)
+
+    @attr(kind='small')
+    def test_decrypt_blob_exception(self):
+
+        class StubDecryptor(object):
+            def decryptor(self, key):
+                return lambda blob: blob
+
+        def mock_exception(cls, *args):
+            self.exception_count += 1
+            raise M2Crypto.EVP.EVPError
+
+        sched = FakeAbstractScheduler()
+        test_data = {"foo": "bar"}
+        self.exception_count = 0
+        self.stubs.Set(abstract_scheduler, 'crypto', StubDecryptor())
+        self.stubs.Set(json, 'dumps', mock_exception)
+
+        sched._decrypt_blob(test_data)
+        self.assertEqual(1, self.exception_count)
+
+    @attr(kind='small')
+    def test_adjust_child_weights_exception(self):
+
+        def fake_zone_get_all(context):
+            return [
+                dict(id=1, api_url='zone1',
+                     username='admin', password='password',
+                     weight_offset=0.0, weight_key=1.1)]
+
+        def fake_call_zone_method(context, method, specs, zones):
+            return [('a', False),
+                    (1, [dict(weight=1, blob='AAAAAAA')])]
+
+        def mock_exception(msg):
+            self.exception_count += 1
+
+        self.exception_count = 0
+        sched = FakeAbstractScheduler()
+
+        child_results = fake_call_zone_method(None, None, None, None)
+        zones = fake_zone_get_all(None)
+
+        self.stubs.Set(abstract_scheduler.LOG, 'exception', mock_exception)
+
+        sched._adjust_child_weights(child_results, zones)
+        self.assertEqual(1, self.exception_count)
+
+    @attr(kind='small')
+    def test_ask_child_zone_to_create_instance(self):
+
+        def mock_zone_get(context, child_zone):
+            return dict(id=1, api_url='http://example.com', username='bob',
+                            password='xxx', weight_scale=1.0,
+                            weight_offset=0.0)
+
+        def mock_client(self, username, api_key, project_id,
+                        auth_url, timeout=None, token=None, region_name=None):
+
+            self.servers = servers.ServerManager(self)
+            return None
+
+        def mock_authenticate(*args):
+            self.success_count += 1
+
+        def mock_create(self, name, image, flavor, meta=None, files=None,
+               zone_blob=None, reservation_id=None, min_count=None,
+               max_count=None, security_groups=None, userdata=None,
+               key_name=None):
+            pass
+
+        class FakeDB(object):
+
+            def __init__(self, name='child'):
+                self.id = 1
+                self.api_url = 'http://example.com'
+                self.username = 'testuser'
+                self.password = 'bbb'
+                self.name = name
+
+            def zone_get(self, context, child_zone):
+                return self
+
+        self.success_count = 0
+
+        request_spec = {'instance_type': dict(flavorid='flav'),
+                        'instance_properties': dict(display_name='aaa',
+                                                     image_ref='image',
+                                                     metadata='metameta',
+                                                     reservation_id='bbb')}
+        zone_info = {'child_zone': 1, 'child_blob': 2}
+        kwargs = {'injected_files': 'aaa'}
+
+        self.stubs.Set(abstract_scheduler,
+                       'db',
+                       FakeDB())
+        self.stubs.Set(novaclient.Client,
+                       '__init__',
+                       mock_client)
+        self.stubs.Set(novaclient.Client,
+                       'authenticate',
+                       mock_authenticate)
+        self.stubs.Set(novaclient.servers.ServerManager,
+                       'create',
+                       mock_create)
+
+        sched = FakeAbstractScheduler()
+        sched._ask_child_zone_to_create_instance(context.get_admin_context(),
+                                                 zone_info,
+                                                 request_spec, kwargs)
+        self.assertEqual(1, self.success_count)
+
+    @attr(kind='small')
+    def test_ask_child_zone_to_create_instance_exception(self):
+
+        class FakeDb(object):
+
+            def __init__(self, name='child'):
+                self.id = 1
+                self.api_url = 'http://example.com'
+                self.username = 'testuser'
+                self.password = 'bbb'
+                self.name = name
+
+            def zone_get(self, context, child_zone):
+                return self
+
+        def mock_client(self, username, api_key, project_id,
+                        auth_url, timeout=None, token=None, region_name=None):
+
+            self.servers = servers.ServerManager(self)
+            return None
+
+        def mock_authenticate(self):
+            raise novaclient_exceptions.BadRequest(self)
+
+        self.success_count = 0
+
+        request_spec = {'instance_type': dict(flavorid='flav'),
+                        'instance_properties': dict(display_name='aaa',
+                                                     image_ref='image',
+                                                     metadata='metameta',
+                                                     reservation_id='bbb')}
+        zone_info = {'child_zone': 1, 'child_blob': 2}
+        kwargs = {'injected_files': 'aaa'}
+
+        self.stubs.Set(abstract_scheduler,
+                       'db',
+                       FakeDb())
+        self.stubs.Set(novaclient.Client,
+                       '__init__',
+                       mock_client)
+        self.stubs.Set(novaclient.Client,
+                       'authenticate',
+                       mock_authenticate)
+
+        sched = FakeAbstractScheduler()
+        self.assertRaises(exception.NotAuthorized,
+                          sched._ask_child_zone_to_create_instance,
+                          context.get_admin_context(),
+                          zone_info, request_spec, kwargs)
+
+    @attr(kind='small')
+    def test_private_schedule_exception(self):
+
+        def mock_exception(cls, *args):
+            self.exception_count += 1
+
+        sched = FakeAbstractScheduler()
+
+        self.assertRaises(NotImplementedError,
+                          sched._schedule, {}, 'difference_param', {})
+
+    @attr(kind='small')
+    def test_schedule_exception(self):
+
+        request_spec = {'instance_type': dict(flavorid='flav'),
+                        'instance_properties': dict(display_name='aaa',
+                                                     image_ref='image',
+                                                     metadata='metameta',
+                                                     reservation_id='bbb')}
+
+        sched = FakeAbstractScheduler()
+        self.assertRaises(driver.NoValidHost,
+            sched.schedule, {}, 'difference_param', request_spec)
+
+    @attr(kind='small')
+    def test_schedule_run_instance_configuration(self):
+
+        def mock_select(self, context, request_spec, *args, **kwargs):
+            return [False, True]
+
+        def mock_provision_resource(sself, context, build_plan_item,
+                                    instance_id, request_spec, kwargs):
+            pass
+
+        request_spec = {'instance_type': dict(flavorid='flav'),
+                        'instance_properties': dict(display_name='aaa',
+                                                     image_ref='image',
+                                                     metadata='metameta',
+                                                     reservation_id='bbb'),
+                        'num_instances': 5,
+                         'blob': False}
+
+        self.stubs.Set(abstract_scheduler.AbstractScheduler,
+                       'select',
+                       mock_select)
+        self.stubs.Set(abstract_scheduler.AbstractScheduler,
+                       '_provision_resource',
+                       mock_provision_resource)
+
+        sched = FakeAbstractScheduler()
+        ret = sched.schedule_run_instance({}, 'aaa', request_spec)
+        self.assertEqual(None, ret)
+
+    @attr(kind='small')
+    def test_provision_resource_locally(self):
+
+        class fake_api(base.Base):
+
+            def create_db_entry_for_new_instance(self, context,
+                                                 instance_type, image,
+                                                 base_options, security_group,
+                                                 block_device_mapping, num=1):
+                return {'id': 'testid'}
+
+        def mock_queue_get_for(context, topic, physical_node_id, *args):
+            self.success_count += 1
+            return 'test'
+
+        def mock_rpt(context, topic, msg):
+            pass
+
+        self.success_count = 0
+        request_spec = {'instance_type': dict(flavorid='flav'),
+                        'instance_properties': dict(display_name='aaa',
+                                                    image_ref='image',
+                                                    metadata='metameta',
+                                                    reservation_id='bbb'),
+                        'image': 'abc'}
+        build_plan_item = {'hostname': "testhost"}
+
+        self.stubs.Set(compute_api, 'API', fake_api)
+        self.stubs.Set(db, 'queue_get_for', mock_queue_get_for)
+        self.stubs.Set(rpc, 'cast', mock_rpt)
+
+        sched = FakeAbstractScheduler()
+        sched._provision_resource_locally({},
+                                          build_plan_item,
+                                          request_spec,
+                                          {'instance_id': 'aa'})
+
+        self.assertEqual(1, self.success_count)

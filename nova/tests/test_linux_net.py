@@ -24,6 +24,7 @@ from nova import test
 from nova import utils
 from nova.network import manager as network_manager
 from nova.network import linux_net
+from nose.plugins.attrib import attr
 
 import mox
 
@@ -346,7 +347,7 @@ class LinuxNetworkTestCase(test.TestCase):
         actual = self.driver._host_dhcp(fixed_ips[0])
         self.assertEquals(actual, expected)
 
-    def _test_initialize_gateway(self, existing, expected):
+    def _test_initialize_gateway(self, existing, expected, routes=''):
         self.flags(fake_network=False)
         executes = []
 
@@ -354,6 +355,8 @@ class LinuxNetworkTestCase(test.TestCase):
             executes.append(args)
             if args[0] == 'ip' and args[1] == 'addr' and args[2] == 'show':
                 return existing, ""
+            if args[0] == 'route' and args[1] == '-n':
+                return routes, ""
         self.stubs.Set(utils, 'execute', fake_execute)
         network = {'dhcp_server': '192.168.1.1',
                    'cidr': '192.168.1.0/24',
@@ -371,6 +374,7 @@ class LinuxNetworkTestCase(test.TestCase):
             "    valid_lft forever preferred_lft forever\n")
         expected = [
             ('ip', 'addr', 'show', 'dev', 'eth0', 'scope', 'global'),
+            ('route', '-n'),
             ('ip', 'addr', 'del', '192.168.0.1/24',
              'brd', '192.168.0.255', 'scope', 'global', 'dev', 'eth0'),
             ('ip', 'addr', 'add', '192.168.1.1/24',
@@ -382,6 +386,32 @@ class LinuxNetworkTestCase(test.TestCase):
             ('ip', 'link', 'set', 'dev', 'eth0', 'promisc', 'on'),
         ]
         self._test_initialize_gateway(existing, expected)
+
+    def test_initialize_gateway_resets_route(self):
+        routes = "0.0.0.0         192.68.0.1        0.0.0.0         " \
+                "UG    100    0        0 eth0"
+        existing = ("2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> "
+            "    mtu 1500 qdisc pfifo_fast state UNKNOWN qlen 1000\n"
+            "    link/ether de:ad:be:ef:be:ef brd ff:ff:ff:ff:ff:ff\n"
+            "    inet 192.168.0.1/24 brd 192.168.0.255 scope global eth0\n"
+            "    inet6 dead::beef:dead:beef:dead/64 scope link\n"
+            "    valid_lft forever preferred_lft forever\n")
+        expected = [
+            ('ip', 'addr', 'show', 'dev', 'eth0', 'scope', 'global'),
+            ('route', '-n'),
+            ('route', 'del', 'default', 'gw', '192.68.0.1', 'dev', 'eth0'),
+            ('ip', 'addr', 'del', '192.168.0.1/24',
+             'brd', '192.168.0.255', 'scope', 'global', 'dev', 'eth0'),
+            ('ip', 'addr', 'add', '192.168.1.1/24',
+             'brd', '192.168.1.255', 'dev', 'eth0'),
+            ('ip', 'addr', 'add', '192.168.0.1/24',
+             'brd', '192.168.0.255', 'scope', 'global', 'dev', 'eth0'),
+            ('route', 'add', 'default', 'gw', '192.68.0.1'),
+            ('ip', '-f', 'inet6', 'addr', 'change',
+             '2001:db8::/64', 'dev', 'eth0'),
+            ('ip', 'link', 'set', 'dev', 'eth0', 'promisc', 'on'),
+        ]
+        self._test_initialize_gateway(existing, expected, routes)
 
     def test_initialize_gateway_no_move_right_ip(self):
         existing = ("2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> "
@@ -407,6 +437,7 @@ class LinuxNetworkTestCase(test.TestCase):
             "    valid_lft forever preferred_lft forever\n")
         expected = [
             ('ip', 'addr', 'show', 'dev', 'eth0', 'scope', 'global'),
+            ('route', '-n'),
             ('ip', 'addr', 'add', '192.168.1.1/24',
              'brd', '192.168.1.255', 'dev', 'eth0'),
             ('ip', '-f', 'inet6', 'addr', 'change',
@@ -414,3 +445,57 @@ class LinuxNetworkTestCase(test.TestCase):
             ('ip', 'link', 'set', 'dev', 'eth0', 'promisc', 'on'),
         ]
         self._test_initialize_gateway(existing, expected)
+
+    @attr(kind='small')
+    def test_device_exists(self):
+        """Test for nova.network.linux_net.device_exists"""
+        self.flags(fake_network=False)
+        executes = []
+
+        def fake_execute(*args, **kwargs):
+            executes.append(args)
+            if args[0] == 'ip' and args[1] == 'link' and args[2] == 'show':
+                return 'success', ''
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        device = 'eth0'
+        actual = self.driver.device_exists(device)
+        self.assertEqual(True, actual)
+        self.assertEqual([('ip', 'link', 'show', 'dev', device)], executes)
+
+    @attr(kind='small')
+    def test_device_exists_ex_execute_stderr(self):
+        """Test for nova.network.linux_net.device_exists"""
+        self.flags(fake_network=False)
+        executes = []
+
+        def fake_execute(*args, **kwargs):
+            executes.append(args)
+            if args[0] == 'ip' and args[1] == 'link' and args[2] == 'show':
+                return '', 'fail'
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        device = 'eth0'
+        actual = self.driver.device_exists(device)
+        self.assertEqual(False, actual)
+        self.assertEqual([('ip', 'link', 'show', 'dev', device)], executes)
+
+    @attr(kind='small')
+    def test_device_exists_ex_execute_raise_exception(self):
+        """Test for nova.network.linux_net.device_exists"""
+        self.flags(fake_network=False)
+        executes = []
+
+        def fake_execute(*args, **kwargs):
+            executes.append(args)
+            if args[0] == 'ip' and args[1] == 'link' and args[2] == 'show':
+                raise exception.ProcessExecutionError()
+
+        self.stubs.Set(utils, 'execute', fake_execute)
+
+        device = 'eth0'
+        self.assertRaises(exception.ProcessExecutionError,
+                          self.driver.device_exists,
+                          device)

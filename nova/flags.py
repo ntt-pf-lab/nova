@@ -349,14 +349,8 @@ DEFINE_string('lock_path', os.path.join(os.path.dirname(__file__), '../'),
               'Directory for lock files')
 DEFINE_string('logdir', None, 'output to a per-service log file in named '
                               'directory')
-DEFINE_integer('logfile_mode', 0644, 'Default file mode of the logs.')
+DEFINE_string('logfile_mode', '0644', 'Default file mode of the logs.')
 DEFINE_string('sqlite_db', 'nova.sqlite', 'file name for sqlite')
-DEFINE_integer('sql_pool_timeout', 30,
-               'seconds to wait for connection from pool before erroring')
-DEFINE_integer('sql_min_pool_size', 10,
-               'minimum number of SQL connections to pool')
-DEFINE_integer('sql_max_pool_size', 10,
-               'maximum number of SQL connections to pool')
 DEFINE_string('sql_connection',
               'sqlite:///$state_path/$sqlite_db',
               'connection string for sql database')
@@ -429,3 +423,6 @@ DEFINE_list('monkey_patch_modules',
         'nova.compute.api:nova.notifier.api.notify_decorator'],
         'Module list representing monkey '
         'patched module and decorator')
+
+DEFINE_integer('pagination_limit', 20, 'maximum number of records \
+in API response')

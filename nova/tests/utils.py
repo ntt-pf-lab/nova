@@ -66,3 +66,25 @@ def get_test_network_info(count=1):
                            {'ip': fake_ip_2},
                            {'ip': fake_ip_3}]
     return [(network, mapping) for x in xrange(0, count)]
+
+
+def get_test_disk_info():
+    return {'base_copy': 'hurr', 'cow': 'durr'}
+
+
+def get_test_migration(context=None):
+    if not context:
+        context = get_test_admin_context()
+
+    migration_values = {
+        'source_compute': 'nova-compute',
+        'dest_compute': 'nova-compute',
+        'dest_host': '10.127.5.114',
+        'status': 'post-migrating',
+        'instance_uuid': '15f23e6a-cc6e-4d22-b651-d9bdaac316f7',
+        'old_instance_type_id': 5,
+        'new_instance_type_id': 1
+    }
+
+    return nova.db.migration_create(
+        context, migration_values)

@@ -57,8 +57,8 @@ class NovaBase(object):
         session.add(self)
         try:
             session.flush()
-        except IntegrityError, e:
-            if str(e).endswith('is not unique'):
+        except exception.DBError, e:
+            if 'unique' in str(e) or 'Duplicate' in str(e):
                 raise exception.Duplicate(str(e))
             else:
                 raise
@@ -235,6 +235,7 @@ class Instance(BASE, NovaBase):
     default_local_device = Column(String(255), nullable=True)
     default_swap_device = Column(String(255), nullable=True)
     config_drive = Column(String(255))
+    config_drive_id = Column(String(255))
 
     # User editable field meant to represent what ip should be used
     # to connect to the instance
@@ -878,3 +879,18 @@ def register_models():
     engine = create_engine(FLAGS.sql_connection, echo=False)
     for model in models:
         model.metadata.create_all(engine)
+
+
+class EventLog(BASE, NovaBase):
+    """Represents a eventlog."""
+    __tablename__ = 'eventlog'
+    id = Column(Integer, primary_key=True)
+    request_id = Column(String(255))
+    message_id = Column(String(255))
+    event_type = Column(String(255))
+    publisher_id = Column(String(255))
+    priority = Column(String(255))
+    message = Column(Text)
+    status = Column(String(255))
+    user_id = Column(String(255))
+    tenant_id = Column(String(255))

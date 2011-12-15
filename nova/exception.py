@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -171,6 +173,30 @@ class VirtualInterfaceMacAddressException(NovaException):
                 "with unique mac address failed")
 
 
+class TerminateVolumeException(NovaException):
+    message = _("Volume termination failed")
+
+
+class NetworkInitHostException(NovaException):
+    message = _("Network host initialization failed")
+
+
+class NetworkAllocateException(NovaException):
+    message = _("Network resource allocation failed")
+
+
+class NetworkDeallocateException(NovaException):
+    message = _("Network resource deallocation failed")
+
+
+class NetworkGetNwInfoException(NovaException):
+    message = _("Network info get failed")
+
+
+class NetworkCreateException(NovaException):
+    message = _("Network creation failed")
+
+
 class NotAuthorized(NovaException):
     message = _("Not authorized.")
 
@@ -180,6 +206,18 @@ class NotAuthorized(NovaException):
 
 class AdminRequired(NotAuthorized):
     message = _("User does not have admin privileges")
+
+
+class InstanceBusy(NovaException):
+    message = _("Instance %(instance_id)s is busy. (%(task_state)s)")
+
+
+class InstanceSnapshotting(InstanceBusy):
+    message = _("Instance %(instance_id)s is currently snapshotting.")
+
+
+class InstanceBackingUp(InstanceBusy):
+    message = _("Instance %(instance_id)s is currently being backed up.")
 
 
 class Invalid(NovaException):
@@ -246,6 +284,14 @@ class InstanceResumeFailure(Invalid):
 
 class InstanceRebootFailure(Invalid):
     message = _("Failed to reboot instance") + ": %(reason)s"
+
+
+class InstanceBootFailure(Invalid):
+    message = _("Failed to boot server") + ": %(reason)s."
+
+
+class InstanceSnapshotFailure(Invalid):
+    message = _("Failed to snapshot instance") + ": %(reason)s"
 
 
 class ServiceUnavailable(Invalid):
@@ -370,7 +416,7 @@ class SnapshotNotFound(NotFound):
     message = _("Snapshot %(snapshot_id)s could not be found.")
 
 
-class VolumeIsBusy(Error):
+class VolumeIsBusy(NovaException):
     message = _("deleting volume %(volume_name)s that has snapshot")
 
 
@@ -520,6 +566,10 @@ class FloatingIpNotFound(NotFound):
 
 class FloatingIpNotFoundForAddress(FloatingIpNotFound):
     message = _("Floating ip not found for address %(address)s.")
+
+
+class LinkIpNotFound(NotFound):
+    message = _("Local link IP not found for %(interface)s. %(reason)s")
 
 
 class FloatingIpNotFoundForProject(FloatingIpNotFound):
@@ -715,7 +765,7 @@ class NetworkAdapterNotFound(NotFound):
 
 
 class ClassNotFound(NotFound):
-    message = _("Class %(class_name)s could not be found")
+    message = _("Class %(class_name)s could not be found: %(exception)s")
 
 
 class NotAllowed(NovaException):
@@ -736,7 +786,8 @@ class RotationRequiredForBackup(NovaException):
 
 #TODO(bcwaldon): EOL this exception!
 class Duplicate(NovaException):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(Duplicate, self).__init__(**kwargs)
 
 
 class KeyPairExists(Duplicate):
@@ -812,8 +863,35 @@ class ImageTooLarge(NovaException):
     message = _("Image is larger than instance type allows")
 
 
+class PublicKeyInvalid(Invalid):
+    message = _("Import key is not ssh-rsa format. %(public_key)")
+
+
 class ZoneRequestError(Error):
     def __init__(self, message=None):
         if message is None:
             message = _("1 or more Zones could not complete the request")
         super(ZoneRequestError, self).__init__(message=message)
+
+
+class InsufficientFreeMemory(NovaException):
+    message = _("Insufficient free memory on compute node to start %(uuid)s.")
+
+
+class RevokeCertException(NovaException):
+    message = _("Certificate revocation failed")
+
+
+class FileError(Error):
+    """Error in file operation."""
+    def __init__(self, inner_exception=None):
+        self.inner_exception = inner_exception
+        super(FileError, self).__init__(str(inner_exception))
+
+
+class InvalidRPCConnectionReuse(NovaException):
+    message = _("It is not allowed to use that RPC Connection once again.")
+
+
+class EventLogNotFound(NotFound):
+    message = _("EventLog Not Found.")

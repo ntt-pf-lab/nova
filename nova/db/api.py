@@ -3,6 +3,8 @@
 # Copyright 2010 United States Government as represented by the
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
+# Copyright 2011 NTT
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -877,7 +879,7 @@ def quota_destroy(context, project_id, resource):
 
 def quota_destroy_all_by_project(context, project_id):
     """Destroy all quotas associated with a given project."""
-    return IMPL.quota_get_all_by_project(context, project_id)
+    return IMPL.quota_destroy_all_by_project(context, project_id)
 
 
 ###################
@@ -1571,3 +1573,31 @@ def vsa_get_all(context):
 def vsa_get_all_by_project(context, project_id):
     """Get all Virtual Storage Array records by project ID."""
     return IMPL.vsa_get_all_by_project(context, project_id)
+
+
+def eventlog_create(context, values):
+    """Create EventLog record."""
+    return IMPL.eventlog_create(context, values)
+
+
+def eventlog_update(context, message_id, values):
+    """Update EventLog record."""
+    return IMPL.eventlog_update(context, message_id, values)
+
+
+def eventlog_get(context, message_id, session=None):
+    """Get EventLog record."""
+    return IMPL.eventlog_get(context, message_id, session=None)
+
+
+def eventlog_get_all_by_request_id(context, request_id, session=None):
+    """Get EventLog recordi by request_id."""
+    return IMPL.eventlog_get_all_by_request_id(context,
+                                               request_id,
+                                               session=None)
+
+
+def eventlog_get_all(context, filters):
+    """Get all EventLog records, after applying filters."""
+    return IMPL.eventlog_get_all(context,
+                                 filters)

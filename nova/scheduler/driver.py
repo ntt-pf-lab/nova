@@ -2,7 +2,14 @@
 
 # Copyright (c) 2010 Openstack, LLC.
 # Copyright 2010 United States Government as represented by the
+#
+# Copyright 2011 NTT
+# All Rights Reserved.
+#
 # Administrator of the National Aeronautics and Space Administration.
+# All Rights Reserved.
+#
+# Copyright 2011 NTT
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -288,10 +295,11 @@ class Scheduler(object):
 
         mem_inst = instance_ref['memory_mb']
         avail = avail - used
-        if avail <= mem_inst:
+        if not mem_inst or avail <= mem_inst:
             instance_id = ec2utils.id_to_ec2_id(instance_ref['id'])
             reason = _("Unable to migrate %(instance_id)s to %(dest)s: "
-                       "Lack of disk(host:%(avail)s <= instance:%(mem_inst)s)")
+                       "Lack of memory(host:%(avail)s <= "
+                       "instance:%(mem_inst)s)")
             raise exception.MigrationError(reason=reason % locals())
 
     def assert_compute_node_has_enough_disk(self, context,
@@ -354,6 +362,8 @@ class Scheduler(object):
         dst_t = db.queue_get_for(context, FLAGS.compute_topic, dest)
         src_t = db.queue_get_for(context, FLAGS.compute_topic, src)
 
+        filename = None
+
         try:
             # create tmpfile at dest host
             filename = rpc.call(context, dst_t,
@@ -370,6 +380,8 @@ class Scheduler(object):
             raise
 
         finally:
-            rpc.call(context, dst_t,
-                     {"method": 'cleanup_shared_storage_test_file',
-                      "args": {'filename': filename}})
+            # Should only be None for tests?
+            if filename is not None:
+                rpc.call(context, dst_t,
+                         {"method": 'cleanup_shared_storage_test_file',
+                          "args": {'filename': filename}})
