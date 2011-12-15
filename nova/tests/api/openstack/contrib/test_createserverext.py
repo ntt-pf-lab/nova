@@ -37,13 +37,18 @@ FLAGS.verbose = True
 
 FAKE_UUID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
-FAKE_NETWORKS = [('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '10.0.1.12'),
-                 ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '10.0.2.12')]
+FAKE_NETWORKS = [{'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                  'fixed_ip': '10.0.1.12', 'gw': True},
+                 {'uuid': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+                  'fixed_ip': '10.0.2.12', 'gw': True}]
 
-DUPLICATE_NETWORKS = [('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '10.0.1.12'),
-                      ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '10.0.1.12')]
+DUPLICATE_NETWORKS = [{'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                       'fixed_ip': '10.0.1.12', 'gw': True},
+                      {'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                       'fixed_ip': '10.0.1.12', 'gw': True}]
 
-INVALID_NETWORKS = [('invalid', 'invalid-ip-address')]
+INVALID_NETWORKS = [{'uuid': 'invalid',
+                       'fixed_ip': 'invalid-ip-address', 'gw': True}]
 
 INSTANCE = {
              "id": 1,
@@ -151,8 +156,8 @@ class CreateserverextTest(test.TestCase):
         server['flavorRef'] = 1
         if networks is not None:
             network_list = []
-            for uuid, fixed_ip in networks:
-                network_list.append({'uuid': uuid, 'fixed_ip': fixed_ip})
+            for net in networks:
+                network_list.append(net.copy())
             server['networks'] = network_list
         return {'server': server}
 
@@ -317,21 +322,21 @@ class CreateserverextTest(test.TestCase):
         self.assertEquals(networks, None)
 
     def test_create_instance_with_network_empty_fixed_ip(self):
-        networks = [('1', '')]
+        networks = [{'uuid': '1', 'fixed_ip': '', 'gw': True}]
         request, response, networks = \
             self._create_instance_with_networks_json(networks)
         self.assertEquals(response.status_int, 400)
         self.assertEquals(networks, None)
 
     def test_create_instance_with_network_non_string_fixed_ip(self):
-        networks = [('1', 12345)]
+        networks = [{'uuid': '1', 'fixed_ip': 12345, 'gw': True}]
         request, response, networks = \
             self._create_instance_with_networks_json(networks)
         self.assertEquals(response.status_int, 400)
         self.assertEquals(networks, None)
 
     def test_create_instance_with_network_empty_fixed_ip_xml(self):
-        networks = [('1', '')]
+        networks = [{'uuid': '1', 'fixed_ip': '', 'gw': True}]
         request, response, networks = \
             self._create_instance_with_networks_xml(networks)
         self.assertEquals(response.status_int, 400)
@@ -345,7 +350,8 @@ class CreateserverextTest(test.TestCase):
             self._run_create_instance_with_mock_compute_api(request)
         self.assertEquals(response.status_int, 202)
         self.assertEquals(compute_api.networks,
-                          [('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', None)])
+                          [{'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                            'fixed_ip': None, 'gw': True}])
 
     def test_create_instance_with_network_no_fixed_ip_xml(self):
         body_dict = self._create_networks_request_dict([FAKE_NETWORKS[0]])
@@ -355,7 +361,8 @@ class CreateserverextTest(test.TestCase):
             self._run_create_instance_with_mock_compute_api(request)
         self.assertEquals(response.status_int, 202)
         self.assertEquals(compute_api.networks,
-                          [('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', None)])
+                          [{'uuid': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                            'fixed_ip': None, 'gw': True}])
 
     def test_create_instance_with_userdata(self):
         user_data_contents = '#!/bin/bash\necho "Oh no!"\n'
