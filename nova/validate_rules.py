@@ -346,27 +346,61 @@ class ZoneNameValid(BaseValidator):
             raise exception.ComputeHostNotFound(host=zone_name)
 
 
-class KeypairRequire(BaseValidator):
+class KeypairNameValid(BaseValidator):
     """
-    keypairRequire.
+    KeypairNameValid.
 
-    Validate the keypair is exists.
+    Validate the keypair name is valid.
     Require the 'keypair_name' parameter.
     """
     def validate_keypair_name(self, keypair_name):
+        if not keypair_name:
+            raise exception.InvalidParameterValue(
+                              err="name parameter required.")
+        if len(keypair_name) > 255:
+            raise exception.InvalidParameterValue(
+                              err="name parameter over 255 length.")
+
+
+class KeypairExists(BaseValidator):
+    """
+    KeypairExists.
+
+    Validate the keypair exists.
+    Require the 'keypair_name' parameter.
+    """
+    def validate_keypair_exists(self, keypair_name):
         db.key_pair_get(self.context, self.context.user_id, keypair_name)
 
 
-class KeypairNameValid(BaseValidator):
+class KeypairNotExist(BaseValidator):
     """
-    keypairNameRequire.
+    KeypairNotExist.
 
     Validate the keypair is not duplicate.
     Require the 'keypair_name' parameter.
     """
-    def validate_keypair_name(self, keypair_name):
+    def validate_keypair_not_exist(self, keypair_name):
         try:
             db.key_pair_get(self.context, self.context.user_id, keypair_name)
             raise exception.KeyPairExists(key_name=keypair_name)
         except exception.KeypairNotFound:
             pass
+
+
+class PublicKeyValid(BaseValidator):
+    """
+    PublicKeyValid.
+
+    Validate the public key is valid.
+    Require the 'public_key' parameter.
+    """
+    def validate_public_key(self, public_key):
+        if public_key is None:
+            return
+        elif not public_key.startswith('ssh-rsa '):
+            raise exception.InvalidParameterValue(
+                              err="public_key parameter is not rsa format.")
+        elif len(public_key.encode() * 8) > 16384:
+            raise exception.InvalidParameterValue(
+                              err="public_key parameter exceeds 16384 bits.")

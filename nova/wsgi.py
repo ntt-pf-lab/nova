@@ -23,7 +23,7 @@
 
 import os
 import sys
-
+import time
 from xml.dom import minidom
 
 import eventlet
@@ -313,6 +313,57 @@ class Debug(Middleware):
             sys.stdout.flush()
             yield part
         print
+
+
+class DebugLogger(Middleware):
+    """Helper class for debugging a WSGI application.
+
+    Can be inserted into any WSGI application chain to log information
+    about the request and response.
+
+    """
+
+    def __init__(self, application, **kwargs):
+        self.application = application
+        self.kwargs = kwargs
+
+    @webob.dec.wsgify(RequestClass=Request)
+    def __call__(self, req):
+        if len(req.body):
+            body = req.body
+        else:
+            body = '-'
+        input_params = "METHOD: %s URL: %s BODY: '%s'" % (req.method,
+                                                        req.url,
+                                                        body)
+        start_time = time.time()
+        resp = req.get_response(self.application)
+        end_time = time.time()
+
+        #set the request_id in cookie
+        if req.environ.get('nova.context', None):
+            request_id = req.environ['nova.context'].request_id
+        else:
+            request_id = 'NA'
+        resp.set_cookie('request_id', request_id)
+
+        #maximum length of response value to log.
+        MAX_RESPONSE_LEN = int(self.kwargs.get('MAX_RESPONSE_LEN', -1))
+        response_str = ''
+        for part in resp.app_iter:
+            response_str += part
+        if MAX_RESPONSE_LEN != -1:
+            response_str = response_str[0:MAX_RESPONSE_LEN]
+
+        log_str = "REQUEST ID: %s TIME: %.3f %s RESPONSE STATUS: '%s' "\
+                    "RESPONSE: '%s'" % \
+                  (request_id,
+                   end_time - start_time,
+                   input_params,
+                   resp.status,
+                   response_str)
+        LOG.info(log_str)
+        return resp
 
 
 class Router(object):

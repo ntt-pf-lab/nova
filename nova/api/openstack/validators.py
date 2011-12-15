@@ -25,6 +25,7 @@ from nova import validate_rules as rules
 from nova import validation
 from nova import utils
 
+
 class InstanceCreationResolver(validation.Resolver):
     """
     InstanceCreationResolver.
@@ -57,6 +58,20 @@ class CreateImageResolver(validation.Resolver):
         return params
 
 
+class KeypairCreationResolver(validation.Resolver):
+    """
+    KeypairCreationResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['keypair_name'] = body['keypair']['name']
+            params['public_key'] = body['keypair'].get('public_key')
+        except KeyError:
+            pass
+        return params
+
+
 MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
@@ -79,7 +94,13 @@ MAPPING = [
  "method": "_action_create_image",
  "validators": [rules.ImageNameValid, rules.InstanceCanSnapshot],
  "resolver": CreateImageResolver},
+{"cls": "contrib.keypairs.KeypairController",
+ "method": "create",
+ "validators": [rules.KeypairNameValid, rules.KeypairNotExist,
+                rules.PublicKeyValid],
+ "resolver": KeypairCreationResolver}
 ]
+
 
 def handle_web_exception(self, e):
     if isinstance(e, exception.NotFound):

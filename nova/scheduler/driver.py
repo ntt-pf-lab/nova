@@ -326,7 +326,7 @@ class Scheduler(object):
 
         disk_inst = instance_ref['local_gb']
         avail = avail - used
-        if not disk_inst or avail <= disk_inst:
+        if avail <= disk_inst:
             instance_id = ec2utils.id_to_ec2_id(instance_ref['id'])
             reason = _("Unable to migrate %(instance_id)s to %(dest)s: "
                        "Lack of disk(host:%(avail)s "

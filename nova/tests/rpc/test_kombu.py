@@ -27,14 +27,14 @@ from nova import exception
 from nova import log as logging
 from nova import test
 from nova.rpc import impl_kombu
-from nova.tests import test_rpc_common
 from nose.plugins.attrib import attr
+from nova.tests.rpc import common
 
 LOG = logging.getLogger('nova.tests.rpc')
 FLAGS = flags.FLAGS
 
 
-class RpcKombuTestCase(test_rpc_common._BaseRpcTestCase):
+class RpcKombuTestCase(common._BaseRpcTestCase):
     def setUp(self):
         self.rpc = impl_kombu
         super(RpcKombuTestCase, self).setUp()

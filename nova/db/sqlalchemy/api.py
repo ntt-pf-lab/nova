@@ -4045,3 +4045,22 @@ def eventlog_get_all_by_request_id(context, request_id, session=None):
         raise exception.EventLogNotFound(request_id=request_id)
 
     return eventlog_ref
+
+
+@require_context
+def eventlog_get_all(context, filters=None):
+    """
+    Get all eventlog records.
+    """
+    session = get_session()
+    query = session.query(models.EventLog).\
+                filter_by(deleted=False)
+
+    if filters:
+        type = filters.get('type', 'ALL')
+
+        if type != 'ALL':
+            query = query.filter_by(priority=type)
+    query = query.order_by('created_at')
+    eventlog_ref = query.all()
+    return eventlog_ref
