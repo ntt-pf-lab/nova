@@ -99,7 +99,11 @@ MAPPING = [
  "method": "create",
  "validators": [rules.KeypairNameValid, rules.KeypairNotExist,
                 rules.PublicKeyValid],
- "resolver": KeypairCreationResolver}
+ "resolver": KeypairCreationResolver},
+{"cls": "images.Controller",
+ "method": "delete",
+ "validators": [rules.ImageRequire],
+ "alias": {"id": "image_id"}}
 ]
 
 

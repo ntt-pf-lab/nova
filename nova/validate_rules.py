@@ -18,6 +18,7 @@
 #    under the License.
 
 import webob
+import sys
 
 from nova import context
 from nova import exception
@@ -251,6 +252,14 @@ class ImageRequire(BaseValidator):
     Require the 'image_id' parameter.
     """
     def validate_image_id(self, image_id):
+        try:
+            num = int(image_id)
+            if num < 1:
+                raise exception.InvalidParameterValue("Specified image id is not positive value.")
+            elif num > sys.maxint:
+                raise exception.InvalidParameterValue("Specified image id is too large.")
+        except TypeError:
+            raise exception.InvalidParameterValue("Specified image id is not digit.")
         service = image.get_default_image_service()
         result = service.show(self.context, image_id)
         if result is None:
