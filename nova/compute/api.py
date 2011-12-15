@@ -1088,10 +1088,6 @@ class API(base.Base):
     @checks_instance_lock
     def reboot(self, context, instance_id):
         """Reboot the given instance."""
-        self.update(context,
-                    instance_id,
-                    vm_state=vm_states.ACTIVE,
-                    task_state=task_states.REBOOTING)
         self._cast_compute_message('reboot_instance', context, instance_id)
 
     @scheduler_api.reroute_compute("rebuild")

@@ -648,7 +648,15 @@ class ComputeManager(manager.SchedulerDependentManager):
                      context=context)
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        self.driver.reboot(instance_ref, network_info)
+        try:
+            self.driver.reboot(instance_ref, network_info)
+        except Exception, e:
+            LOG.exception(_("snapshot instance error: %s") % e)
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=vm_states.ERROR,
+                      task_state=None)
+            raise
 
         current_power_state = self._get_power_state(context, instance_ref)
         self._instance_update(context,
