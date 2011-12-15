@@ -25,8 +25,66 @@ from nova import log as LOG
 from nova.notifier import api
 from nova import utils
 from nova.notifier import rabbit_notifier
+from nova.db import sqlalchemy
+from nova import db
+import json
 
 FLAGS = flags.FLAGS
+
+
+
+def db_decorator(name, fn):
+    """ decorator for notify which is used from utils.monkey_patch()
+
+        :param name: name of the function
+        :param function: - object of the function
+        :returns: function -- decorated function
+
+    """
+    def wrapped_func(*args, **kwarg):
+        LOG.debug(args)
+        LOG.debug(kwarg)
+        body = {}
+
+#        if not args and len(args) > 1:
+        print name
+        print args
+        if name.startswith('nova.db.sqlalchemy.models'):
+            actionm = name.split('.')[-1]
+            if actionm in ('add', 'update', 'delete'):
+                tablename = args[0].__tablename__
+#                if tablename.lower() == 'instances':
+                if tablename.lower() not in ('novabase',
+                                             'eventlog'):
+                    v1 = ''
+                    if len(args) > 1:
+                        v1 = args[1]
+                    print 'db action: table %s, action %s, param %s'\
+                               % (tablename, actionm, v1)
+
+                    values = dict(message=utils.dumps(v1),
+                          message_id=tablename,
+                          event_type='db',
+                          status=actionm,
+                          request_id='',
+                          user_id='',
+                          tenant_id='',
+                          publisher_id='',
+                          priority='INFO')
+#                    f = open('/var/log/event.log', 'a')
+#                    f.write(str(values))
+#                    f.write('\n')
+#                    f.close()
+                    db.eventlog_create(context.get_admin_context(), values)
+
+        ret = None
+        try:
+            ret = fn(*args, **kwarg)
+        except Error as e:
+            body['error'] = "%s" % e
+            raise e
+        return ret
+    return wrapped_func
 
 
 def api_decorator(name, fn):
@@ -60,14 +118,18 @@ def api_decorator(name, fn):
                 body['kwarg'][key] = kwarg[key]
             except:
                 LOG.warn(_('Encode Faild kwarg: %s') % kwarg[key])
+
         api.notify(FLAGS.default_publisher_id,
                             name,
                             FLAGS.default_notification_level,
                             body)
+
         ret = None
         try:
             ret = fn(*original_args, **kwarg)
-        except Error as e:
+        #except Error as e:
+        except Exception as e:
+            print FLAGS.notification_driver
             body['error'] = "%s" % e
             api.notify(FLAGS.default_publisher_id,
                             name,
@@ -90,14 +152,16 @@ def emit(self, record):
 def notify(message):
     """Notifies the recipient of the desired event given the model.
     Log notifications using nova's default logging system"""
+    #LOG.info('yyyyyyy666666666')
     nova_context = context.get_admin_context()
     message['method'] = 'notify'
     priority = message.get('priority',
                            FLAGS.default_notification_level)
     priority = priority.lower()
+    #LOG.info('yyyyyyy777777')
     rpc.cast(nova_context, FLAGS.notification_topic, {'method': 'notify',
                                                  'args': {'message': message}})
-
+    #LOG.info('yyyyyyy888888')
 
 #Patching Emit function
 nova.log.PublishErrorsHandler.emit = emit
