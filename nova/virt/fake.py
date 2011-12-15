@@ -319,10 +319,15 @@ class FakeConnection(driver.ComputeDriver):
         raise NotImplementedError('This method is supported only by libvirt.')
 
     def plug_vifs(self, instance, network_info):
+        """Plug VIFs into networks."""
         if instance['name'] in self.instances:
             pass
         else:
             raise exception.InstanceNotFound
+
+    def unplug_vifs(self, instance, network_info):
+        """Unplug VIFs from networks."""
+        pass
 
     def finish_revert_migration(self, instance):
         if instance['name'] in self.instances:
