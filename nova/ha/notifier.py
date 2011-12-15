@@ -152,16 +152,16 @@ def emit(self, record):
 def notify(message):
     """Notifies the recipient of the desired event given the model.
     Log notifications using nova's default logging system"""
-    LOG.info('yyyyyyy666666666')
+    #LOG.info('yyyyyyy666666666')
     nova_context = context.get_admin_context()
     message['method'] = 'notify'
     priority = message.get('priority',
                            FLAGS.default_notification_level)
     priority = priority.lower()
-    LOG.info('yyyyyyy777777')
+    #LOG.info('yyyyyyy777777')
     rpc.cast(nova_context, FLAGS.notification_topic, {'method': 'notify',
                                                  'args': {'message': message}})
-    LOG.info('yyyyyyy888888')
+    #LOG.info('yyyyyyy888888')
 
 #Patching Emit function
 nova.log.PublishErrorsHandler.emit = emit
