@@ -290,6 +290,10 @@ class InstanceBootFailure(Invalid):
     message = _("Failed to boot server") + ": %(reason)s."
 
 
+class InstanceSnapshotFailure(Invalid):
+    message = _("Failed to snapshot instance") + ": %(reason)s"
+
+
 class ServiceUnavailable(Invalid):
     message = _("Service is unavailable at this time.")
 

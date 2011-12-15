@@ -141,6 +141,24 @@ class InstanceCanReboot(BaseValidator):
         raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
 
 
+class InstanceCanSnapshot(BaseValidator):
+    """
+    InstanceCanSnapshot.
+    
+    Validate the instance can snapshot.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        instance = db.instance_get(self.context, instance_id)
+        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+        if instance["vm_state"] == vm_states.ACTIVE:
+            if instance["task_state"] == None:
+                return
+            if instance["task_state"] == task_states.IMAGE_SNAPSHOT:
+                raise exception.InstanceSnapshotting(instance_id=instance_id)
+        raise exception.InstanceSnapshotFailure(reason="Instance state is not suitable for snapshot")
+
+
 class ImageNameValid(BaseValidator):
     """
     ImageNameValid.

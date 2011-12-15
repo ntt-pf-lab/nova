@@ -58,6 +58,10 @@ MAPPING = [
 {"cls": "servers.Controller",
  "method": "_action_reboot",
  "validators": [rules.InstanceCanReboot],
+ "alias": {"id": "instance_id"}},
+{"cls": "servers.ControllerV11",
+ "method": "_action_create_image",
+ "validators": [rules.InstanceCanSnapshot],
  "alias": {"id": "instance_id"}}
 ]
 
@@ -68,8 +72,12 @@ def handle_web_exception(self, e):
         # TODO add some except pattern.
         if isinstance(e, exception.InstanceRebootFailure):
             raise webob.exc.HTTPForbidden(explanation=str(e))
+        if isinstance(e, exception.InstanceSnapshotFailure):
+            raise webob.exc.HTTPForbidden(explanation=str(e))
         raise webob.exc.HTTPBadRequest(explanation=str(e))
     elif isinstance(e, exception.Duplicate):
+        raise webob.exc.HTTPConflict(explanation=str(e))
+    elif isinstance(e, exception.InstanceBusy):
         raise webob.exc.HTTPConflict(explanation=str(e))
 
 
