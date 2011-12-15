@@ -356,6 +356,7 @@ class KeypairNameValid(BaseValidator):
     KeypairNameValid.
 
     Validate the keypair name is valid.
+    Validate the keypair does not exist.
     Require the 'keypair_name' parameter.
     """
     def validate_keypair_name(self, keypair_name):
@@ -369,6 +370,15 @@ class KeypairNameValid(BaseValidator):
         except Exception as e:
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
+        try:
+            try:
+                db.key_pair_get(self.context, self.context.user_id, keypair_name)
+                raise exception.KeyPairExists(key_name=keypair_name)
+            except exception.KeypairNotFound:
+                pass
+        except Exception as e:
+            raise webob.exc.HTTPConflict(explanation=str(e))
+
 
 class KeypairExists(BaseValidator):
     """
@@ -377,28 +387,9 @@ class KeypairExists(BaseValidator):
     Validate the keypair exists.
     Require the 'keypair_name' parameter.
     """
-    def validate_keypair_exists(self, keypair_name):
+    def validate_keypair_name(self, keypair_name):
         try:
             db.key_pair_get(self.context, self.context.user_id, keypair_name)
-        except Exception as e:
-            raise webob.exc.HTTPNotFound(explanation=str(e))
-
-
-
-class KeypairNotExist(BaseValidator):
-    """
-    KeypairNotExist.
-
-    Validate the keypair is not duplicate.
-    Require the 'keypair_name' parameter.
-    """
-    def validate_keypair_not_exist(self, keypair_name):
-        try:
-            try:
-                db.key_pair_get(self.context, self.context.user_id, keypair_name)
-                raise exception.KeyPairExists(key_name=keypair_name)
-            except exception.KeypairNotFound:
-                pass
         except Exception as e:
             raise webob.exc.HTTPNotFound(explanation=str(e))
 
@@ -411,6 +402,8 @@ class KeypairIsRsa(BaseValidator):
     Require the 'public_key' parameter.
     """
     def validate_public_key(self, public_key):
+        if public_key is None:
+            return
         try:
             try:
                 if len(public_key.split()) == 3:
