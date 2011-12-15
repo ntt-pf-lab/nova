@@ -206,16 +206,6 @@ class ImageNameValidAPI(BaseValidator):
             if len(image_name) > 255:
                 raise exception.InvalidParameterValue(
                                   err="Image name should less than 255.")
-    
-            service, _id = image.get_image_service(self.context, None)
-            try:
-                result = service.show_by_name(self.context, image_name)
-                if result:
-                    raise exception.ImageExist(image_id=image_name)
-            except Exception:
-                pass
-        except exception.ImageExist as e:
-            raise webob.exc.HTTPConflict(explanation=str(e))
         except Exception as e:
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
