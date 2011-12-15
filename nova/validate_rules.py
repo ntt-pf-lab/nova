@@ -31,7 +31,7 @@ from nova import image
 from nova import utils
 from nova.context import RequestContext
 from nova.compute import power_state, vm_states, task_states
-
+from nova import log as logger
 FLAGS = flags
 
 
@@ -359,12 +359,15 @@ class KeypairNameValid(BaseValidator):
     Require the 'keypair_name' parameter.
     """
     def validate_keypair_name(self, keypair_name):
-        if not keypair_name:
-            raise exception.InvalidParameterValue(
-                              err="name parameter required.")
-        if len(keypair_name) > 255:
-            raise exception.InvalidParameterValue(
-                              err="name parameter over 255 length.")
+        try:
+            if not keypair_name:
+                raise exception.InvalidParameterValue(
+                                  err="name parameter required.")
+            if len(keypair_name) > 255:
+                raise exception.InvalidParameterValue(
+                                  err="name parameter over 255 length.")
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
 class KeypairExists(BaseValidator):
@@ -375,7 +378,11 @@ class KeypairExists(BaseValidator):
     Require the 'keypair_name' parameter.
     """
     def validate_keypair_exists(self, keypair_name):
-        db.key_pair_get(self.context, self.context.user_id, keypair_name)
+        try:
+            db.key_pair_get(self.context, self.context.user_id, keypair_name)
+        except Exception as e:
+            raise webob.exc.HTTPNotFound(explanation=str(e))
+
 
 
 class KeypairNotExist(BaseValidator):
@@ -387,10 +394,13 @@ class KeypairNotExist(BaseValidator):
     """
     def validate_keypair_not_exist(self, keypair_name):
         try:
-            db.key_pair_get(self.context, self.context.user_id, keypair_name)
-            raise exception.KeyPairExists(key_name=keypair_name)
-        except exception.KeypairNotFound:
-            pass
+            try:
+                db.key_pair_get(self.context, self.context.user_id, keypair_name)
+                raise exception.KeyPairExists(key_name=keypair_name)
+            except exception.KeypairNotFound:
+                pass
+        except Exception as e:
+            raise webob.exc.HTTPNotFound(explanation=str(e))
 
 
 class KeypairIsRsa(BaseValidator):
@@ -402,14 +412,17 @@ class KeypairIsRsa(BaseValidator):
     """
     def validate_public_key(self, public_key):
         try:
-            if len(public_key.split()) == 3:
-                type, key_string, comment = public_key.split()
-            else:
-                type, key_string = public_key.split()
-            data = base64.decodestring(key_string)
-            int_len = 4
-            str_len = struct.unpack('>I', data[:int_len])[0]
-            if not data[int_len:int_len+str_len] == type:
+            try:
+                if len(public_key.split()) == 3:
+                    type, key_string, comment = public_key.split()
+                else:
+                    type, key_string = public_key.split()
+                data = base64.decodestring(key_string)
+                int_len = 4
+                str_len = struct.unpack('>I', data[:int_len])[0]
+                if not data[int_len:int_len+str_len] == type:
+                    raise exception.PublicKeyInvalid(public_key=public_key)
+            except Exception:
                 raise exception.PublicKeyInvalid(public_key=public_key)
-        except Exception:
-            raise exception.PublicKeyInvalid(public_key=public_key)
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))

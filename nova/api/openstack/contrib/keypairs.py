@@ -47,8 +47,7 @@ class KeypairController(object):
                 'public_key': public_key,
                 'fingerprint': fingerprint}
 
-    @validation.method(rules.KeypairNameValid, rules.KeypairNotExist,
-                       rules.PublicKeyValid,
+    @validation.method(rules.KeypairNameValid, rules.KeypairIsRsa,
                        resolver=validators.KeypairCreationResolver)
     def create(self, req, body):
         """
@@ -63,7 +62,6 @@ class KeypairController(object):
             name (required) - string
             public_key (optional) - string
         """
-
         context = req.environ['nova.context']
         params = body['keypair']
         name = params['name']
@@ -97,7 +95,7 @@ class KeypairController(object):
         db.key_pair_create(context, keypair)
         return {'keypair': keypair}
 
-    @validation.method(rules.KeypairRequire,
+    @validation.method(rules.KeypairExists,
                        alias={'id': 'keypair_name'})
     def delete(self, req, id):
         """
