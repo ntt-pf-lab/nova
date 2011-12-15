@@ -1872,7 +1872,7 @@ class FlatNetworkTestCase(test.TestCase):
         self.stubs.Set(db, 'network_delete_safe', stub_network_delete_safe)
         self.mox.ReplayAll()
 
-        self.network.delete_network(self.context, '10.0.0.0/29', True)
+        self.network.delete_network(self.context, '10.0.0.0/29', None, True)
         self.assertTrue(self._context)
         self.assertEqual(network.id, self._network_id)
 
@@ -1889,7 +1889,7 @@ class FlatNetworkTestCase(test.TestCase):
 
         self.assertRaises(ValueError,
                           self.network.delete_network,
-                          self.context, '10.0.0.0/29', True)
+                          self.context, '10.0.0.0/29', None, True)
 
     @attr(kind='small')
     def test_delete_network_db_network_not_found(self):
@@ -1902,7 +1902,7 @@ class FlatNetworkTestCase(test.TestCase):
 
         self.assertRaises(exception.NetworkNotFound,
                           self.network.delete_network,
-                          self.context, '10.0.0.0/29', True)
+                          self.context, '10.0.0.0/29', None, True)
 
     @attr(kind='small')
     def test_allocate_for_instance_param_requested_networks_is_none(self):
