@@ -420,7 +420,17 @@ class ComputeManager(manager.SchedulerDependentManager):
         instance['admin_pass'] = kwargs.get('admin_password', None)
 
         is_vpn = instance['image_ref'] == str(FLAGS.vpn_image_id)
-        network_info = _make_network_info()
+
+        try:
+            network_info = _make_network_info()
+        except:
+            LOG.exception(_("Making network is failed"))
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=vm_states.ERROR,
+                      task_state=None)
+            raise
+
         try:
             self._instance_update(context,
                                   instance_id,
@@ -443,6 +453,10 @@ class ComputeManager(manager.SchedulerDependentManager):
                         "virtualization enabled in the BIOS? Details: "
                         "%(ex)s") % locals()
                 LOG.exception(msg)
+                self._instance_update(context,
+                          instance_id,
+                          vm_state=vm_states.ERROR,
+                          task_state=None)
                 _deallocate_network()
                 return
 
@@ -497,9 +511,14 @@ class ComputeManager(manager.SchedulerDependentManager):
                   {'action_str': action_str, 'instance_id': instance_id},
                   context=context)
 
-        network_info = self._get_instance_nw_info(context, instance)
-        if not FLAGS.stub_network:
-            self.network_api.deallocate_for_instance(context, instance)
+        try:
+            network_info = self._get_instance_nw_info(context, instance)
+            if not FLAGS.stub_network:
+                self.network_api.deallocate_for_instance(context, instance)
+        except:
+            network_info = []
+            LOG.exception(_("Failed to deallocate network of instance %(instance_id)s.") %
+                          {'instance_id': instance_id}, context=context)
 
         volumes = instance.get('volumes') or []
         for volume in volumes:
@@ -629,7 +648,15 @@ class ComputeManager(manager.SchedulerDependentManager):
                      context=context)
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        self.driver.reboot(instance_ref, network_info)
+        try:
+            self.driver.reboot(instance_ref, network_info)
+        except Exception, e:
+            LOG.exception(_("snapshot instance error: %s") % e)
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=vm_states.ERROR,
+                      task_state=None)
+            raise
 
         current_power_state = self._get_power_state(context, instance_ref)
         self._instance_update(context,
@@ -679,7 +706,28 @@ class ComputeManager(manager.SchedulerDependentManager):
                        'instance: %(instance_id)s (state: %(state)s '
                        'expected: %(running)s)') % locals())
 
-        self.driver.snapshot(context, instance_ref, image_id)
+        try:
+            self.driver.snapshot(context, instance_ref, image_id)
+        except exception.InstanceNotFound:
+            LOG.exception(_("libvirtError at lookup instance by name"))
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=instance_ref['vm_state'],
+                      task_state=instance_ref['task_state'])
+            raise
+        except exception.Error:
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=instance_ref['vm_state'],
+                      task_state=instance_ref['task_state'])
+            raise
+        except Exception, e:
+            LOG.exception(_("snapshot instance error: %s") % e)
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=instance_ref['vm_state'],
+                      task_state=instance_ref['task_state'])
+            raise
         self._instance_update(context, instance_id, task_state=None)
 
         if image_type == 'snapshot' and rotation:

@@ -266,7 +266,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
         try:
             virt_dom = self._lookup_by_name(instance_name)
-        except exception.NotFound:
+        except (exception.NotFound, exception.Error):
             virt_dom = None
 
         # If the instance is already terminated, we're still happy
@@ -290,7 +290,6 @@ class LibvirtConnection(driver.ComputeDriver):
                                   "%(instance_name)s. Code=%(errcode)s "
                                   "Error=%(e)s") %
                                 locals())
-                    raise
 
             try:
                 # NOTE(justinsb): We remove the domain definition. We probably
@@ -303,7 +302,6 @@ class LibvirtConnection(driver.ComputeDriver):
                               "%(instance_name)s. Code=%(errcode)s "
                               "Error=%(e)s") %
                             locals())
-                raise
 
             for (network, mapping) in network_info:
                 self.vif_driver.unplug(instance, network, mapping)
@@ -471,7 +469,11 @@ class LibvirtConnection(driver.ComputeDriver):
 
         finally:
             # Clean up
-            shutil.rmtree(temp_dir)
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception, e:
+                snapshot_ptr.delete(0)
+                raise
             snapshot_ptr.delete(0)
 
     @exception.wrap_exception()
@@ -637,7 +639,9 @@ class LibvirtConnection(driver.ComputeDriver):
                 raise utils.LoopingCallDone
 
         timer = utils.LoopingCall(_wait_for_boot)
-        return timer.start(interval=0.5, now=True)
+        future = timer.start(interval=0.5, now=True)
+        future.wait()
+        return future
 
     def _flush_xen_console(self, virsh_output):
         LOG.info(_('virsh said: %r'), virsh_output)
