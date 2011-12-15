@@ -97,6 +97,35 @@ class FirewallDriver(object):
         raise NotImplementedError()
 
 
+class NullFirewallDriver(FirewallDriver):
+    def __init__(self, get_connection, **kwargs):
+        pass
+
+    def prepare_instance_filter(self, instance, network_info):
+        pass
+
+    def unfilter_instance(self, instance, network_info):
+        pass
+
+    def apply_instance_filter(self, instance, network_info):
+        pass
+
+    def refresh_security_group_rules(self, security_group_id):
+        pass
+
+    def refresh_security_group_members(self, security_group_id):
+        pass
+
+    def refresh_provider_fw_rules(self):
+        pass
+
+    def setup_basic_filtering(self, instance, network_info):
+        pass
+
+    def instance_filter_exists(self, instance, network_info):
+        return True
+
+
 class NWFilterFirewall(FirewallDriver):
     """
     This class implements a network filtering mechanism versatile
