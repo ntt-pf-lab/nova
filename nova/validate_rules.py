@@ -159,12 +159,15 @@ class InstanceCanReboot(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
-        instance = db.instance_get(self.context, instance_id)
-        # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
-        if instance["vm_state"] == vm_states.ACTIVE:
-            if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
-                return
-        raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
+        try:
+            instance = db.instance_get(self.context, instance_id)
+            # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
+            if instance["vm_state"] == vm_states.ACTIVE:
+                if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
+                    return
+            raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
+        except Exception as e:
+            raise webob.exc.HTTPForbidden(explanation=str(e))
 
 
 class ImageNameValid(BaseValidator):

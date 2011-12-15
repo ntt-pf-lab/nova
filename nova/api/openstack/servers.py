@@ -328,6 +328,8 @@ class Controller(object):
     def _action_resize(self, input_dict, req, id):
         return exc.HTTPNotImplemented()
 
+    @validation.method(validate_rules.InstanceCanReboot,
+                       alias={"id": "instance_id"})
     def _action_reboot(self, input_dict, req, id):
         if 'reboot' in input_dict and 'type' in input_dict['reboot']:
             valid_reboot_types = ['HARD', 'SOFT']
