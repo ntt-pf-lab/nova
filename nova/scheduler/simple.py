@@ -54,8 +54,7 @@ class SimpleScheduler(chance.ChanceScheduler):
             # TODO(vish): this probably belongs in the manager, if we
             #             can generalize this somehow
             now = utils.utcnow()
-            db.instance_update(context, instance_id, {'host': host,
-                                                      'scheduled_at': now})
+            db.instance_update(context, instance_id, {'scheduled_at': now})
             return host
         results = db.service_get_all_compute_sorted(context)
         for result in results:
@@ -68,12 +67,17 @@ class SimpleScheduler(chance.ChanceScheduler):
                 now = utils.utcnow()
                 db.instance_update(context,
                                    instance_id,
-                                   {'host': service['host'],
-                                    'scheduled_at': now})
+                                   {'scheduled_at': now})
                 return service['host']
         raise driver.NoValidHost(_("Scheduler was unable to locate a host"
                                    " for this request. Is the appropriate"
                                    " service running?"))
+
+    def schedule_prep_resize(self, context, instance_id, *_args, **_kwargs):
+        # note: instance_id here is uuid
+        instance_ref = db.instance_get_by_uuid(context, instance_id)
+        return self._schedule_instance(context, instance_ref['id'], 
+                     *_args, **_kwargs)
 
     def schedule_run_instance(self, context, instance_id, *_args, **_kwargs):
         return self._schedule_instance(context, instance_id, *_args, **_kwargs)

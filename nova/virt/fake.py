@@ -202,7 +202,8 @@ class FakeConnection(driver.ComputeDriver):
         else:
             raise exception.InstanceNotFound
 
-    def destroy(self, instance, network_info, cleanup=True):
+    def destroy(self, instance, network_info, cleanup=True,
+                confirm_resize=False):
         key = instance['name']
         if key in self.instances:
             del self.instances[key]

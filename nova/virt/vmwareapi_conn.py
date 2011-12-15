@@ -137,7 +137,8 @@ class VMWareESXConnection(driver.ComputeDriver):
         """Reboot VM instance."""
         self._vmops.reboot(instance, network_info)
 
-    def destroy(self, instance, network_info, cleanup=True):
+    def destroy(self, instance, network_info, cleanup=True,
+                 confirm_resize=False):
         """Destroy VM instance."""
         self._vmops.destroy(instance, network_info)
 

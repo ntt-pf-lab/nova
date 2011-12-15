@@ -217,7 +217,8 @@ class XenAPIConnection(driver.ComputeDriver):
         """
         self._vmops.inject_file(instance, b64_path, b64_contents)
 
-    def destroy(self, instance, network_info, cleanup=True):
+    def destroy(self, instance, network_info, cleanup=True,
+                  confirm_resize=False):
         """Destroy VM instance"""
         self._vmops.destroy(instance, network_info)
 

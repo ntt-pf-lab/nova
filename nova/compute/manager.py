@@ -85,6 +85,8 @@ flags.DEFINE_integer("rescue_timeout", 0,
                      " Set to 0 to disable.")
 flags.DEFINE_integer('host_state_interval', 120,
                      'Interval in seconds for querying the host status')
+flags.DEFINE_bool('available_same_host_resize', False,
+                     'available same host resize')
 
 LOG = logging.getLogger('nova.compute.manager')
 
@@ -871,7 +873,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                 migration_ref.instance_uuid)
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        self.driver.destroy(instance_ref, network_info)
+        self.driver.destroy(instance_ref, network_info, confirm_resize=True)
         usage_info = utils.usage_from_instance(instance_ref)
         notifier.notify('compute.%s' % self.host,
                             'compute.instance.resize.confirm',
@@ -926,7 +928,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                               local_gb=instance_type['local_gb'],
                               instance_type_id=instance_type['id'])
 
-        self.driver.revert_migration(instance_ref)
+        network_info = self._get_instance_nw_info(context, instance_ref)
+        self.driver.revert_migration(instance_ref, network_info)
         self.db.migration_update(context, migration_id,
                 {'status': 'reverted'})
         usage_info = utils.usage_from_instance(instance_ref)
@@ -950,7 +953,8 @@ class ComputeManager(manager.SchedulerDependentManager):
         # of the instance down
         instance_ref = self.db.instance_get_by_uuid(context, instance_id)
 
-        if instance_ref['host'] == FLAGS.host:
+        if instance_ref['host'] == FLAGS.host and \
+              not FLAGS.available_same_host_resize:
             self._instance_update(context,
                                   instance_id,
                                   vm_state=vm_states.ERROR)
