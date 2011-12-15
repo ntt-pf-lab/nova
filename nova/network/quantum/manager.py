@@ -20,6 +20,7 @@ import time
 from netaddr import IPNetwork, IPAddress
 
 from nova import db
+from nova import context
 from nova import exception
 from nova import flags
 from nova import log as logging
@@ -78,6 +79,22 @@ class QuantumManager(manager.FlatManager):
         # self.driver.ensure_metadata_ip()
         # self.driver.metadata_forward()
 
+    def init_host(self):
+        if FLAGS.quantum_use_dhcp:
+            ctxt = context.get_admin_context()
+            networks = db.network_get_all(ctxt) \
+                         if db.network_count(ctxt) > 0 else []
+            for net in networks:
+                # set up dnsmasq for only used networks
+                if self.get_dhcp_hosts_text(ctxt, net['uuid'], None) \
+                    == "":
+                    continue
+                vif_rec = {'uuid': None}  # dummy
+                self.enable_dhcp(ctxt, net['uuid'], net, vif_rec, None)
+
+        # NOTE(oda): actually do nothing, so maybe OK not to call this.
+        super(QuantumManager, self).init_host()
+ 
     def create_networks(self, context, label, cidr, multi_host, num_networks,
                         network_size, cidr_v6, gateway, gateway_v6, bridge,
                         bridge_interface, dns1=None, dns2=None, uuid=None,
@@ -279,26 +296,25 @@ class QuantumManager(manager.FlatManager):
             # If we haven't then we need to intiialize it and create
             # it.  This device will be the one serving dhcp via
             # dnsmasq.
+            if not self.driver.device_exists(interface_id):
+                mac_address = self.generate_mac_address()
+                is_gw = (network_ref['gateway'] != network_ref['dhcp_server'])
+                self.driver.plug(network_ref, mac_address,
+                    gateway=is_gw)
+                self.driver.initialize_gateway_device(interface_id, network_ref)
+                LOG.debug("Intializing DHCP for network: %s" %
+                    network_ref)
             q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
             port = self.q_conn.get_port_by_attachment(q_tenant_id,
                     quantum_net_id, interface_id)
-            if not port:  # No dhcp server has been started
-                mac_address = self.generate_mac_address()
-                is_gw = (network_ref['gateway'] != network_ref['dhcp_server'])
-                dev = self.driver.plug(network_ref, mac_address,
-                    gateway=is_gw)
-                self.driver.initialize_gateway_device(dev, network_ref)
-                LOG.debug("Intializing DHCP for network: %s" %
-                    network_ref)
+            if not port:
                 self.q_conn.create_and_attach_port(q_tenant_id,
                         quantum_net_id, interface_id)
-            else:  # We've already got one and its plugged in
-                dev = interface_id
 
             hosts = self.get_dhcp_hosts_text(context,
                 subnet['network_id'], project_id)
-            self.driver.update_dhcp_hostfile_with_text(dev, hosts)
-            self.driver.restart_dhcp(dev, network_ref)
+            self.driver.update_dhcp_hostfile_with_text(interface_id, hosts)
+            self.driver.restart_dhcp(interface_id, network_ref)
 
     def get_instance_nw_info(self, context, instance_id,
                                 instance_type_id, host):
