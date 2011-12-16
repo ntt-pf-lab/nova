@@ -131,6 +131,7 @@ class QuantumClientConnectionTestCase(test.TestCase):
 
         self.assertEqual(None, ref)
 
+    @attr(kind='small')
     def test_get_port_by_attachment(self):
         """Test for nova.network.quantum.quantum_connection.
         QuantumClientConnection.get_port_by_attachment. """
@@ -148,11 +149,11 @@ class QuantumClientConnectionTestCase(test.TestCase):
                        'do_request', fake_do_request)
 
         ref = self.quantumclientconnection.get_port_by_attachment(
-                                        tenant_id=1, attachment_id=2)
+                          tenant_id=1, net_id=3, attachment_id=2)
 
-        self.assertEqual('network_id', ref[0])
-        self.assertEqual('port_id', ref[1])
+        self.assertEqual('port_id', ref)
 
+    @attr(kind='small')
     def test_get_port_by_attachment_parameter(self):
         """Test for nova.network.quantum.quantum_connection.
         QuantumClientConnection.get_port_by_attachment. """
@@ -170,7 +171,6 @@ class QuantumClientConnectionTestCase(test.TestCase):
                        'do_request', fake_do_request)
 
         ref = self.quantumclientconnection.get_port_by_attachment(
-                                        tenant_id=1, attachment_id=99)
+                        tenant_id=1, net_id=3, attachment_id=99)
 
-        self.assertEqual(None, ref[0])
-        self.assertEqual(None, ref[1])
+        self.assertEqual(None, ref)
