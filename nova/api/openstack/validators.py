@@ -86,11 +86,7 @@ MAPPING = [
  "method": "create",
  "validators": [rules.InstanceNameValid, rules.ImageRequire,
                 rules.FlavorRequire, rules.ZoneNameValid],
- "resolver": InstanceCreationResolver},
-{"cls": "images.Controller",
- "method": "delete",
- "validators": [rules.ImageRequire],
- "alias": {"id": "image_id"}}
+ "resolver": InstanceCreationResolver}
 ]
 
 

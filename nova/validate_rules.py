@@ -289,10 +289,31 @@ class ImageRequire(BaseValidator):
                 raise exception.InvalidParameterValue("Specified image id is too large.")
         except TypeError:
             raise exception.InvalidParameterValue("Specified image id is not digit.")
-        service = image.get_default_image_service()
-        result = service.show(self.context, image_id)
-        if result is None:
-            raise exception.ImageNotFound(image_id=image_id)
+
+
+class ImageRequireAPI(BaseValidator):
+    """
+    ImageRequire for API.
+
+    Validate the image is exists.
+    Require the 'image_id' parameter.
+    """
+    def validate_image_id(self, image_id):
+        try:
+            try:
+                num = int(image_id)
+                if num < 1:
+                    raise exception.InvalidParameterValue("Specified image id is not positive value.")
+                elif num > sys.maxint:
+                    raise exception.InvalidParameterValue("Specified image id is too large.")
+            except TypeError:
+                raise exception.InvalidParameterValue("Specified image id is not digit.")
+            service = image.get_default_image_service()
+            result = service.show(self.context, image_id)
+            if result is None:
+                raise exception.ImageNotFound(image_id=image_id)
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
 class ImageMetadataRequire(BaseValidator):
