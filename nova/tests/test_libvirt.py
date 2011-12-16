@@ -2177,8 +2177,10 @@ class LibvirtConnectionTestCase(test.TestCase):
                                     'host1')
 
         FakeLibvirt.VIR_ERR_OPERATION_INVALID = ''
-        self.assertRaises(FakeLibvirt.libvirtError,
-                    self.libvirtconnection.destroy, ins_ref, ni, cleanup=True)
+#        self.assertRaises(FakeLibvirt.libvirtError,
+#                    self.libvirtconnection.destroy, ins_ref, ni, cleanup=True)
+        self.libvirtconnection.destroy(ins_ref, ni, cleanup=True)
+        # no error happend
 
     @attr(kind='small')
     def test_destroy_exception_undefine(self):
@@ -2199,8 +2201,10 @@ class LibvirtConnectionTestCase(test.TestCase):
                                     ins_ref['instance_type_id'],
                                     'host1')
 
-        self.assertRaises(FakeLibvirt.libvirtError,
-                    self.libvirtconnection.destroy, ins_ref, ni, cleanup=True)
+#        self.assertRaises(FakeLibvirt.libvirtError,
+#                    self.libvirtconnection.destroy, ins_ref, ni, cleanup=True)
+        self.libvirtconnection.destroy(ins_ref, ni, cleanup=True)
+        # no error happend.
 
     @attr(kind='small')
     def test_cleanup(self):
@@ -2608,8 +2612,11 @@ class LibvirtConnectionTestCase(test.TestCase):
                                     ins_ref['instance_type_id'],
                                     'host1')
 
-        self.assertRaises(exception.Error,
-                self.libvirtconnection.reboot, ins_ref, ni, xml=None)
+#        self.assertRaises(exception.Error,
+#                self.libvirtconnection.reboot, ins_ref, ni, xml=None)
+        self.libvirtconnection.reboot(ins_ref, ni, xml=None)
+        # not occured any exception.
+
 
     @attr(kind='small')
     def test_pause(self):

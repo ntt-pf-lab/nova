@@ -62,10 +62,10 @@ class EventLogsController(object):
                 value = req.str_params.get(param)
 
                 if param == 'type' and value not in LOG_TYPES:
-                    err_str = _("Invalid log type: %s") % str(value)
+                    err_str = "Invalid log type: %s" % str(value)
                     raise webob.exc.HTTPBadRequest(explanation=err_str)
                 if param in ['limit', 'offset', 'marker']:
-                    err_str = _("Invalid %s: %s") % (param, str(value))
+                    err_str = "Invalid %s: %s" % (param, str(value))
                     try:
                         value = int(value)
                     except  ValueError:

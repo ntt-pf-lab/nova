@@ -1705,8 +1705,8 @@ class ServersTest(test.TestCase):
         self._setup_for_create_instance()
 
         # proper local hrefs must start with 'http://localhost/v1.1/'
-        image_href = 'http://localhost/v1.1/123/images/2'
-        flavor_ref = 'http://localhost/123/flavors/3'
+        image_href = 'http://localhost/v1.1/fake/images/2'
+        flavor_ref = 'http://localhost/fake/flavors/3'
         access_ipv4 = '1.2.3.4'
         access_ipv6 = 'fead::1234'
         expected_flavor = {
@@ -1714,7 +1714,7 @@ class ServersTest(test.TestCase):
             "links": [
                 {
                     "rel": "bookmark",
-                    "href": 'http://localhost/123/flavors/3',
+                    "href": 'http://localhost/fake/flavors/3',
                 },
             ],
         }
@@ -1723,7 +1723,7 @@ class ServersTest(test.TestCase):
             "links": [
                 {
                     "rel": "bookmark",
-                    "href": 'http://localhost/123/images/2',
+                    "href": 'http://localhost/fake/images/2',
                 },
             ],
         }
