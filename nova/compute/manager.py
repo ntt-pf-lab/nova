@@ -647,8 +647,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                      'expected: %(running)s)') % locals(),
                      context=context)
 
-        network_info = self._get_instance_nw_info(context, instance_ref)
         try:
+            network_info = self._get_instance_nw_info(context, instance_ref)
             self.driver.reboot(instance_ref, network_info)
         except Exception, e:
             LOG.exception(_("snapshot instance error: %s") % e)
