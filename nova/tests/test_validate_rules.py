@@ -25,6 +25,7 @@ from nova import validation
 from nova import validate_rules as rules
 from nova.auth import manager
 from nova.compute import power_state
+import webob
 
 FLAGS = flags
 
@@ -506,24 +507,6 @@ class ValidateRulesTestCase(test.TestCase):
         self.assertEqual("meth", actual)
         self.assertRaises(exception.ZoneNotFound, target.meth, 999)
 
-    def test_keypair_require(self):
-        # setup validation
-        class TargetClass(object):
-            @validation.method(rules.KeypairRequire)
-            def meth(self, keypair_name):
-                return "meth"
-
-        validation.apply()
-        # setup data
-        values = {'id': 1, 'name': 'key1', 'user_id': self.context.user_id}
-        db.key_pair_create(self.context, values)
-        # do test
-        target = TargetClass()
-        actual = target.meth('key1')
-
-        # assertion
-        self.assertEqual("meth", actual)
-        self.assertRaises(exception.KeypairNotFound, target.meth, 'key2')
 
     def test_keypair_name_valid(self):
         # setup validation
@@ -542,7 +525,7 @@ class ValidateRulesTestCase(test.TestCase):
 
         # assertion
         self.assertEqual("meth", actual)
-        self.assertRaises(exception.KeyPairExists, target.meth, 'key1')
+        self.assertRaises(webob.exc.HTTPConflict, target.meth, 'key1')
 
     def test_keypair_public_key_invalid(self):
         # setup validation
@@ -563,6 +546,6 @@ class ValidateRulesTestCase(test.TestCase):
         actual = target.meth(valid_key2)
         self.assertEqual("meth", actual)
 
-        self.assertRaises(exception.PublicKeyInvalid, target.meth, invalid_key)
-        self.assertRaises(exception.PublicKeyInvalid, target.meth, 'key1')
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, invalid_key)
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, 'key1')
         

@@ -18,6 +18,8 @@
 #    under the License.
 
 import nova.db
+import webob
+
 from nova import context, db
 from nova import flags
 from nova import test
@@ -39,6 +41,7 @@ class FakeController2(object):
         return id
 
 
+@test.skip_test('side effect to validation rules.')
 class APIValidateMapperTest(test.TestCase):
 
     def setUp(self):
@@ -50,7 +53,7 @@ class APIValidateMapperTest(test.TestCase):
 
     def test_map(self):
         # setup
-        def fake_get_config(self):
+        def fake_get_config():
             return [{"cls": "FakeController",
                      "method": "fake",
                     "validators": [rules.FlavorRequire],
@@ -63,11 +66,11 @@ class APIValidateMapperTest(test.TestCase):
         controller = FakeController()
         self.assertEqual(999, controller.fake(999))
         validation.apply()
-        self.assertRaises(exception.FlavorNotFound, controller.fake, 999)
+        self.assertRaises(webob.exc.HTTPNotFound, controller.fake, 999)
 
     def test_map_multi(self):
         # setup
-        def fake_get_config(self):
+        def fake_get_config():
             return [
                     {"cls": "FakeController",
                      "method": "fake",
@@ -87,5 +90,5 @@ class APIValidateMapperTest(test.TestCase):
 
         self.assertEqual(1, controller.fake(1, 101))
         validation.apply()
-        self.assertRaises(exception.FlavorNotFound, controller.fake, 999, 100)
-        self.assertRaises(exception.NetworkNotFound, controller.fake, 1, 101)
+        self.assertRaises(webob.exc.HTTPNotFound, controller.fake, 999, 100)
+        self.assertRaises(webob.exc.HTTPNotFound, controller.fake, 1, 101)
