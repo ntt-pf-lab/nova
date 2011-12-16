@@ -868,7 +868,7 @@ class ImageTooLarge(NovaException):
 
 
 class PublicKeyInvalid(Invalid):
-    message = _("Import key is not ssh-rsa format. %(public_key)")
+    message = _("Import key is not ssh-rsa format. %(public_key)s")
 
 
 class ZoneRequestError(Error):
