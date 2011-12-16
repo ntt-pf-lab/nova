@@ -874,6 +874,12 @@ def wire_HTTPConnection_to_WSGI(host, app):
             else:
                 return self.wrapped(connection_host, *args, **kwargs)
 
+        def request(self, method, url, body=None, headers={}):
+            pass
+
+        def getresponse(self, buffering=False):
+            pass
+
     httplib.HTTPConnection = HTTPConnectionDecorator(httplib.HTTPConnection)
 
 
