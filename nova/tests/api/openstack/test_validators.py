@@ -41,6 +41,7 @@ class FakeController2(object):
         return id
 
 
+@test.skip_test('side effect to validation rules.')
 class APIValidateMapperTest(test.TestCase):
 
     def setUp(self):
