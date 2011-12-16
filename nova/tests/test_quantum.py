@@ -488,7 +488,8 @@ class QuantumManagerTestCase(test.TestCase):
     @attr(kind='small')
     def test_deallocate_for_instance_exception_net_not_found(self):
         """Test for quantum.manager.QuantumManager.deallocate_for_instance"""
-        def fake_get_port_by_attachment(self, tenant_id, attachment_id):
+        def fake_get_port_by_attachment(self, tenant_id, net_id,
+                                            attachment_id):
             return (None, None)
 
         self.stubs.Set(quantum_connection.QuantumClientConnection,
@@ -505,13 +506,15 @@ class QuantumManagerTestCase(test.TestCase):
 
         param = dict(instance_id=ins_ref['id'])
 
-        self.quantummanager.deallocate_for_instance(
+        self.assertRaises(Exception,
+            self.quantummanager.deallocate_for_instance,
                 context=context.get_admin_context(), **param)
 
     @attr(kind='small')
     def test_deallocate_for_instance_exception_no_instance(self):
         """Test for quantum.manager.QuantumManager.deallocate_for_instance"""
-        def fake_get_port_by_attachment(self, tenant_id, attachment_id):
+        def fake_get_port_by_attachment(self, tenant_id, net_id,
+                                            attachment_id):
             return (1, 999)
 
         self.stubs.Set(quantum_connection.QuantumClientConnection,
@@ -569,7 +572,7 @@ class QuantumManagerTestCase(test.TestCase):
         self.stubs.Set(self.quantummanager.ipam,
                        'verify_subnet_exists', fake_verify_subnet_exists)
 
-        na = [('127.0.0.1', 1)]
+        na = [dict(uuid='127.0.0.1')]
         self.assertRaises(exception.NetworkNotFound,
             self.quantummanager.validate_networks,
                 context=context.get_admin_context(), networks=na)

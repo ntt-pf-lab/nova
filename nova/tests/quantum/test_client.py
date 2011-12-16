@@ -350,6 +350,7 @@ class ClientTestCase(test.TestCase):
                                       status_code=None)
         self.assertEqual(dict(key1='abc'), ref)
 
+    @test.skip_test('has no status_code parameter checking in this release')
     @attr(kind='small')
     def test_deserialize_parameter(self):
         """Test for nova.network.quantum.client.Client.deserialize"""
