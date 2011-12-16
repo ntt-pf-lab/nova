@@ -119,6 +119,12 @@ class ClientTestCase(test.TestCase):
     """Test for nova.network.quantum.client.Client"""
     def setUp(self):
         super(ClientTestCase, self).setUp()
+        try:
+            if getattr(httplib.HTTPConnection,'wrapped'):
+                httplib.HTTPConnection = getattr(httplib.HTTPConnection,'wrapped')
+        except Exception:
+            pass
+
         self.client = client.Client()
 
     @attr(kind='small')

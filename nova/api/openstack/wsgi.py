@@ -488,9 +488,7 @@ class Resource(wsgi.Application):
 
         project_id = args.pop("project_id", None)
         if 'nova.context' in request.environ and project_id:
-            context = request.environ['nova.context']
-            if not context.project_id:
-                context.project_id = project_id
+            request.environ['nova.context'].project_id = project_id
 
         try:
             action_result = self.dispatch(request, action, args)

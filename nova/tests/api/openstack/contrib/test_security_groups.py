@@ -272,7 +272,7 @@ class TestSecurityGroups(test.TestCase):
         expected = {'security_groups': [
                     {'id': 1,
                             'name':"default",
-                            'tenant_id': "fake",
+                            'tenant_id': "123",
                             "description":"default",
                             "rules": []
                        },
@@ -282,7 +282,7 @@ class TestSecurityGroups(test.TestCase):
                     {
                         'id': 2,
                         'name': "test",
-                        'tenant_id': "fake",
+                        'tenant_id': "123",
                         "description": "group-description",
                         "rules": []
                     }
@@ -308,7 +308,7 @@ class TestSecurityGroups(test.TestCase):
                       'security_group': {
                           'id': 2,
                           'name': "test",
-                          'tenant_id': "fake",
+                          'tenant_id': "123",
                           'description': "group-description",
                           'rules': []
                        }
