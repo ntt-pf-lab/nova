@@ -142,9 +142,10 @@ class LibvirtOpenVswitchDriver(VIFDriver):
         the bridge."""
         dev = self.get_dev_name(mapping['vif_uuid'])
         try:
-            utils.execute('ovs-vsctl', 'del-port',
+            utils.execute('ovs-vsctl', '--', '--if-exists', 'del-port',
                           FLAGS.libvirt_ovs_bridge, dev, run_as_root=True)
-            utils.execute('ip', 'link', 'delete', dev, run_as_root=True)
+            if linux_net.device_exists(dev):
+                utils.execute('ip', 'link', 'delete', dev, run_as_root=True)
         except exception.ProcessExecutionError:
             LOG.warning(_("Failed while unplugging vif of instance '%s'"),
                         instance['name'])

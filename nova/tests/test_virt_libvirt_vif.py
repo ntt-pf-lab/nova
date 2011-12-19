@@ -359,18 +359,27 @@ class LibvirtOpenVswitchDriverTestCase(test.TestCase):
     @attr(kind='small')
     def test_unplug(self):
         """Test for nova.virt.libvirt.vif.LibvirtOpenVswitchDriver.unplug. """
+        self.stub_linux_flg = False
         self.stub_flg = False
         self.stub_num = 0
+
+        def fake_linux_net_device_exists(*args, **kwargs):
+            self.stub_linux_flg = True
+            return True
 
         def fake_utils_execute(*args, **kwargs):
             self.stub_num += 1
             if self.stub_num == 2:
                 self.stub_flg = True
 
+        self.stubs.Set(linux_net,
+                       'device_exists',
+                       fake_linux_net_device_exists)
         self.stubs.Set(utils, 'execute', fake_utils_execute)
         self.libvirtopenvswitchdriver.unplug(instance=instances[1],
                                              network=networks[0],
                                              mapping=info[0])
+        self.assert_(self.stub_linux_flg)
         self.assert_(self.stub_flg)
 
     @attr(kind='small')
