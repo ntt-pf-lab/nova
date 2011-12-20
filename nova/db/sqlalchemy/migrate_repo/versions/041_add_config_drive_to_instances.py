@@ -26,16 +26,13 @@ instances = Table("instances", meta,
 
 # matches the size of an image_ref
 config_drive_column = Column("config_drive", String(255), nullable=True)
-config_drive_id_column = Column("config_drive_id", String(255), nullable=True)
 
 
 def upgrade(migrate_engine):
     meta.bind = migrate_engine
     instances.create_column(config_drive_column)
-    instances.create_column(config_drive_id_column)
 
 
 def downgrade(migrate_engine):
     meta.bind = migrate_engine
     instances.drop_column(config_drive_column)
-    instances.drop_column(config_drive_id_column)
