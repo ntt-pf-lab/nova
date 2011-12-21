@@ -33,6 +33,7 @@ from nova.network import quantum
 from nova.network.quantum import quantum_connection
 from nova import flags
 from nova.compute import instance_types
+import mox
 
 FLAGS = flags.FLAGS
 
@@ -270,35 +271,7 @@ class QuantumTestCaseBase(object):
 
         self._delete_nets()
 
-    def test_allocate_and_deallocate_instance_dynamic(self):
-        self._create_nets()
-        project_id = "fake_project2"
-        ctx = context.RequestContext('user1', project_id)
-
-        net_ids = self.net_man.q_conn.get_networks_for_tenant(project_id)
-        requested_networks = [{'uuid': net_id, 'fixed_ip': None, 'gw': True}
-                              for net_id in net_ids['networks']]
-
-        self.net_man.validate_networks(ctx, requested_networks)
-
-        instance_ref = db.api.instance_create(ctx,
-                                    {"project_id": project_id})
-
-        def func(arg1, arg2):
-            pass
-
-        def func1(arg1):
-            pass
-
-        self.net_man.driver.update_dhcp_hostfile_with_text = func
-        self.net_man.driver.restart_dhcp = func
-        self.net_man.driver.kill_dhcp = func1
-        nw_info = self.net_man.allocate_for_instance(ctx,
-                        instance_id=instance_ref['id'], host="",
-                        instance_type_id=instance_ref['instance_type_id'],
-                        project_id=project_id,
-                        requested_networks=requested_networks)
-
+    def _check_allocated_nw_info(self, nw_info):
         self.assertEquals(len(nw_info), 2)
 
         # we don't know which order the NICs will be in until we
@@ -329,6 +302,125 @@ class QuantumTestCaseBase(object):
             nw_info[0][1]['ip6s'][0]['ip'].startswith("2001:1db9:") or
             nw_info[1][1]['ip6s'][0]['ip'].startswith("2001:1db9:"))
 
+    def test_allocate_and_deallocate_instance_dynamic(self):
+        self._create_nets()
+        project_id = "fake_project2"
+        ctx = context.RequestContext('user1', project_id)
+
+        net_ids = self.net_man.q_conn.get_networks_for_tenant(project_id)
+        requested_networks = [{'uuid': net_id, 'fixed_ip': None, 'gw': True}
+                              for net_id in net_ids['networks']]
+
+        self.net_man.validate_networks(ctx, requested_networks)
+
+        instance_ref = db.api.instance_create(ctx,
+                                    {"project_id": project_id})
+
+        def func(arg1, arg2):
+            pass
+
+        def func1(arg1):
+            pass
+
+        self.net_man.driver.update_dhcp_hostfile_with_text = func
+        self.net_man.driver.restart_dhcp = func
+        self.net_man.driver.kill_dhcp = func1
+        nw_info = self.net_man.allocate_for_instance(ctx,
+                        instance_id=instance_ref['id'], host="",
+                        instance_type_id=instance_ref['instance_type_id'],
+                        project_id=project_id,
+                        requested_networks=requested_networks)
+
+        self._check_allocated_nw_info(nw_info)
+
+        self.net_man.deallocate_for_instance(ctx,
+                    instance_id=instance_ref['id'],
+                    project_id=project_id)
+
+        self._delete_nets()
+
+    def test_allocate_and_deallocate_instance_dhcp(self):
+        self.flags(quantum_use_dhcp=True)
+        self._create_nets()
+        project_id = "fake_project2"
+        ctx = context.RequestContext('user1', project_id)
+        net_ids = self.net_man.q_conn.get_networks_for_tenant(project_id)
+        requested_networks = [{'uuid': net_id, 'fixed_ip': None, 'gw': True}
+                              for net_id in net_ids['networks']]
+        self.net_man.validate_networks(ctx, requested_networks)
+
+        instance_ref = db.api.instance_create(ctx,
+                                    {"project_id": project_id})
+
+        def func1(arg1):
+            pass
+
+        self.net_man.driver.kill_dhcp = func1
+
+        self.mox.StubOutWithMock(self.net_man.driver,
+                                 "update_dhcp_hostfile_with_text")
+        self.mox.StubOutWithMock(self.net_man.driver,
+                                 "restart_dhcp")
+        self.net_man.driver.update_dhcp_hostfile_with_text(mox.IgnoreArg(),
+            mox.Regex(',9\.0\.0\.\d+$|,192\.168\.1\.\d+$')).MultipleTimes()
+        self.net_man.driver.restart_dhcp(mox.IgnoreArg(),
+                                         mox.IgnoreArg()).MultipleTimes()
+        self.net_man.driver.update_dhcp_hostfile_with_text(mox.IgnoreArg(),
+            '').MultipleTimes()
+        self.mox.ReplayAll()
+        nw_info = self.net_man.allocate_for_instance(ctx,
+                        instance_id=instance_ref['id'], host="",
+                        instance_type_id=instance_ref['instance_type_id'],
+                        project_id=project_id,
+                        requested_networks=requested_networks)
+
+        self._check_allocated_nw_info(nw_info)
+
+        self.net_man.deallocate_for_instance(ctx,
+                    instance_id=instance_ref['id'],
+                    project_id=project_id)
+
+        self._delete_nets()
+
+    def test_allocate_and_deallocate_instance_dhcp_nogw(self):
+        self.flags(quantum_use_dhcp=True)
+        self._create_nets()
+        project_id = "fake_project2"
+        ctx = context.RequestContext('user1', project_id)
+
+        net_ids = self.net_man.q_conn.get_networks_for_tenant(project_id)
+        requested_networks = [{'uuid': net_id, 'fixed_ip': None, 'gw': False}
+                              for net_id in net_ids['networks']]
+
+        self.net_man.validate_networks(ctx, requested_networks)
+
+        instance_ref = db.api.instance_create(ctx,
+                                    {"project_id": project_id})
+
+        def func1(arg1):
+            pass
+
+        self.net_man.driver.kill_dhcp = func1
+
+        self.mox.StubOutWithMock(self.net_man.driver,
+                                 "update_dhcp_hostfile_with_text")
+        self.mox.StubOutWithMock(self.net_man.driver,
+                                 "restart_dhcp")
+        self.net_man.driver.update_dhcp_hostfile_with_text(mox.IgnoreArg(),
+            mox.Regex(',9\.0\.0\.\d+,set:nor$|,192\.168\.1\.\d+,set:nor$')).MultipleTimes()
+        self.net_man.driver.restart_dhcp(mox.IgnoreArg(),
+                                         mox.IgnoreArg()).MultipleTimes()
+        self.net_man.driver.update_dhcp_hostfile_with_text(mox.IgnoreArg(),
+            '').MultipleTimes()
+        self.mox.ReplayAll()
+        nw_info = self.net_man.allocate_for_instance(ctx,
+                        instance_id=instance_ref['id'], host="",
+                        instance_type_id=instance_ref['instance_type_id'],
+                        project_id=project_id,
+                        requested_networks=requested_networks)
+
+        self._check_allocated_nw_info(nw_info)
+
         self.net_man.deallocate_for_instance(ctx,
                     instance_id=instance_ref['id'],
                     project_id=project_id)
@@ -347,6 +439,7 @@ class QuantumNovaIPAMTestCase(QuantumTestCaseBase, test.TestCase):
     def setUp(self):
         super(QuantumNovaIPAMTestCase, self).setUp()
 
+        self.flags(network_manager="nova.network.quantum.manager.QuantumManager")
         self.net_man = quantum_manager.QuantumManager(
                 ipam_lib="nova.network.quantum.nova_ipam_lib",
                 q_conn=FakeQuantumClientConnection())
