@@ -659,6 +659,8 @@ class ControllerV11(Controller):
     """v1.1 OpenStack API controller"""
 
     @scheduler_api.redirect_handler
+    @validation.method(validate_rules.InstanceCanDestroy,
+                       alias={"id": "instance_id"})
     def delete(self, req, id):
         """ Destroys a server """
         try:

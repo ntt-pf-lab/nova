@@ -294,6 +294,10 @@ class InstanceSnapshotFailure(Invalid):
     message = _("Failed to snapshot instance") + ": %(reason)s"
 
 
+class InstanceDestroyFailure(Invalid):
+    message = _("Failed to destroy instance") + ": %(reason)s"
+
+
 class ServiceUnavailable(Invalid):
     message = _("Service is unavailable at this time.")
 

@@ -210,16 +210,17 @@ class InstanceCanDestroy(BaseValidator):
                 instance = db.instance_get_by_uuid(self.context, instance_id)
             else:
                 instance = db.instance_get(self.context, instance_id)
-            # ACTIVE/REBOOTING, REBOOT/REBOOTING, BUILDING/DELETING,
+            # ACTIVE/REBOOTING, BUILDING/DELETING,
             # ACTIVE/DELETING or DELETED/None only allow.
             if (instance["vm_state"], instance["task_state"]) in\
                     [(vm_states.ACTIVE, task_states.REBOOTING),
-                     (vm_states.REBOOT, task_states.REBOOTING),
                      (vm_states.BUILDING, task_states.DELETING),
                      (vm_states.ACTIVE, task_states.DELETING),
                      (vm_states.DELETED, None)]:
                 raise exception.InstanceDestroyFailure(
                         reason="Instance state is not suitable for destroy")
+        except exception.InstanceNotFound as e:
+            raise webob.exc.HTTPNotFound(explanation=str(e))
         except Exception as e:
             raise webob.exc.HTTPForbidden(explanation=str(e))
 
