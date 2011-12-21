@@ -35,9 +35,9 @@ class InstanceCreationResolver(validation.Resolver):
         try:
             body = params['body']
             params['instance_name'] = body['server']['name']
-            params['image_id'] = body['server']['imageRef']
-            params['flavor_id'] = body['server']['flavorRef']
-            params['zone_name'] = body['server']['availability_zone']
+            params['image_id'] = body['server'].get('imageRef')
+            params['flavor_id'] = body['server'].get('flavorRef')
+            params['zone_name'] = body['server'].get('availability_zone')
         except KeyError:
             pass
         return params

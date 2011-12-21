@@ -141,6 +141,25 @@ class InstanceNameValid(BaseValidator):
                               err="name parameter over 255 length.")
 
 
+class InstanceNameValidAPI(BaseValidator):
+    """
+    InstanceNameValid for API.
+
+    Validate the name is valid format.
+    Require the 'instance_name' parameter.
+    """
+    def validate_instance_name(self, instance_name):
+        try:
+            if not instance_name:
+                raise exception.InvalidParameterValue(
+                                  err="name parameter required.")
+            if len(instance_name) > 255:
+                raise exception.InvalidParameterValue(
+                                  err="name parameter over 255 length.")
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
 class InstanceRunningRequire(BaseValidator):
     """
     InstanceRunningRequire.
@@ -174,6 +193,33 @@ class InstanceCanReboot(BaseValidator):
                     return
             raise exception.InstanceRebootFailure(
                             reason="Instance state is not suitable for reboot")
+        except Exception as e:
+            raise webob.exc.HTTPForbidden(explanation=str(e))
+
+
+class InstanceCanDestroy(BaseValidator):
+    """
+    InstanceCanDestroy.
+
+    Validate the instance can destroy.
+    Require the 'instance_id' parameter.
+    """
+    def validate_instance_id(self, instance_id):
+        try:
+            if utils.is_uuid_like(instance_id):
+                instance = db.instance_get_by_uuid(self.context, instance_id)
+            else:
+                instance = db.instance_get(self.context, instance_id)
+            # ACTIVE/REBOOTING, REBOOT/REBOOTING, BUILDING/DELETING,
+            # ACTIVE/DELETING or DELETED/None only allow.
+            if (instance["vm_state"], instance["task_state"]) in\
+                    [(vm_states.ACTIVE, task_states.REBOOTING),
+                     (vm_states.REBOOT, task_states.REBOOTING),
+                     (vm_states.BUILDING, task_states.DELETING),
+                     (vm_states.ACTIVE, task_states.DELETING),
+                     (vm_states.DELETED, None)]:
+                raise exception.InstanceDestroyFailure(
+                        reason="Instance state is not suitable for destroy")
         except Exception as e:
             raise webob.exc.HTTPForbidden(explanation=str(e))
 
@@ -281,6 +327,20 @@ class FlavorRequire(BaseValidator):
         db.api.instance_type_get_by_flavor_id(self.context, flavor_id)
 
 
+class FlavorRequireAPI(BaseValidator):
+    """
+    FlavorRequire for API.
+
+    Validate the flavor is exists.
+    Require the 'flavor_id' parameter.
+    """
+    def validate_flavor_id(self, flavor_id):
+        try:
+            db.api.instance_type_get_by_flavor_id(self.context, flavor_id)
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
 class ImageRequire(BaseValidator):
     """
     ImageRequire.
@@ -292,11 +352,14 @@ class ImageRequire(BaseValidator):
         try:
             num = int(image_id)
             if num < 1:
-                raise exception.InvalidParameterValue("Specified image id is not positive value.")
+                raise exception.InvalidParameterValue(
+                                "Specified image id is not positive value.")
             elif num > sys.maxint:
-                raise exception.InvalidParameterValue("Specified image id is too large.")
+                raise exception.InvalidParameterValue(
+                                "Specified image id is too large.")
         except TypeError:
-            raise exception.InvalidParameterValue("Specified image id is not digit.")
+            raise exception.InvalidParameterValue(
+                                "Specified image id is not digit.")
 
 
 class ImageRequireAPI(BaseValidator):
@@ -311,11 +374,14 @@ class ImageRequireAPI(BaseValidator):
             try:
                 num = int(image_id)
                 if num < 1:
-                    raise exception.InvalidParameterValue("Specified image id is not positive value.")
+                    raise exception.InvalidParameterValue(
+                                "Specified image id is not positive value.")
                 elif num > sys.maxint:
-                    raise exception.InvalidParameterValue("Specified image id is too large.")
+                    raise exception.InvalidParameterValue(
+                                "Specified image id is too large.")
             except TypeError:
-                raise exception.InvalidParameterValue("Specified image id is not digit.")
+                raise exception.InvalidParameterValue(
+                                "Specified image id is not digit.")
             service = image.get_default_image_service()
             result = service.show(self.context, image_id)
             if result is None:
@@ -388,10 +454,11 @@ class ZoneRequire(BaseValidator):
     def validate_zone_id(self, zone_id):
         db.zone_get(self.context, zone_id)
 
+
 class ZoneNameValid(BaseValidator):
     """
     ZoneNameValid.
-    
+
     If the specified zone is host, check the host exists.
     If the specified zone is zone name, check the zone exists.
     Otherwise, accept the request.
@@ -405,6 +472,28 @@ class ZoneNameValid(BaseValidator):
                                              'nova-compute')
             if not service:
                 raise exception.HostNotFound(host=host)
+
+
+class ZoneNameValidAPI(BaseValidator):
+    """
+    ZoneNameValid for API.
+
+    If the specified zone is host, check the host exists.
+    If the specified zone is zone name, check the zone exists.
+    Otherwise, accept the request.
+    """
+    def validate_zone_name(self, zone_name):
+        if not zone_name:
+            return
+        try:
+            zone, _x, host = zone_name.partition(':')
+            if host:
+                service = db.service_get_by_args(self.context.elevated(), host,
+                                                 'nova-compute')
+                if not service:
+                    raise exception.HostNotFound(host=host)
+        except Exception as e:
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
 class KeypairNameValid(BaseValidator):
@@ -428,7 +517,8 @@ class KeypairNameValid(BaseValidator):
 
         try:
             try:
-                db.key_pair_get(self.context, self.context.user_id, keypair_name)
+                db.key_pair_get(self.context, self.context.user_id,
+                                keypair_name)
                 raise exception.KeyPairExists(key_name=keypair_name)
             except exception.KeypairNotFound:
                 pass
@@ -446,8 +536,10 @@ class KeypairExists(BaseValidator):
     def validate_keypair_name(self, keypair_name):
         try:
             db.key_pair_get(self.context, self.context.user_id, keypair_name)
-            keypair = db.key_pair_get(self.context, self.context.user_id, keypair_name)
-            instances = db.instance_get_all_by_user(self.context, self.context.user_id)
+            keypair = db.key_pair_get(self.context, self.context.user_id,
+                                      keypair_name)
+            instances = db.instance_get_all_by_user(self.context,
+                                                    self.context.user_id)
             for i in instances:
                 if i["key_name"] == keypair["name"]:
                     raise exception.KeyPairUsed(key_name=keypair_name)
@@ -476,7 +568,7 @@ class KeypairIsRsa(BaseValidator):
                 data = base64.decodestring(key_string)
                 int_len = 4
                 str_len = struct.unpack('>I', data[:int_len])[0]
-                if not data[int_len:int_len+str_len] == type:
+                if not data[int_len:int_len + str_len] == type:
                     raise exception.PublicKeyInvalid(public_key=public_key)
             except Exception:
                 raise exception.PublicKeyInvalid(public_key=public_key)
