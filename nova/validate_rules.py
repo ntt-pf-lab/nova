@@ -107,13 +107,16 @@ class InstanceCanSnapshot(BaseValidator):
     """
     def validate_instance_id(self, instance_id):
         try:
-            instance = db.instance_get(self.context, instance_id)
+            if utils.is_uuid_like(instance_id):
+                instance = db.instance_get_by_uuid(self.context, instance_id)
+            else:
+                instance = db.instance_get(self.context, instance_id)
             vm = instance["vm_state"]
             task = instance["task_state"]
             if vm == vm_states.ACTIVE and task is None:
                 return
             if vm == vm_states.ACTIVE and task == task_states.IMAGE_SNAPSHOT:
-                raise exception.InstanceSnapshotting(instance_id=instance_id) 
+                raise exception.InstanceSnapshotting(instance_id=instance_id)
             raise exception.InstanceSnapshotFailure(
                         reason="Instance state is not suitable for snapshot")
         except exception.InstanceSnapshotting as e:
@@ -154,18 +157,23 @@ class InstanceRunningRequire(BaseValidator):
 class InstanceCanReboot(BaseValidator):
     """
     InstanceCanReboot.
-    
+
     Validate the instance can reboot.
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
         try:
-            instance = db.instance_get(self.context, instance_id)
+            if utils.is_uuid_like(instance_id):
+                instance = db.instance_get_by_uuid(self.context, instance_id)
+            else:
+                instance = db.instance_get(self.context, instance_id)
             # ACTIVE/NONE or ACTIVE/REBOOTING only allow.
             if instance["vm_state"] == vm_states.ACTIVE:
-                if instance["task_state"] == None or instance["task_state"] == task_states.REBOOTING:
+                if instance["task_state"] is None or\
+                        instance["task_state"] == task_states.REBOOTING:
                     return
-            raise exception.InstanceRebootFailure(reason="Instance state is not suitable for reboot")
+            raise exception.InstanceRebootFailure(
+                            reason="Instance state is not suitable for reboot")
         except Exception as e:
             raise webob.exc.HTTPForbidden(explanation=str(e))
 
