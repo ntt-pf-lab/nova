@@ -121,7 +121,7 @@ class QuantumNovaIPAMLib(object):
         address = net['fixed_ip']
         if network['cidr']:
             if address:
-                address = db.fixed_ip_associate(context,
+                address = db.fixed_ip_associate(admin_context,
                                    address, vif_rec['instance_id'],
                                    network['id'])
             else:

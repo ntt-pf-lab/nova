@@ -3297,6 +3297,25 @@ class TestServerCreateRequestXMLDeserializerV11(test.TestCase):
                 }}
         self.assertEquals(request['body'], expected)
 
+    def test_request_with_networks_gw(self):
+        serial_request = """
+<server xmlns="http://docs.openstack.org/compute/api/v1.1"
+ name="new-server-test" imageRef="1" flavorRef="1">
+    <networks>
+       <network uuid="1" gw="true"/>
+       <network uuid="2" fixed_ip="10.0.2.12" gw="false"/>
+    </networks>
+</server>"""
+        request = self.deserializer.deserialize(serial_request, 'create')
+        expected = {"server": {
+            "name": "new-server-test",
+            "imageRef": "1",
+            "flavorRef": "1",
+            "networks": [{"uuid": "1", "gw": True},
+                         {"uuid": "2", "fixed_ip": "10.0.2.12", "gw": False}],
+                }}
+        self.assertEquals(request['body'], expected)
+
 
 class TestAddressesXMLSerialization(test.TestCase):
 

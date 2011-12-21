@@ -583,6 +583,12 @@ class ServerXMLDeserializerV11(wsgi.MetadataXMLDeserializer):
                     item["uuid"] = network_node.getAttribute("uuid")
                 if network_node.hasAttribute("fixed_ip"):
                     item["fixed_ip"] = network_node.getAttribute("fixed_ip")
+                if network_node.hasAttribute("gw"):
+                    gw_string = network_node.getAttribute("gw")
+                    if gw_string == "true":
+                        item["gw"] = True
+                    else:
+                        item["gw"] = False
                 networks.append(item)
             return networks
         else:

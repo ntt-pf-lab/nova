@@ -427,6 +427,58 @@ class QuantumTestCaseBase(object):
 
         self._delete_nets()
 
+    def test_allocate_and_deallocate_instance_fixed_ip(self):
+        self.flags(quantum_use_dhcp=True)
+        self._create_nets()
+        project_id = "fake_project2"
+        ctx = context.RequestContext('user1', project_id)
+        net_ids = self.net_man.q_conn.get_networks_for_tenant(project_id)
+        requested_networks = []
+        for net_id in net_ids['networks']:
+            net_ref = db.api.network_get_by_uuid(ctx.elevated(), net_id)
+            if net_ref['label'] == "project2-net1": 
+                requested_networks.append({'uuid': net_id,
+                                           'fixed_ip': "192.168.1.10",
+                                           'gw': True})
+            elif net_ref['label'] == "project2-net2":
+                requested_networks.append({'uuid': net_id,
+                                           'fixed_ip': "9.0.0.10",
+                                           'gw': False})
+        self.net_man.validate_networks(ctx, requested_networks)
+
+        instance_ref = db.api.instance_create(ctx,
+                                    {"project_id": project_id})
+
+        def func1(arg1):
+            pass
+
+        self.net_man.driver.kill_dhcp = func1
+
+        self.mox.StubOutWithMock(self.net_man.driver,
+                                 "update_dhcp_hostfile_with_text")
+        self.mox.StubOutWithMock(self.net_man.driver,
+                                 "restart_dhcp")
+        self.net_man.driver.update_dhcp_hostfile_with_text(mox.IgnoreArg(),
+            mox.Regex(',9\.0\.0\.\d+,set:nor$|,192\.168\.1\.\d+$')).MultipleTimes()
+        self.net_man.driver.restart_dhcp(mox.IgnoreArg(),
+                                         mox.IgnoreArg()).MultipleTimes()
+        self.net_man.driver.update_dhcp_hostfile_with_text(mox.IgnoreArg(),
+            '').MultipleTimes()
+        self.mox.ReplayAll()
+        nw_info = self.net_man.allocate_for_instance(ctx,
+                        instance_id=instance_ref['id'], host="",
+                        instance_type_id=instance_ref['instance_type_id'],
+                        project_id=project_id,
+                        requested_networks=requested_networks)
+
+        self._check_allocated_nw_info(nw_info)
+
+        self.net_man.deallocate_for_instance(ctx,
+                    instance_id=instance_ref['id'],
+                    project_id=project_id)
+
+        self._delete_nets()
+
     def test_validate_bad_network(self):
         ctx = context.RequestContext('user1', 'fake_project1')
         self.assertRaises(exception.NetworkNotFound,
