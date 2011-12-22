@@ -1705,8 +1705,8 @@ class ServersTest(test.TestCase):
         self._setup_for_create_instance()
 
         # proper local hrefs must start with 'http://localhost/v1.1/'
-        image_href = 'http://localhost/v1.1/123/images/2'
-        flavor_ref = 'http://localhost/123/flavors/3'
+        image_href = 'http://localhost/v1.1/fake/images/2'
+        flavor_ref = 'http://localhost/fake/flavors/3'
         access_ipv4 = '1.2.3.4'
         access_ipv6 = 'fead::1234'
         expected_flavor = {
@@ -1714,7 +1714,7 @@ class ServersTest(test.TestCase):
             "links": [
                 {
                     "rel": "bookmark",
-                    "href": 'http://localhost/123/flavors/3',
+                    "href": 'http://localhost/fake/flavors/3',
                 },
             ],
         }
@@ -1723,7 +1723,7 @@ class ServersTest(test.TestCase):
             "links": [
                 {
                     "rel": "bookmark",
-                    "href": 'http://localhost/123/images/2',
+                    "href": 'http://localhost/fake/images/2',
                 },
             ],
         }
@@ -1747,7 +1747,7 @@ class ServersTest(test.TestCase):
             },
         }
 
-        req = webob.Request.blank('/v1.1/123/servers')
+        req = webob.Request.blank('/v1.1/fake/servers')
         req.method = 'POST'
         req.body = json.dumps(body)
         req.headers["content-type"] = "application/json"
@@ -1770,7 +1770,7 @@ class ServersTest(test.TestCase):
 
         # proper local hrefs must start with 'http://localhost/v1.1/'
         image_href = 'http://localhost/v1.1/images/2'
-        flavor_ref = 'http://localhost/123/flavors/3'
+        flavor_ref = 'http://localhost/fake/flavors/3'
         expected_flavor = {
             "id": "3",
             "links": [
@@ -1875,13 +1875,13 @@ class ServersTest(test.TestCase):
     def test_create_instance_v1_1_invalid_flavor_id_int(self):
         self._setup_for_create_instance()
 
-        image_href = 'http://localhost/v1.1/123/images/2'
+        image_href = 'http://localhost/v1.1/fake/images/2'
         flavor_ref = -1
         body = dict(server=dict(
             name='server_test', imageRef=image_href, flavorRef=flavor_ref,
             metadata={'hello': 'world', 'open': 'stack'},
             personality={}))
-        req = webob.Request.blank('/v1.1/123/servers')
+        req = webob.Request.blank('/v1.1/fake/servers')
         req.method = 'POST'
         req.body = json.dumps(body)
         req.headers["content-type"] = "application/json"
@@ -1908,8 +1908,8 @@ class ServersTest(test.TestCase):
         self.config_drive = True
         self._setup_for_create_instance()
 
-        image_href = 'http://localhost/v1.1/123/images/2'
-        flavor_ref = 'http://localhost/v1.1/123/flavors/3'
+        image_href = 'http://localhost/v1.1/fake/images/2'
+        flavor_ref = 'http://localhost/v1.1/fake/flavors/3'
         body = {
             'server': {
                 'name': 'config_drive_test',
@@ -1924,7 +1924,7 @@ class ServersTest(test.TestCase):
             },
         }
 
-        req = webob.Request.blank('/v1.1/123/servers')
+        req = webob.Request.blank('/v1.1/fake/servers')
         req.method = 'POST'
         req.body = json.dumps(body)
         req.headers["content-type"] = "application/json"
@@ -1940,8 +1940,8 @@ class ServersTest(test.TestCase):
         self.config_drive = 2
         self._setup_for_create_instance()
 
-        image_href = 'http://localhost/v1.1/123/images/2'
-        flavor_ref = 'http://localhost/v1.1/123/flavors/3'
+        image_href = 'http://localhost/v1.1/fake/images/2'
+        flavor_ref = 'http://localhost/v1.1/fake/flavors/3'
         body = {
             'server': {
                 'name': 'config_drive_test',
@@ -1956,7 +1956,7 @@ class ServersTest(test.TestCase):
             },
         }
 
-        req = webob.Request.blank('/v1.1/123/servers')
+        req = webob.Request.blank('/v1.1/fake/servers')
         req.method = 'POST'
         req.body = json.dumps(body)
         req.headers["content-type"] = "application/json"
@@ -1973,8 +1973,8 @@ class ServersTest(test.TestCase):
         self.config_drive = "asdf"
         self._setup_for_create_instance()
 
-        image_href = 'http://localhost/v1.1/123/images/2'
-        flavor_ref = 'http://localhost/v1.1/123/flavors/3'
+        image_href = 'http://localhost/v1.1/fake/images/2'
+        flavor_ref = 'http://localhost/v1.1/fake/flavors/3'
         body = {
             'server': {
                 'name': 'config_drive_test',
@@ -1989,7 +1989,7 @@ class ServersTest(test.TestCase):
             },
         }
 
-        req = webob.Request.blank('/v1.1/123/servers')
+        req = webob.Request.blank('/v1.1/fake/servers')
         req.method = 'POST'
         req.body = json.dumps(body)
         req.headers["content-type"] = "application/json"
@@ -2000,8 +2000,8 @@ class ServersTest(test.TestCase):
     def test_create_instance_without_config_drive_v1_1(self):
         self._setup_for_create_instance()
 
-        image_href = 'http://localhost/v1.1/123/images/2'
-        flavor_ref = 'http://localhost/v1.1/123/flavors/3'
+        image_href = 'http://localhost/v1.1/fake/images/2'
+        flavor_ref = 'http://localhost/v1.1/fake/flavors/3'
         body = {
             'server': {
                 'name': 'config_drive_test',
@@ -2016,7 +2016,7 @@ class ServersTest(test.TestCase):
             },
         }
 
-        req = webob.Request.blank('/v1.1/123/servers')
+        req = webob.Request.blank('/v1.1/fake/servers')
         req.method = 'POST'
         req.body = json.dumps(body)
         req.headers["content-type"] = "application/json"
@@ -2249,7 +2249,7 @@ class ServersTest(test.TestCase):
                 return_server_with_attributes(name='server_test',
                                               access_ipv4='0.0.0.0',
                                               access_ipv6='beef::0123'))
-        req = webob.Request.blank('/v1.1/123/servers/1')
+        req = webob.Request.blank('/v1.1/fake/servers/1')
         req.method = 'PUT'
         req.content_type = 'application/json'
         body = {'server': {
@@ -2282,7 +2282,7 @@ class ServersTest(test.TestCase):
     def test_update_server_access_ipv4_v1_1(self):
         self.stubs.Set(nova.db.api, 'instance_get',
                 return_server_with_attributes(access_ipv4='0.0.0.0'))
-        req = webob.Request.blank('/v1.1/123/servers/1')
+        req = webob.Request.blank('/v1.1/fake/servers/1')
         req.method = 'PUT'
         req.content_type = 'application/json'
         req.body = json.dumps({'server': {'accessIPv4': '0.0.0.0'}})
@@ -2295,7 +2295,7 @@ class ServersTest(test.TestCase):
     def test_update_server_access_ipv6_v1_1(self):
         self.stubs.Set(nova.db.api, 'instance_get',
                 return_server_with_attributes(access_ipv6='beef::0123'))
-        req = webob.Request.blank('/v1.1/123/servers/1')
+        req = webob.Request.blank('/v1.1/fake/servers/1')
         req.method = 'PUT'
         req.content_type = 'application/json'
         req.body = json.dumps({'server': {'accessIPv6': 'beef::0123'}})
