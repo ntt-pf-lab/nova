@@ -18,6 +18,9 @@
 Tests For nova.virt.libvirt.netutils
 """
 
+import netaddr
+from netaddr.core import AddrFormatError
+
 from nova import test
 from nova import exception
 from nose.plugins.attrib import attr
@@ -157,3 +160,27 @@ class NetutilsTestCase(test.TestCase):
         cidr = '192:168:0:0/64'
         self.assertRaises(exception.InvalidCidr,
             netutils.get_ip_version, cidr)
+
+    @attr(kind='small')
+    def test_get_ip_version_exception_invalid(self):
+        """Test for nova.virt.libvirt.netutils.get_ip_version.
+        Raise InvalidCidr for invalid input"""
+
+        def fake_ipnetwork_init(self, addr, implicit_prefix=False):
+            raise AddrFormatError
+
+        self.stubs.Set(netaddr.IPNetwork, '__init__', fake_ipnetwork_init)
+
+        cidr = 'aaa'
+        self.assertRaises(exception.InvalidCidr,
+            netutils.get_ip_version, cidr)
+
+    @attr(kind='small')
+    def test_netaddr_raise_addrformaterror(self):
+        """Test for netaddr.IPNetwork.Raise AddrFormatError for invalid input
+        rather than UnboundLocalError"""
+
+        cidr = 'aaa'
+        self.assertRaises(netaddr.AddrFormatError,
+            netaddr.IPNetwork, cidr)
+
