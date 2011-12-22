@@ -535,6 +535,9 @@ class QuantumManager(manager.FlatManager):
     def release_fixed_ip(self, context, address):
         pass
 
+    def lease_fixed_ip(self, context, address):
+        pass
+
     def get_dhcp_hosts_text(self, context, subnet_id, project_id=None):
         ips = self.ipam.get_allocated_ips(context, subnet_id, project_id)
         hosts_text = ""
@@ -551,22 +554,7 @@ class QuantumManager(manager.FlatManager):
         return hosts_text
 
     def get_dhcp_leases(self, context, network_ref):
-        """Return a network's hosts config in dnsmasq leasefile format."""
-        subnet_id = network_ref['uuid']
-        project_id = network_ref['project_id']
-        ips = self.ipam.get_allocated_ips(context, subnet_id, project_id)
-        leases_text = ""
-        admin_context = context.elevated()
-        for ip in ips:
-            address, vif_id, gw = ip
-            vif = db.virtual_interface_get_by_uuid(admin_context, vif_id)
-            mac_address = vif['address']
-            text = "%s %s %s %s *\n" % \
-                (int(time.time()) - FLAGS.dhcp_lease_time,
-                 mac_address, address, '*')
-            leases_text += text
-        LOG.debug("DHCP leases: %s" % leases_text)
-        return leases_text
+        return ""
 
     # NOTE(oda): quick work around
     @property
