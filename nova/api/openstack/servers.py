@@ -211,10 +211,9 @@ class Controller(object):
         return exc.HTTPNotImplemented()
 
     @scheduler_api.redirect_handler
-    @validation.method(validate_rules.InstanceRequire,
+    @validation.method(validate_rules.InstanceRequireAPI,
                        alias={"id": "instance_id"})
     def action(self, req, id, body):
-        print "-------------------------ACTION %s " % id
         """Multi-purpose method used to take actions on a server"""
 
         self.actions = {
