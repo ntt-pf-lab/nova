@@ -602,6 +602,7 @@ class ComputeAPITestCase(test.TestCase):
         self.assertEqual(dict(security_group_id=group['id']),
                 FLAGS.tests_compute_api_rpc_args)
 
+    @test.skip_test('delete is available for this state')
     @attr(kind='small')
     def test_delete_exception_unavailable_state(self):
         """Make sure return value when destroying instance error"""

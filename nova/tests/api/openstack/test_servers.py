@@ -1218,7 +1218,7 @@ class ServersTest(test.TestCase):
                        fake_get_all)
         self.flags(allow_admin_api=True)
 
-        req = webob.Request.blank('/v1.1/fake/servers?tenant_id=faketenant')
+        req = webob.Request.blank('/v1.1/testproject/servers?tenant_id=faketenant')
         # Use admin context
         context = nova.context.RequestContext('testuser', 'testproject',
                 is_admin=True)
@@ -1340,7 +1340,7 @@ class ServersTest(test.TestCase):
         self.stubs.Set(nova.compute.API, 'get_all', fake_get_all)
 
         query_str = "name=foo&ip=10.*&status=active&unknown_option=meow"
-        req = webob.Request.blank('/v1.1/fake/servers?%s' % query_str)
+        req = webob.Request.blank('/v1.1/testproject/servers?%s' % query_str)
         # Request admin context
         context = nova.context.RequestContext('testuser', 'testproject',
                 is_admin=True)
@@ -1374,7 +1374,7 @@ class ServersTest(test.TestCase):
         self.stubs.Set(nova.compute.API, 'get_all', fake_get_all)
 
         query_str = "name=foo&ip=10.*&status=active&unknown_option=meow"
-        req = webob.Request.blank('/v1.1/fake/servers?%s' % query_str)
+        req = webob.Request.blank('/v1.1/testproject/servers?%s' % query_str)
         # Request admin context
         context = nova.context.RequestContext('testuser', 'testproject',
                 is_admin=False)
@@ -1407,7 +1407,7 @@ class ServersTest(test.TestCase):
         self.stubs.Set(nova.compute.API, 'get_all', fake_get_all)
 
         query_str = "name=foo&ip=10.*&status=active&unknown_option=meow"
-        req = webob.Request.blank('/v1.1/fake/servers?%s' % query_str)
+        req = webob.Request.blank('/v1.1/testproject/servers?%s' % query_str)
         # Request admin context
         context = nova.context.RequestContext('testuser', 'testproject',
                 is_admin=True)
@@ -1433,7 +1433,7 @@ class ServersTest(test.TestCase):
 
         self.stubs.Set(nova.compute.API, 'get_all', fake_get_all)
 
-        req = webob.Request.blank('/v1.1/fake/servers?ip=10\..*')
+        req = webob.Request.blank('/v1.1/testproject/servers?ip=10\..*')
         # Request admin context
         context = nova.context.RequestContext('testuser', 'testproject',
                 is_admin=True)
@@ -1459,7 +1459,7 @@ class ServersTest(test.TestCase):
 
         self.stubs.Set(nova.compute.API, 'get_all', fake_get_all)
 
-        req = webob.Request.blank('/v1.1/fake/servers?ip6=ffff.*')
+        req = webob.Request.blank('/v1.1/testproject/servers?ip6=ffff.*')
         # Request admin context
         context = nova.context.RequestContext('testuser', 'testproject',
                 is_admin=True)
@@ -1632,7 +1632,7 @@ class ServersTest(test.TestCase):
             raise exception.InstanceSnapshotting
         self.stubs.Set(nova.compute.API, 'snapshot', snapshot)
 
-        req = webob.Request.blank('/v1.1/fakes/servers/1/action')
+        req = webob.Request.blank('/v1.1/fake/servers/1/action')
         req.method = 'POST'
         req.body = json.dumps({
             "createImage": {
