@@ -183,3 +183,4 @@ class NetutilsTestCase(test.TestCase):
         cidr = 'aaa'
         self.assertRaises(netaddr.AddrFormatError,
             netaddr.IPNetwork, cidr)
+
