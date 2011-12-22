@@ -294,6 +294,10 @@ class InstanceSnapshotFailure(Invalid):
     message = _("Failed to snapshot instance") + ": %(reason)s"
 
 
+class InstanceDestroyFailure(Invalid):
+    message = _("Failed to destroy instance") + ": %(reason)s"
+
+
 class ServiceUnavailable(Invalid):
     message = _("Service is unavailable at this time.")
 
@@ -868,7 +872,7 @@ class ImageTooLarge(NovaException):
 
 
 class PublicKeyInvalid(Invalid):
-    message = _("Import key is not ssh-rsa format. %(public_key)")
+    message = _("Import key is not ssh-rsa format. %(public_key)s")
 
 
 class ZoneRequestError(Error):

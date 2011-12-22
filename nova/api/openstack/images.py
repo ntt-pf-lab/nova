@@ -24,6 +24,8 @@ from nova import exception
 from nova import flags
 import nova.image
 from nova import log
+from nova import validation
+from nova import validate_rules as rules
 from nova.api.openstack import common
 from nova.api.openstack import image_metadata
 from nova.api.openstack import servers
@@ -88,6 +90,7 @@ class Controller(object):
 
         return dict(image=self.get_builder(req).build(image, detail=True))
 
+    @validation.method(rules.ImageRequireAPI, alias={'id': 'image_id'})
     def delete(self, req, id):
         """Delete an image, if allowed.
 
