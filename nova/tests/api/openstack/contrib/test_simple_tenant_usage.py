@@ -87,7 +87,7 @@ class SimpleTenantUsageTest(test.TestCase):
 
     def test_verify_index(self):
         req = webob.Request.blank(
-                    '/v1.1/fake/os-simple-tenant-usage?start=%s&end=%s' %
+                    '/v1.1/faketenant_0/os-simple-tenant-usage?start=%s&end=%s' %
                     (START.isoformat(), STOP.isoformat()))
         req.method = "GET"
         req.headers["content-type"] = "application/json"
@@ -113,7 +113,7 @@ class SimpleTenantUsageTest(test.TestCase):
 
     def test_verify_detailed_index(self):
         req = webob.Request.blank(
-                    '/v1.1/fake/os-simple-tenant-usage?'
+                    '/v1.1/faketenant_0/os-simple-tenant-usage?'
                     'detailed=1&start=%s&end=%s' %
                     (START.isoformat(), STOP.isoformat()))
         req.method = "GET"
