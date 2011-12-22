@@ -175,7 +175,7 @@ class ValidateRulesTestCase(test.TestCase):
         # setup validation.
         class TargetClass1(object):
             @validation.method(rules.FlavorRequire,
-                        rules.ImageRequire, resolver=InstanceCreationResolver)
+                        rules.ImageRequireAPI, resolver=InstanceCreationResolver)
             def meth(self, body):
                 return "meth"
         validation.apply()
@@ -201,7 +201,7 @@ class ValidateRulesTestCase(test.TestCase):
 
         # assertion
         self.assertEqual("meth", actual)
-        self.assertRaises(exception.ImageNotFound, target.meth, invalid_image)
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, invalid_image)
         self.assertRaises(exception.FlavorNotFound,
                           target.meth, invalid_flavor)
 
@@ -439,7 +439,7 @@ class ValidateRulesTestCase(test.TestCase):
     def test_image_require(self):
         # setup validation
         class TargetClass(object):
-            @validation.method(rules.ImageRequire)
+            @validation.method(rules.ImageRequireAPI)
             def meth(self, image_id):
                 return "meth"
 
@@ -451,7 +451,7 @@ class ValidateRulesTestCase(test.TestCase):
 
         # assertion
         self.assertEqual("meth", actual)
-        self.assertRaises(exception.ImageNotFound, target.meth, 999)
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, 999)
 
     def test_image_name_valid(self):
         # setup validation

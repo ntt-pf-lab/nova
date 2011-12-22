@@ -169,6 +169,7 @@ class ComputeAPITestCase(test.TestCase):
         size = self.compute_api._volume_size(inst_type, 'swap')
         self.assertEqual(local_size, size)
 
+    @test.skip_test('ignore this case for issue741') 
     @attr(kind='small')
     def test_create_parameter_instance_associates_config_drive(self):
         """Make sure create instance that config_drive is a image id.
@@ -185,6 +186,7 @@ class ComputeAPITestCase(test.TestCase):
         self.assertTrue(hasattr(instance, 'config_drive_id'))
         self.assertEqual(image_id, instance.config_drive_id)
 
+    @test.skip_test('ignore this case for issue741') 
     @attr(kind='small')
     def test_create_parameter_associates_config_drive_none(self):
         """Make sure create instance that config_drive is none.
@@ -600,6 +602,7 @@ class ComputeAPITestCase(test.TestCase):
         self.assertEqual(dict(security_group_id=group['id']),
                 FLAGS.tests_compute_api_rpc_args)
 
+    @test.skip_test('delete is available for this state')
     @attr(kind='small')
     def test_delete_exception_unavailable_state(self):
         """Make sure return value when destroying instance error"""

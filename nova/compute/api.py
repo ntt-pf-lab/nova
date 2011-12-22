@@ -788,9 +788,6 @@ class API(base.Base):
         LOG.debug(_("Going to try to terminate %s"), instance_id)
         instance = self._get_instance(context, instance_id, 'terminating')
 
-        if not _is_able_to_shutdown(instance, instance_id):
-            return
-
         self.update(context,
                     instance_id,
                     task_state=task_states.DELETING)
