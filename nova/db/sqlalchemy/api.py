@@ -1802,7 +1802,15 @@ def network_create_safe(context, values):
 @require_admin_context
 def network_delete_safe(context, network_id):
     session = get_session()
+    # also delete fixed_ips associated with the network.
+    # FIXME(oda): may be able to delete automatically by certain
+    #             definition of the model.
+    fixed_ips = session.query(models.FixedIp).\
+                     filter_by(network_id=network_id).\
+                     all()
     with session.begin():
+        for fixed_ip_ref in fixed_ips:
+            session.delete(fixed_ip_ref)
         network_ref = network_get(context, network_id=network_id, \
                                   session=session)
         session.delete(network_ref)
