@@ -404,6 +404,7 @@ class LibvirtConnTestCase(test.TestCase):
         snapshot = image_service.show(context, recv_meta['id'])
         self.assertEquals(snapshot['properties']['image_state'], 'available')
         self.assertEquals(snapshot['status'], 'active')
+        # ami image treated as a raw disk.
         self.assertEquals(snapshot['disk_format'], 'ami')
         self.assertEquals(snapshot['name'], snapshot_name)
 
