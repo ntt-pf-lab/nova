@@ -25,6 +25,7 @@
 
 
 import netaddr
+from netaddr.core import AddrFormatError
 
 from nova import flags
 from nova import exception
@@ -36,7 +37,7 @@ FLAGS = flags.FLAGS
 def get_net_and_mask(cidr):
     try:
         net = netaddr.IPNetwork(cidr)
-    except UnboundLocalError:
+    except (UnboundLocalError, AddrFormatError):
         raise exception.InvalidCidr(cidr=cidr)
     return str(net.ip), str(net.netmask)
 
@@ -44,7 +45,7 @@ def get_net_and_mask(cidr):
 def get_net_and_prefixlen(cidr):
     try:
         net = netaddr.IPNetwork(cidr)
-    except UnboundLocalError:
+    except (UnboundLocalError, AddrFormatError):
         raise exception.InvalidCidr(cidr=cidr)
     return str(net.ip), str(net._prefixlen)
 
@@ -52,6 +53,6 @@ def get_net_and_prefixlen(cidr):
 def get_ip_version(cidr):
     try:
         net = netaddr.IPNetwork(cidr)
-    except UnboundLocalError:
+    except (UnboundLocalError, AddrFormatError):
         raise exception.InvalidCidr(cidr=cidr)
     return int(net.version)

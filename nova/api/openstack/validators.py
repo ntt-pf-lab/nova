@@ -18,7 +18,6 @@
 #    under the License.
 import webob
 from nova import exception
-from nova import flags
 from nova import log as logging
 from nova import wsgi
 from nova import validate_rules as rules
@@ -27,6 +26,7 @@ from nova import utils
 
 LOG = logging.getLogger('nova.api.openstack')
 
+
 class InstanceCreationResolver(validation.Resolver):
     """
     InstanceCreationResolver.
@@ -34,10 +34,23 @@ class InstanceCreationResolver(validation.Resolver):
     def resolve_parameter(self, params):
         try:
             body = params['body']
-            params['instance_name'] =body['server']['name']
-            params['image_id'] = body['server']['imageRef']
-            params['flavor_id'] = body['server']['flavorRef']
-            params['zone_name']= body['server']['availability_zone']
+            params['instance_name'] = body['server']['name']
+            params['image_id'] = body['server'].get('imageRef')
+            params['flavor_id'] = body['server'].get('flavorRef')
+            params['zone_name'] = body['server'].get('availability_zone')
+        except KeyError:
+            pass
+        return params
+
+
+class InstanceUpdateResolver(validation.Resolver):
+    """
+    InstanceUpdateResolver.
+    """
+    def resolve_parameter(self, params):
+        try:
+            body = params['body']
+            params['instance_name'] = body['server']['name']
         except KeyError:
             pass
         return params
@@ -45,7 +58,7 @@ class InstanceCreationResolver(validation.Resolver):
 
 class CreateImageResolver(validation.Resolver):
     """
-    InstanceCreationResolver.
+    CreateImageResolver.
     params before: input_dict, req, instance_id
     params after: input_dict, req, instance_id, image_name
     """
@@ -77,21 +90,7 @@ MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
  "validators": [rules.FlavorRequire],
- "alias": {"id": "flavor_id"}},
-{"cls": "servers.Controller",
- "method": "action",
- "validators": [rules.InstanceRequire],
- "alias": {"id": "instance_id"}},
-{"cls": "servers.Controller",
- "method": "create",
- "validators": [rules.InstanceNameValid, rules.ImageRequire,
-                rules.FlavorRequire, rules.ZoneNameValid],
- "resolver": InstanceCreationResolver},
-{"cls": "images.Controller",
- "method": "delete",
- "validators": [rules.ImageRequire],
- "alias": {"id": "image_id"}}
-]
+ "alias": {"id": "flavor_id"}}]
 
 
 def handle_web_exception(self, e):

@@ -82,7 +82,7 @@ class EventlogsTest(test.TestCase):
         self.context = context.get_admin_context()
 
     def test_logs_list(self):
-        req = webob.Request.blank('/v1.1/admin/logs')
+        req = webob.Request.blank('/v1.1/fake/logs')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
@@ -90,7 +90,7 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_request_id(self):
-        req_url = '/v1.1/admin/logs/cf5685ea-2611-4f2e-9036-b10dc9bdf4dc'
+        req_url = '/v1.1/fake/logs/cf5685ea-2611-4f2e-9036-b10dc9bdf4dc'
         req = webob.Request.blank(req_url)
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
@@ -99,7 +99,7 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_list_type_input(self):
-        req = webob.Request.blank('/v1.1/admin/logs?type=INFO')
+        req = webob.Request.blank('/v1.1/fake/logs?type=INFO')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
@@ -107,18 +107,18 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_list_limit(self):
-        req = webob.Request.blank('/v1.1/admin/logs?limit=5')
+        req = webob.Request.blank('/v1.1/fake/logs?limit=5')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
         expected_logs = get_all_logs()
-        links = [{'href': 'http://localhost/v1.1/admin/logs?limit=5&marker=5',
+        links = [{'href': 'http://localhost/v1.1/fake/logs?limit=5&marker=5',
                   'rel': 'next'}]
         response = {'eventlogs': expected_logs[:5], 'eventlogs_links': links}
         self.assertEqual(res_dict, response)
 
     def test_logs_list_offset(self):
-        req = webob.Request.blank('/v1.1/admin/logs?offset=1')
+        req = webob.Request.blank('/v1.1/fake/logs?offset=1')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
@@ -127,7 +127,7 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_list_limit_with_offset(self):
-        req = webob.Request.blank('/v1.1/admin/logs?offset=2&limit=10')
+        req = webob.Request.blank('/v1.1/fake/logs?offset=2&limit=10')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
@@ -136,7 +136,7 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_list_marker(self):
-        req = webob.Request.blank('/v1.1/admin/logs?marker=5')
+        req = webob.Request.blank('/v1.1/fake/logs?marker=5')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
@@ -145,48 +145,48 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_list_invalid_marker(self):
-        req = webob.Request.blank('/v1.1/admin/logs?marker=555')
+        req = webob.Request.blank('/v1.1/fake/logs?marker=555')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
         self.assertNotEqual(res.body.find('marker [555] not found'), -1)
 
     def test_logs_list_invalid_type(self):
-        req = webob.Request.blank('/v1.1/admin/logs?type=INFOO')
+        req = webob.Request.blank('/v1.1/fake/logs?type=INFOO')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
         self.assertNotEqual(res.body.find('Invalid log type: INFOO'), -1)
 
     def test_logs_list_invalid_request_id(self):
-        req = webob.Request.blank('/v1.1/admin/logs/%s' % INVALID_REQUEST_ID)
+        req = webob.Request.blank('/v1.1/fake/logs/%s' % INVALID_REQUEST_ID)
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 404)
         self.assertNotEqual(res.body.find('Request id 12345 not found'), -1)
 
     def test_logs_list_invalid_offset(self):
-        req = webob.Request.blank('/v1.1/admin/logs?offset=INFOO')
+        req = webob.Request.blank('/v1.1/fake/logs?offset=INFOO')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
         self.assertNotEqual(res.body.find('Invalid offset: INFO'), -1)
 
     def test_logs_list_invalid_offset_negative(self):
-        req = webob.Request.blank('/v1.1/admin/logs?offset=-5')
+        req = webob.Request.blank('/v1.1/fake/logs?offset=-5')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
         self.assertNotEqual(res.body.find('Invalid offset: -5'), -1)
 
     def test_logs_list_invalid_limit_negative(self):
-        req = webob.Request.blank('/v1.1/admin/logs?limit=-10')
+        req = webob.Request.blank('/v1.1/fake/logs?limit=-10')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
         self.assertNotEqual(res.body.find('Invalid limit: -10'), -1)
 
     def test_logs_list_pagination(self):
-        req = webob.Request.blank('/v1.1/admin/logs?limit=5')
+        req = webob.Request.blank('/v1.1/fake/logs?limit=5')
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
         expected_logs = get_all_logs()
-        links = {'href': 'http://localhost/v1.1/admin/logs?limit=5&marker=5',
+        links = {'href': 'http://localhost/v1.1/fake/logs?limit=5&marker=5',
                  'rel': 'next'}
         response = {'eventlogs': expected_logs[:5],
                     'eventlogs_links': [links]}
@@ -197,7 +197,7 @@ class EventlogsTest(test.TestCase):
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
         res_dict = json.loads(res.body)
-        links = {'href': 'http://localhost/v1.1/admin/logs?limit=5&marker=10',
+        links = {'href': 'http://localhost/v1.1/fake/logs?limit=5&marker=10',
                  'rel': 'next'}
         response = {'eventlogs': expected_logs[5:10],
                     'eventlogs_links': [links]}
@@ -212,7 +212,7 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response, "Pagination failed at last page.")
 
     def test_logs_list_logged_since(self):
-        req_url = '/v1.1/admin/logs?logged_since=2011-12-12T10:09:43Z'
+        req_url = '/v1.1/fake/logs?logged_since=2011-12-12T10:09:43Z'
         req = webob.Request.blank(req_url)
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 200)
@@ -221,7 +221,7 @@ class EventlogsTest(test.TestCase):
         self.assertEqual(res_dict, response)
 
     def test_logs_list_invalid_logged_since(self):
-        req_url = '/v1.1/admin/logs?logged_since=2011-12-12'
+        req_url = '/v1.1/fake/logs?logged_since=2011-12-12'
         req = webob.Request.blank(req_url)
         res = req.get_response(fakes.wsgi_app())
         self.assertEqual(res.status_int, 400)
