@@ -396,7 +396,7 @@ class LibvirtConnTestCase(test.TestCase):
         self.assertEquals(snapshot['properties']['image_state'], 'available')
         self.assertEquals(snapshot['status'], 'active')
         # ami image treated as a raw disk.
-        self.assertEquals(snapshot['disk_format'], 'ami')
+        self.assertEquals(snapshot['disk_format'], 'raw')
         self.assertEquals(snapshot['name'], snapshot_name)
 
     def test_snapshot_in_raw_format(self):
