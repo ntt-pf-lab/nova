@@ -404,7 +404,8 @@ class LibvirtConnTestCase(test.TestCase):
         snapshot = image_service.show(context, recv_meta['id'])
         self.assertEquals(snapshot['properties']['image_state'], 'available')
         self.assertEquals(snapshot['status'], 'active')
-        self.assertEquals(snapshot['disk_format'], 'ami')
+        # ami image treated as a raw disk.
+        self.assertEquals(snapshot['disk_format'], 'raw')
         self.assertEquals(snapshot['name'], snapshot_name)
 
     def test_snapshot_in_raw_format(self):
@@ -3406,27 +3407,6 @@ class LibvirtConnectionTestCase(test.TestCase):
         self.assertEqual(result, ref['volumes'][0])
 
     @attr(kind='small')
-    def test_prepare_xml_info_use_raw_image(self):
-        """Test for nova.virt.libvirt.connection.LibvirtConnection
-        ._prepare_xml_info."""
-
-        ins_ref = self._create_instance()
-        self._setup_networking(ins_ref['id'])
-        manager = network.manager.NetworkManager()
-        manager.SHOULD_CREATE_BRIDGE = True
-        ni = manager.get_instance_nw_info(
-                                    context.get_admin_context(),
-                                    ins_ref['id'],
-                                    ins_ref['instance_type_id'],
-                                    'host1')
-
-        ref = self.libvirtconnection._prepare_xml_info(instance=ins_ref,
-                network_info=ni, rescue=False, block_device_info=None,
-                use_raw_image=True)
-
-        self.assertEqual('raw', ref['driver_type'])
-
-    @attr(kind='small')
     def test_prepare_xml_info_single_local_disk(self):
         """Test for nova.virt.libvirt.connection.LibvirtConnection
         ._prepare_xml_info."""
@@ -4598,7 +4578,7 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         def fake_extend(path, size):
             pass
-        def fake_to_xml(instance, network_info, use_raw_image=False):
+        def fake_to_xml(instance, network_info):
             return ""
         def fake_plug_vifs(instance, network_info):
             pass
@@ -4608,7 +4588,10 @@ class LibvirtConnectionTestCase(test.TestCase):
             pass
         def fake_create_new_domain(xml):
             return None
+        def fake_execute(*args, **kwargs):
+            pass
 
+        self.flags(use_cow_images=True)
         self.stubs.Set(virt.disk, 'extend', fake_extend)
         self.stubs.Set(self.libvirtconnection, 'to_xml', fake_to_xml)
         self.stubs.Set(self.libvirtconnection, 'plug_vifs', fake_plug_vifs)
@@ -4616,6 +4599,7 @@ class LibvirtConnectionTestCase(test.TestCase):
                        fake_create_image)
         self.stubs.Set(self.libvirtconnection, '_create_new_domain',
                        fake_create_new_domain)
+        self.stubs.Set(utils, 'execute', fake_execute)
         fw = virt.libvirt.firewall.NullFirewallDriver(None)
         self.stubs.Set(self.libvirtconnection, 'firewall_driver', fw)
 

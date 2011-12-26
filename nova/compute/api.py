@@ -1190,6 +1190,10 @@ class API(base.Base):
         be migrated to a new host and resized to the new flavor_id.
         """
         instance_ref = self._get_instance(context, instance_id, 'resize')
+        if instance_ref['vm_state'] != vm_states.ACTIVE or \
+              instance_ref['task_state'] is not None:
+            raise exception.InstanceBusy(instance_id=instance_id,
+                                     task_state=instance_ref['vm_state'])
         current_instance_type = instance_ref['instance_type']
 
         # If flavor_id is not provided, only migrate the instance.

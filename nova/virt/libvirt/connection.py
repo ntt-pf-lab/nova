@@ -1099,7 +1099,7 @@ class LibvirtConnection(driver.ComputeDriver):
             raise exception.InvalidDevicePath(path=device_path)
 
     def _prepare_xml_info(self, instance, network_info, rescue,
-                          block_device_info=None, use_raw_image=False):
+                          block_device_info=None):
         block_device_mapping = driver.block_device_info_get_mapping(
             block_device_info)
 
@@ -1110,7 +1110,7 @@ class LibvirtConnection(driver.ComputeDriver):
         inst_type_id = instance['instance_type_id']
         inst_type = instance_types.get_instance_type(inst_type_id)
 
-        if FLAGS.use_cow_images and not use_raw_image:
+        if FLAGS.use_cow_images:
             driver_type = 'qcow2'
         else:
             driver_type = 'raw'
@@ -1204,11 +1204,11 @@ class LibvirtConnection(driver.ComputeDriver):
         return xml_info
 
     def to_xml(self, instance, network_info, rescue=False,
-               block_device_info=None, use_raw_image=False):
+               block_device_info=None):
         # TODO(termie): cache?
         LOG.debug(_('instance %s: starting toXML method'), instance['name'])
         xml_info = self._prepare_xml_info(instance, network_info, rescue,
-                                          block_device_info, use_raw_image)
+                                          block_device_info)
         xml = str(Template(self.libvirt_xml, searchList=[xml_info]))
         LOG.debug(_('instance %s: finished toXML method'), instance['name'])
         return xml
@@ -2017,8 +2017,15 @@ class LibvirtConnection(driver.ComputeDriver):
             elif fname == 'disk.local':
                 disk.extend(info['path'],
                             instance['local_gb'] * 1024 * 1024 * 1024)
+            if FLAGS.use_cow_images:
+                # back to qcow2 (no backing_file though) so that snapshot
+                # will be available
+                path_qcow = info['path'] + '_qcow'
+                utils.execute('qemu-img', 'convert', '-f', 'raw',
+                        '-O', 'qcow2', info['path'], path_qcow)
+                utils.execute('mv', path_qcow, info['path'])
 
-        xml = self.to_xml(instance, network_info, use_raw_image=True)
+        xml = self.to_xml(instance, network_info)
 
         self.plug_vifs(instance, network_info)
         self.firewall_driver.setup_basic_filtering(instance, network_info)

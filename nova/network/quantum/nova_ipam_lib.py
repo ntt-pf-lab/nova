@@ -222,7 +222,9 @@ class QuantumNovaIPAMLib(object):
             for fixed_ip in fixed_ips:
                 db.fixed_ip_update(admin_context, fixed_ip['address'],
                                    {'allocated': False,
+                                    'leased': False,
                                     'use_gw': True,
+                                    'instance_id': None,
                                     'virtual_interface_id': None})
         except exception.FixedIpNotFoundForInstance:
             LOG.error(_('No fixed IPs to deallocate for vif %s' %

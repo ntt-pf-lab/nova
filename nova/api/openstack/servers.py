@@ -573,6 +573,9 @@ class Controller(object):
         except exception.CannotResizeToSmallerSize:
             msg = _("Resizing to a smaller size is not supported.")
             raise exc.HTTPBadRequest(explanation=msg)
+        except exception.InstanceBusy:
+            msg = _("Instance busy.")
+            raise exc.HTTPForbidden(explanation=msg)
 
         return webob.Response(status_int=202)
 

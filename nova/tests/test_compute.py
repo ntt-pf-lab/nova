@@ -290,6 +290,35 @@ class ComputeTestCase(test.TestCase):
 
         self.compute.terminate_instance(context, instance_id)
 
+    def test_resize_vm_state_failes(self):
+        context = self.context.elevated()
+        instance_id = self._create_instance()
+        instance_values = {'vm_state': vm_states.RESIZING}
+        db.instance_update(self.context, instance_id, instance_values)
+
+        self.assertRaises(exception.InstanceBusy,
+                          self.compute_api.resize,
+                          self.context,
+                          instance_id,
+                          None, None)
+
+        db.instance_destroy(self.context, instance_id)
+
+    def test_resize_task_state_failes(self):
+        context = self.context.elevated()
+        instance_id = self._create_instance()
+        instance_values = {'vm_state': vm_states.ACTIVE,
+                           'task_state': task_states.RESIZE_VERIFY}
+        db.instance_update(self.context, instance_id, instance_values)
+
+        self.assertRaises(exception.InstanceBusy,
+                          self.compute_api.resize,
+                          self.context,
+                          instance_id,
+                          None, None)
+
+        db.instance_destroy(self.context, instance_id)
+
     def test_migrate(self):
         context = self.context.elevated()
         instance_id = self._create_instance()

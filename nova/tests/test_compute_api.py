@@ -994,6 +994,9 @@ class ComputeAPITestCase(test.TestCase):
                 self.context,
                 instance_type=instance_types.get_default_instance_type(),
                 image_href=None)
+        instance_values = {'vm_state': vm_states.ACTIVE,
+                           'task_state': None}
+        db.instance_update(self.context, ref[0]['id'], instance_values)
 
         self.flags(tests_compute_api_result=False,
                    tests_compute_api_rpc_args={})
@@ -1019,6 +1022,9 @@ class ComputeAPITestCase(test.TestCase):
                 self.context,
                 instance_type=instance_types.get_default_instance_type(),
                 image_href=None)
+        instance_values = {'vm_state': vm_states.ACTIVE,
+                           'task_state': None}
+        db.instance_update(self.context, ref[0]['id'], instance_values)
 
         self.compute_api.resize(self.context, ref[0]['id'])
 
@@ -1054,6 +1060,9 @@ class ComputeAPITestCase(test.TestCase):
                 self.context,
                 instance_type=instance_types.get_default_instance_type(),
                 image_href=None)
+        instance_values = {'vm_state': vm_states.ACTIVE,
+                           'task_state': None}
+        db.instance_update(self.context, ref[0]['id'], instance_values)
 
         self.compute_api.resize(self.context, ref[0]['id'])
 

@@ -721,3 +721,24 @@ class QuantumManagerTestCase(test.TestCase):
         self.assertRaises(exception.NetworkNotFound,
             self.quantummanager.validate_networks,
                 context=context.get_admin_context(), networks=na)
+
+    @attr(kind='small')
+    def test_release_fixed_ip(self):
+        """Test for quantum.manager.QuantumManager.release_fixed_ip. """
+        ref = self.quantummanager.release_fixed_ip(context=None,
+                                                   address=None)
+        self.assertEqual(None, ref)
+
+    @attr(kind='small')
+    def test_lease_fixed_ip(self):
+        """Test for quantum.manager.QuantumManager.lease_fixed_ip. """
+        ref = self.quantummanager.lease_fixed_ip(context=None,
+                                                 address=None)
+        self.assertEqual(None, ref)
+
+    @attr(kind='small')
+    def test_get_dhcp_leases(self):
+        """Test for quantum.manager.QuantumManager.get_dhcp_leases. """
+        ref = self.quantummanager.get_dhcp_leases(context=None,
+                                                  network_ref=None)
+        self.assertEqual("", ref)
