@@ -147,6 +147,7 @@ class ViewBuilderV11(ViewBuilder):
         response['server']['accessIPv6'] = inst.get('access_ip_v6') or ""
         response['server']['key_name'] = inst.get('key_name', '')
         response['server']['config_drive'] = inst.get('config_drive')
+        self._build_networks(response['server'], inst)
 
         return response
 
@@ -204,6 +205,25 @@ class ViewBuilderV11(ViewBuilder):
         ]
 
         response["links"] = links
+
+    def _build_networks(self, response, inst):
+        interfaces = inst.get('virtual_interfaces', [])
+        networks = []
+        for interface in interfaces:
+            uuid = None
+            fixed_ip = None
+            gw = False
+            try:
+                uuid = interface['network']['uuid']
+                fixed_ip_ref = interface['fixed_ips'][0]
+                fixed_ip = fixed_ip_ref['address']
+                gw = fixed_ip_ref['use_gw']
+            except:
+                pass
+            networks.append({'uuid': uuid,
+                             'fixed_ip': fixed_ip,
+                             'gw': gw})
+        response['networks'] = networks
 
     def generate_href(self, server_id):
         """Create an url that refers to a specific server id."""

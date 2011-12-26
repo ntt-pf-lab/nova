@@ -971,6 +971,17 @@ class ServerXMLSerializer(wsgi.XMLDictSerializer):
                                                     server['security_groups'])
             server_node.appendChild(security_groups_node)
 
+        if 'networks' in server:
+            networks_node = xml_doc.createElement('networks')
+            for network in server['networks']:
+                network_node = xml_doc.createElement('network')
+                network_node.setAttribute('uuid', network['uuid'])
+                network_node.setAttribute('fixed_ip', network['fixed_ip'])
+                gw_string = "true" if network['gw'] else "false"
+                network_node.setAttribute('gw', gw_string)
+                networks_node.appendChild(network_node)
+            server_node.appendChild(networks_node)
+
         return server_node
 
     def _server_list_to_xml(self, xml_doc, servers, detailed):
