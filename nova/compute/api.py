@@ -1211,13 +1211,14 @@ class API(base.Base):
         if not new_instance_type:
             raise exception.FlavorNotFound(flavor_id=flavor_id)
 
-        current_memory_mb = current_instance_type['memory_mb']
-        new_memory_mb = new_instance_type['memory_mb']
-        if current_memory_mb > new_memory_mb:
-            raise exception.CannotResizeToSmallerSize()
+        if not FLAGS.available_smaller_or_equal_memory_size_resize:
+            current_memory_mb = current_instance_type['memory_mb']
+            new_memory_mb = new_instance_type['memory_mb']
+            if current_memory_mb > new_memory_mb:
+                raise exception.CannotResizeToSmallerSize()
 
-        if (current_memory_mb == new_memory_mb) and flavor_id:
-            raise exception.CannotResizeToSameSize()
+            if (current_memory_mb == new_memory_mb) and flavor_id:
+                raise exception.CannotResizeToSameSize()
 
         if availability_zone:
             self.db.instance_update(context, instance_id,

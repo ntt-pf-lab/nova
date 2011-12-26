@@ -87,6 +87,8 @@ flags.DEFINE_integer('host_state_interval', 120,
                      'Interval in seconds for querying the host status')
 flags.DEFINE_bool('available_same_host_resize', False,
                      'available same host resize')
+flags.DEFINE_bool('available_smaller_or_equal_memory_size_resize', False,
+                     'available smaller or equal memory size resize')
 
 LOG = logging.getLogger('nova.compute.manager')
 
