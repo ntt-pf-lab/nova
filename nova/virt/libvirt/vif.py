@@ -117,10 +117,6 @@ class LibvirtOpenVswitchDriver(VIFDriver):
                 utils.execute('ip', 'link', 'set', dev, 'down',
                               run_as_root=True)
                 raise e
-        if not linux_net.device_exists(dev):
-            utils.execute('ip', 'tuntap', 'add', dev, 'mode', 'tap',
-                          run_as_root=True)
-            utils.execute('ip', 'link', 'set', dev, 'up', run_as_root=True)
         utils.execute('ovs-vsctl', '--', '--may-exist', 'add-port',
                 FLAGS.libvirt_ovs_bridge, dev,
                 '--', 'set', 'Interface', dev,
