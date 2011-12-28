@@ -20,6 +20,8 @@
 
 """Handles all requests relating to instances (guest vms)."""
 
+import netaddr
+
 from nova import exception
 from nova import flags
 from nova import log as logging
@@ -231,3 +233,147 @@ class API(base.Base):
         return rpc.call(context, FLAGS.network_topic,
                         {'method': 'validate_networks',
                          'args': args})
+
+    def _db_to_network_info(self, network_ref, is_detail):
+        if is_detail:
+            project_id = network_ref['project_id'] \
+                          if network_ref['project_id'] else "defalut"
+            multi_host = "T" if network_ref['multi_host'] else "F"
+            injected = "T" if network_ref['injected'] else "F"
+            net_info = { \
+                "created_at": network_ref['created_at'],
+                "updated_at": network_ref['updated_at'],
+                "id": network_ref['id'],
+                "injected": injected,
+                "cidr": network_ref['cidr'],
+                "bridge": network_ref['bridge'],
+                "gateway": network_ref['gateway'],
+                "dns1": network_ref['dns1'],
+                "vlan": network_ref['vlan'],
+                "vpn": network_ref['vpn_public_address'],
+                "vpn_private_address": network_ref['vpn_private_address'],
+                "dhcp_start": network_ref['dhcp_start'],
+                "project_id": project_id,
+                "host": network_ref['host'],
+                "cidr_v6": network_ref['cidr_v6'],
+                "gateway_v6": network_ref['gateway_v6'],
+                "label": network_ref['label'],
+                "bridge_interface": network_ref['bridge_interface'],
+                "multi_host": multi_host,
+                "dns2": network_ref['dns2'],
+                "uuid": network_ref['uuid'],
+                "priority": network_ref['priority'],
+                "dhcp_server": None, #network_ref['dhcp_server'],
+               }
+        else:
+            net_info = { \
+                "label": network_ref['label'],
+                "uuid": network_ref['uuid'],
+                "cidr": network_ref['cidr'],
+                "cidr_v6": network_ref['cidr_v6'],
+                "priority": network_ref['priority'],
+               }
+        return net_info
+
+    def get_networks(self, context, project_id, is_detail):
+        """ get networks information of the specified project."""
+        # TODO(oda): should be ask the network manager in the future.
+        network_infos = []
+        try:
+            networks = self.db.network_get_all(context.elevated())
+        except exception.NoNetworksFound:
+            # OK. no network made yet.
+            return network_infos
+        for network in networks:
+            if project_id == network['project_id']:
+                network_infos.append(\
+                   self._db_to_network_info(network, is_detail))
+        return network_infos
+
+    def get_network_info(self, context, uuid):
+        """ get network information of the specified uuid."""
+        # TODO(oda): should be ask the network manager in the future.
+        network_ref = self.db.network_get_by_uuid(context.elevated(), uuid) 
+        return self._db_to_network_info(network_ref, True)
+
+    def create_network(self, context, project_id, network_dict):
+        """ create a network """
+        args = {}
+        if not 'label' in network_dict:
+            raise exception.ApiError(_('label is required.'))
+        args['label'] = network_dict['label']
+
+        args['cidr'] = network_dict.get('cidr', None)
+        args['cidr_v6'] = network_dict.get('cidr_v6', None)
+        if not (args['cidr'] or args['cidr_v6']):
+            raise exception.ApiError(_('cidr or cidr_v6 is required.'))
+        if 'cidr' in network_dict:
+            network_size = netaddr.IPNetwork(network_dict['cidr']).size
+        else:
+            network_size = netaddr.IPNetwork(network_dict['cidr_v6']).size
+        args['network_size'] = network_size
+        args['num_networks'] = 1
+
+        if 'multi_host' in network_dict:
+            args['multi_host'] = network_dict['multi_host'] == 'T'
+        else:
+            args['multi_host'] = FLAGS.multi_host
+
+        args['gateway'] = network_dict.get('gateway', None)
+        args['gateway_v6'] = network_dict.get('gateway_v6', None)
+
+        bridge = network_dict.get('bridge', None) or FLAGS.flat_network_bridge
+        if not bridge:
+            bridge_required = ['nova.network.manager.FlatManager',
+                               'nova.network.manager.FlatDHCPManager']
+            if FLAGS.network_manager in bridge_required:
+                raise exception.ApiError(_('bridge is required.'))
+        args['bridge'] = bridge
+
+        bridge_interface =  network_dict.get('bridge_interface', None) or \
+                            FLAGS.flat_interface or FLAGS.vlan_interface
+        if not bridge_interface:
+            interface_required = ['nova.network.manager.VlanManager']
+            if FLAGS.network_manager in interface_required:
+                raise exception.ApiError(_('bridge_interface is required.'))
+        args['bridge_interface'] = bridge_interface
+
+        args['dns1'] = network_dict.get('dns2', None) or FLAGS.flat_network_dns
+        args['dns2'] = network_dict.get('dns2', None)
+
+        # the following arguments are stored to **kwards,
+        # key may not exist
+        if 'vlan' in network_dict:
+            args['vlan_start'] = network_dict['vlan']
+        elif FLAGS.vlan_start:
+            args['vlan_start'] = FLAGS.vlan_start
+
+        if 'vpn' in network_dict:
+            args['vpn_start'] = network_dict['vpn']
+        elif FLAGS.vpn_start:
+            args['vpn_start'] = FLAGS.vpn_start
+
+        if 'priority' in network_dict:
+            args['priority'] = network_dict['priority']
+
+        if 'uuid' in network_dict:
+            args['uuid'] = network_dict['uuid']
+
+        if 'dhcp_server' in network_dict:
+            args['dhcp_server'] = network_dict['dhcp_server']
+
+        args['project_id'] = project_id
+
+        networks = rpc.call(context,
+                            FLAGS.network_topic,
+                            {'method': 'create_networks',
+                             'args': args})
+
+        return self.get_network_info(context, networks[0]['uuid'])
+
+    def delete_network(self, context, uuid):
+        rpc.call(context,
+                 FLAGS.network_topic,
+                 {'method': 'delete_network',
+                  'args': {'fixed_range': None,
+                           'uuid': uuid}})

@@ -836,3 +836,348 @@ class APITestCase(test.TestCase):
         requested_networks = networks
         ref = self.api.validate_networks(self.context, requested_networks)
         self.assertEqual(None, ref)
+
+    @attr(kind='small')
+    def test_get_networks(self):
+        """Test for nova.network.api.API.get_networks. is_detail=False """
+        def fake_network_get_all(context):
+            net = networks[0].copy()
+            net['priority'] = 0
+            return [net] 
+
+        self.stubs.Set(self.api.db, "network_get_all",
+                                    fake_network_get_all)
+        expected = [{'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'label': 'test0',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'priority': 0}]
+        ref = self.api.get_networks(self.context, 'fake_project', False)
+        self.assertEqual(expected, ref)
+
+    @attr(kind='small')
+    def test_get_networks_detail(self):
+        """Test for nova.network.api.API.get_networks. is_detail=True """
+        def fake_network_get_all(context):
+            net = networks[0].copy()
+            net['created_at'] = "aaa"
+            net['updated_at'] = "bbb"
+            net['vpn_private_address'] = "ccc"
+            net['priority'] = 0
+            net['dhcp_start'] = '192.168.0.3'
+            return [net] 
+
+        self.stubs.Set(self.api.db, "network_get_all",
+                                    fake_network_get_all)
+        expected = [{'id': 1,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'label': 'test0',
+             'injected': 'F',
+             'multi_host': 'F',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'gateway': '192.168.0.1',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': None,
+             'host': 'testhost',
+             'project_id': 'fake_project',
+             'vpn': '192.168.0.2',
+             'vpn_private_address': 'ccc',
+             'created_at': 'aaa',
+             'updated_at': 'bbb',
+             'priority': 0,
+             'dhcp_start': '192.168.0.3',
+             'dhcp_server': None}]
+        ref = self.api.get_networks(self.context, 'fake_project', True)
+        self.assertEqual(expected, ref)
+
+    @attr(kind='small')
+    def test_get_networks_no_network(self):
+        """Test for nova.network.api.API.get_networks."""
+        def fake_network_get_all(context):
+            raise exception.NoNetworksFound()
+
+        self.stubs.Set(self.api.db, "network_get_all",
+                                    fake_network_get_all)
+        ref = self.api.get_networks(self.context, 'fake_project', True)
+        self.assertEqual([], ref)
+
+    @attr(kind='small')
+    def test_get_networks_no_project_network(self):
+        """Test for nova.network.api.API.get_networks."""
+        def fake_network_get_all(context):
+            return networks
+
+        self.stubs.Set(self.api.db, "network_get_all",
+                                    fake_network_get_all)
+        ref = self.api.get_networks(self.context, 'aaa_project', True)
+        self.assertEqual([], ref)
+
+    @attr(kind='small')
+    def test_get_network_info(self):
+        """Test for nova.network.api.API.get_network_info."""
+        def fake_network_get_by_uuid(context, uuid):
+            net = networks[0].copy()
+            net['created_at'] = "aaa"
+            net['updated_at'] = "bbb"
+            net['vpn_private_address'] = "ccc"
+            net['priority'] = 0
+            net['dhcp_start'] = '192.168.0.3'
+            return net
+
+        self.stubs.Set(self.api.db, "network_get_by_uuid",
+                                    fake_network_get_by_uuid)
+        expected = {'id': 1,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'label': 'test0',
+             'injected': 'F',
+             'multi_host': 'F',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'gateway': '192.168.0.1',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': None,
+             'host': 'testhost',
+             'project_id': 'fake_project',
+             'vpn': '192.168.0.2',
+             'vpn_private_address': 'ccc',
+             'created_at': 'aaa',
+             'updated_at': 'bbb',
+             'priority': 0,
+             'dhcp_start': '192.168.0.3',
+             'dhcp_server': None}
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        ref = self.api.get_network_info(self.context, uuid) 
+        self.assertEqual(expected, ref)
+
+    @attr(kind='small')
+    def test_get_network_info_not_found(self):
+        """Test for nova.network.api.API.get_network_info."""
+        def fake_network_get_by_uuid(context, uuid):
+            raise exception.NetworkNotFoundForUUID()
+
+        self.stubs.Set(self.api.db, "network_get_by_uuid",
+                                    fake_network_get_by_uuid)
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        self.assertRaises(exception.NetworkNotFoundForUUID,
+                          self.api.get_network_info,
+                          self.context, uuid)
+
+    @attr(kind='small')
+    def test_create_network_1(self):
+        """Test for nova.network.api.API.create_network."""
+        def call(topic, content):
+            return [{'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}]
+
+        def fake_network_get_by_uuid(context, uuid):
+            net = networks[0].copy()
+            net['created_at'] = "aaa"
+            net['updated_at'] = "bbb"
+            net['vpn_private_address'] = "ccc"
+            net['priority'] = 0
+            net['dhcp_start'] = '192.168.0.3'
+            net['vlan'] = 100
+            return net
+
+        self.call = call
+        self.stubs.Set(self.api.db, "network_get_by_uuid",
+                                    fake_network_get_by_uuid)
+        expected = {'id': 1,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'label': 'test0',
+             'injected': 'F',
+             'multi_host': 'F',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'gateway': '192.168.0.1',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'host': 'testhost',
+             'project_id': 'fake_project',
+             'vpn': '192.168.0.2',
+             'vpn_private_address': 'ccc',
+             'created_at': 'aaa',
+             'updated_at': 'bbb',
+             'priority': 0,
+             'dhcp_start': '192.168.0.3',
+             'dhcp_server': None}
+
+        network_dict = {'label': 'test0',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'multi_host': 'T',
+             'gateway': '192.168.0.1',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'vpn': '192.168.0.2',
+             'priority': 0,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'dhcp_server': '192.168.0.10'}
+
+        ref = self.api.create_network(self.context, 'fale_project',
+                                      network_dict) 
+        self.assertEqual(expected, ref)
+
+    @attr(kind='small')
+    def test_create_network_2(self):
+        """Test for nova.network.api.API.create_network."""
+        def call(topic, content):
+            return [{'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}]
+
+        def fake_network_get_by_uuid(context, uuid):
+            net = networks[0].copy()
+            net['created_at'] = "aaa"
+            net['updated_at'] = "bbb"
+            net['vpn_private_address'] = "ccc"
+            net['priority'] = 0
+            net['dhcp_start'] = '192.168.0.3'
+            net['vlan'] = 100
+            return net
+
+        self.call = call
+        self.stubs.Set(self.api.db, "network_get_by_uuid",
+                                    fake_network_get_by_uuid)
+        expected = {'id': 1,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'label': 'test0',
+             'injected': 'F',
+             'multi_host': 'F',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'gateway': '192.168.0.1',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'host': 'testhost',
+             'project_id': 'fake_project',
+             'vpn': '192.168.0.2',
+             'vpn_private_address': 'ccc',
+             'created_at': 'aaa',
+             'updated_at': 'bbb',
+             'priority': 0,
+             'dhcp_start': '192.168.0.3',
+             'dhcp_server': None}
+
+        network_dict = {'label': 'test0',
+             'cidr_v6': '2001:db8::/64',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0'}
+
+        self.flags(vlan_start=100)
+        self.flags(vpn_start="192.168.0.2")
+        ref = self.api.create_network(self.context, 'fale_project',
+                                      network_dict) 
+        self.assertEqual(expected, ref)
+
+    @attr(kind='small')
+    def test_create_network_no_label(self):
+        """Test for nova.network.api.API.create_network."""
+        network_dict = {'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'multi_host': 'T',
+             'gateway': '192.168.0.1',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'vpn': '192.168.0.2',
+             'priority': 0,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'dhcp_server': '192.168.0.10'}
+        self.assertRaises(exception.ApiError,
+                          self.api.create_network,
+                          self.context, 'fake_project', network_dict)
+
+    @attr(kind='small')
+    def test_create_network_no_cidr(self):
+        """Test for nova.network.api.API.create_network."""
+        network_dict = {'label': 'test0',
+             'multi_host': 'T',
+             'gateway': '192.168.0.1',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'bridge_interface': 'fake_fa0',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'vpn': '192.168.0.2',
+             'priority': 0,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'dhcp_server': '192.168.0.10'}
+        self.assertRaises(exception.ApiError,
+                          self.api.create_network,
+                          self.context, 'fake_project', network_dict)
+
+    @attr(kind='small')
+    def test_create_network_no_bridge(self):
+        """Test for nova.network.api.API.create_network."""
+        network_dict = {'label': 'test0',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'multi_host': 'T',
+             'gateway': '192.168.0.1',
+             'gateway_v6': '2001:db8::1',
+             'bridge_interface': 'fake_fa0',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'vpn': '192.168.0.2',
+             'priority': 0,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'dhcp_server': '192.168.0.10'}
+        self.flags(flat_network_bridge=None)
+        self.flags(network_manager='nova.network.manager.FlatManager')
+        self.assertRaises(exception.ApiError,
+                          self.api.create_network,
+                          self.context, 'fake_project', network_dict)
+
+    @attr(kind='small')
+    def test_create_network_no_bridge_interface(self):
+        """Test for nova.network.api.API.create_network."""
+        network_dict = {'label': 'test0',
+             'cidr': '192.168.0.0/24',
+             'cidr_v6': '2001:db8::/64',
+             'multi_host': 'T',
+             'gateway': '192.168.0.1',
+             'gateway_v6': '2001:db8::1',
+             'bridge': 'fa0',
+             'dns1': '192.168.0.1',
+             'dns2': '192.168.0.2',
+             'vlan': 100,
+             'vpn': '192.168.0.2',
+             'priority': 0,
+             'uuid': "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+             'dhcp_server': '192.168.0.10'}
+        self.flags(flat_interface=None)
+        self.flags(vlan_interface=None)
+        self.flags(network_manager='nova.network.manager.VlanManager')
+        self.assertRaises(exception.ApiError,
+                          self.api.create_network,
+                          self.context, 'fake_project', network_dict)
+
+    @attr(kind='small')
+    def test_delete_network(self):
+        """Test for nova.network.api.API.delete_network."""
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        self.api.delete_network(self.context, uuid)

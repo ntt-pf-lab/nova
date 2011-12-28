@@ -36,6 +36,7 @@ from nova.api.openstack import images
 from nova.api.openstack import image_metadata
 from nova.api.openstack import ips
 from nova.api.openstack import limits
+from nova.api.openstack import networks
 from nova.api.openstack import servers
 from nova.api.openstack import server_metadata
 from nova.api.openstack import shared_ip_groups
@@ -169,6 +170,10 @@ class APIRouter(base_wsgi.Router):
 
         mapper.resource("flavor", "flavors",
                         controller=flavors.create_resource(version),
+                        collection={'detail': 'GET'})
+
+        mapper.resource("network", "networks",
+                        controller=networks.create_resource(version),
                         collection={'detail': 'GET'})
 
         super(APIRouter, self).__init__(mapper)
