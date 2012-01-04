@@ -305,7 +305,7 @@ class NetworkUuidsExists(BaseValidator):
     Require the 'uuids' parameter.
     """
     def validate_uuids(self, uuids):
-        db.network_get_all_by_uuids(self.context, uuids)
+        db.network_get_all_by_uuids(self.context.elevated(), uuids)
 
 
 class NetworkFixedIpsValid(BaseValidator):
@@ -471,7 +471,7 @@ class ZoneRequire(BaseValidator):
     Require the 'zone_id' parameter.
     """
     def validate_zone_id(self, zone_id):
-        db.zone_get(self.context, zone_id)
+        db.zone_get(self.context.elevated(), zone_id)
 
 
 class ZoneNameValid(BaseValidator):
@@ -554,11 +554,11 @@ class KeypairExists(BaseValidator):
     """
     def validate_keypair_name(self, keypair_name):
         try:
-            db.key_pair_get(self.context, self.context.user_id, keypair_name)
             keypair = db.key_pair_get(self.context, self.context.user_id,
                                       keypair_name)
-            instances = db.instance_get_all_by_user(self.context,
-                                                    self.context.user_id)
+            instances = db.instance_get_all_by_filters(
+                                             self.context,
+                                             {"key_name": keypair_name})
             for i in instances:
                 if i["key_name"] == keypair["name"]:
                     raise exception.KeyPairUsed(key_name=keypair_name)
