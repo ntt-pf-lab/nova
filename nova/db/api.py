@@ -403,6 +403,11 @@ def fixed_ip_update(context, address, values):
     """Create a fixed ip from the values dictionary."""
     return IMPL.fixed_ip_update(context, address, values)
 
+def fixed_ip_delete_by_virtual_interface(context, vif_id):
+    """Delete fixed_ip associated with the specified vif.
+    """
+    return IMPL.fixed_ip_delete_by_virtual_interface(context, vif_id)
+
 ####################
 
 

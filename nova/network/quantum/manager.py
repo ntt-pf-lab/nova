@@ -211,14 +211,21 @@ class QuantumManager(manager.FlatManager):
 
         requested_networks = kwargs.get('requested_networks')
 
+        uuid_proj_pairs = self.ipam.get_project_and_global_net_ids(context,
+                                                                project_id)
+        net_proj_pairs = []
         if requested_networks:
-            net_proj_pairs = [(net, project_id) for net in requested_networks]
+            for net in requested_networks:
+                proj_id = project_id
+                for (net_id, p_id) in uuid_proj_pairs:
+                    if net_id == net['uuid']:
+                        proj_id = p_id
+                        break
+                net_proj_pairs.append((net, proj_id))
         else:
             net_proj_pairs = [({'uuid': net_id, 'fixed_ip': None, 'gw': True},
                                  p_id) \
-                   for (net_id, p_id) in \
-                             self.ipam.get_project_and_global_net_ids(context,
-                                                                project_id)]
+                   for (net_id, p_id) in uuid_proj_pairs]
 
             # Quantum may also know about networks that aren't in the networks
             # table so we need to query Quanutm for any tenant networks and add

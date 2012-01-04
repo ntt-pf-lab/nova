@@ -69,7 +69,13 @@ class QuantumMelangeIPAMLib(object):
         net = {"uuid": quantum_net_id,
                "project_id": project_id,
                "priority": priority,
-               "label": label}
+               "label": label,
+               "cidr": cidr,
+               "gateway": gateway,
+               "cidr_v6": cidr_v6,
+               "gateway_v6": gateway_v6,
+               "dns1": dns1,
+               "dns2": dns2}
         if FLAGS.quantum_use_dhcp:
             if cidr:
                 n = IPNetwork(cidr)
@@ -82,17 +88,34 @@ class QuantumMelangeIPAMLib(object):
     def allocate_fixed_ip(self, context, net, project_id, vif_ref):
         """Pass call to allocate fixed IP on to Melange"""
         quantum_net_id = net['uuid']
+        use_gw = net['gw']
         tenant_id = project_id or FLAGS.quantum_default_tenant_id
+        args = {'project_id': tenant_id,
+                'mac_address': vif_ref['address'],
+                'use_gw': use_gw}
+        if net['fixed_ip']:
+            args['address'] = net['fixed_ip']
         ip = self.m_conn.allocate_ip(quantum_net_id,
-                                     vif_ref['uuid'], project_id=tenant_id,
-                                     mac_address=vif_ref['address'])
+                                     vif_ref['uuid'], **args)
+        admin_context = context.elevated()
+        network = db.network_get_by_uuid(admin_context, quantum_net_id)
+        values = {'allocated': True,
+                  'address': ip[0]['address'],
+                  'network_id': network['id'],
+                  'use_gw': net['gw'],
+                  'virtual_interface_id': vif_ref['id']}
+        db.fixed_ip_create(admin_context, values)
         return ip[0]['address']
 
-    def reserve_fixed_ip(self, context, address, quantum_net_id, tenant_id):
+    def reserve_fixed_ip(self, context, address, quantum_net_id, project_id):
         """Reserve a single fixed IPv4 address for not to allocate to 
            a virtual interface."""
         # TODO(oda): implement
-        pass
+        tenant_id = project_id or FLAGS.quantum_default_tenant_id
+        ip = self.m_conn.allocate_ip(quantum_net_id,
+                                     'null', project_id=tenant_id,
+                                     address=address,
+                                     use_gw=True)
 
     def get_network_id_by_cidr(self, context, cidr, project_id):
         """Find the Quantum UUID associated with a IPv4 CIDR
@@ -221,9 +244,12 @@ class QuantumMelangeIPAMLib(object):
         # GET /ipam/tenants/{tenant_id}/networks/{network_id}/ instead
         # of searching through all the blocks.  Checking for a 404
         # will then determine whether it exists.
-        tenant_id = project_id or FLAGS.quantum_default_tenant_id
-        all_blocks = self.m_conn.get_blocks(tenant_id)
-        for b in all_blocks['ip_blocks']:
+        all_blocks = self.m_conn.get_blocks(FLAGS.quantum_default_tenant_id)
+        ip_blocks = all_blocks['ip_blocks']
+        if project_id:
+            all_blocks = self.m_conn.get_blocks(project_id)
+            ip_blocks += all_blocks['ip_blocks']
+        for b in ip_blocks:
             if b['network_id'] == quantum_net_id:
                 return True
         return False
@@ -234,7 +260,11 @@ class QuantumMelangeIPAMLib(object):
         """
         tenant_id = project_id or FLAGS.quantum_default_tenant_id
         self.m_conn.deallocate_ips(net_id, vif_ref['uuid'], tenant_id)
+        admin_context = context.elevated()
+        db.fixed_ip_delete_by_virtual_interface(admin_context,
+                                                   vif_ref['id'])
 
     def get_allocated_ips(self, context, subnet_id, project_id):
         ips = self.m_conn.get_allocated_ips_for_network(subnet_id, project_id)
-        return [(ip['address'], ip['interface_id']) for ip in ips]
+        return [(ip['address'], ip['interface_id'], ip['use_gw']) for ip in ips
+                if ip['interface_id'] is not None]

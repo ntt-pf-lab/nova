@@ -913,6 +913,19 @@ def fixed_ip_update(context, address, values):
         fixed_ip_ref.update(values)
         fixed_ip_ref.save(session=session)
 
+@require_admin_context
+def fixed_ip_delete_by_virtual_interface(context, vif_id):
+    session = get_session()
+    with session.begin():
+        rv = session.query(models.FixedIp).\
+                 options(joinedload('floating_ips')).\
+                 filter_by(virtual_interface_id=vif_id).\
+                 filter_by(deleted=False).\
+                 all()
+        if not rv:
+            raise exception.FixedIpNotFoundForVirtualInterface(vif_id=vif_id)
+        for fixed_ip_ref in rv:
+            fixed_ip_ref.delete(session=session)
 
 ###################
 

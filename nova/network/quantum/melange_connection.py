@@ -87,11 +87,15 @@ class MelangeConnection(object):
                             "server. Got error: %s" % e))
 
     def allocate_ip(self, network_id, vif_id,
-                    project_id=None, mac_address=None):
+                    project_id=None, mac_address=None, use_gw=True,
+                    address=None):
         tenant_scope = "/tenants/%s" % project_id if project_id else ""
-        request_body = (json.dumps(dict(network=dict(mac_address=mac_address,
-                                 tenant_id=project_id)))
-                    if mac_address else None)
+        request_dict = {'tenant_id': project_id, 'use_gw':use_gw}
+        if mac_address:
+            request_dict['mac_address'] = mac_address
+        if address:
+            request_dict['addresses'] = [address]
+        request_body = json.dumps({'network': request_dict})
         url = ("ipam%(tenant_scope)s/networks/%(network_id)s/"
            "interfaces/%(vif_id)s/ip_allocations" % locals())
         response = self.post(url, body=request_body,
