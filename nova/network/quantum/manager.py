@@ -220,15 +220,16 @@ class QuantumManager(manager.FlatManager):
                              self.ipam.get_project_and_global_net_ids(context,
                                                                 project_id)]
 
-        # Quantum may also know about networks that aren't in the networks
-        # table so we need to query Quanutm for any tenant networks and add
-        # them to net_proj_pairs.
-        qnets = self.q_conn.get_networks(project_id)
-        for qn in qnets['networks']:
-            if qn['id'] not in (net['uuid'] for (net, _p) in net_proj_pairs):
-                pair = ({'uuid': qn['id'], 'fixed_ip': None, 'gw': True},
+            # Quantum may also know about networks that aren't in the networks
+            # table so we need to query Quanutm for any tenant networks and add
+            # them to net_proj_pairs.
+            qnets = self.q_conn.get_networks(project_id)
+            for qn in qnets['networks']:
+                if qn['id'] not in \
+                      (net['uuid'] for (net, _p) in net_proj_pairs):
+                    pair = ({'uuid': qn['id'], 'fixed_ip': None, 'gw': True},
                                                                 project_id)
-                net_proj_pairs.append(pair)
+                    net_proj_pairs.append(pair)
 
         # Create a port via quantum and attach the vif
         for (net, project_id) in net_proj_pairs:
