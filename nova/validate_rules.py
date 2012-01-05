@@ -556,9 +556,8 @@ class KeypairExists(BaseValidator):
         try:
             keypair = db.key_pair_get(self.context, self.context.user_id,
                                       keypair_name)
-            instances = db.instance_get_all_by_filters(
-                                             self.context,
-                                             {"key_name": keypair_name})
+            instances = db.instance_get_all_by_user(self.context.elevated(),
+                                                    self.context.user_id)
             for i in instances:
                 if i["key_name"] == keypair["name"]:
                     raise exception.KeyPairUsed(key_name=keypair_name)
