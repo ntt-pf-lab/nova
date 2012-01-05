@@ -405,6 +405,10 @@ class ServersTest(test.TestCase):
                         "href": "http://localhost/fake/servers/1",
                     },
                 ],
+                "networks": [
+                    {"gw": False, "fixed_ip": None, "uuid": None},
+                    {"gw": False, "fixed_ip": None, "uuid": None}
+                ],
             }
         }
 
@@ -481,6 +485,10 @@ class ServersTest(test.TestCase):
                     <ip version="4" addr="%(private_ip)s"/>
                 </network>
             </addresses>
+            <networks>
+                <network fixed_ip="" gw="false" uuid=""/>
+                <network fixed_ip="" gw="false" uuid=""/>
+            </networks>
         </server>
         """.replace("  ", "") % (locals()))
 
@@ -575,6 +583,10 @@ class ServersTest(test.TestCase):
                         "rel": "bookmark",
                         "href": "http://localhost/fake/servers/1",
                     },
+                ],
+                "networks": [
+                    {"gw": False, "fixed_ip": None, "uuid": None},
+                    {"gw": False, "fixed_ip": None, "uuid": None}
                 ],
             }
         }
@@ -672,6 +684,10 @@ class ServersTest(test.TestCase):
                         "rel": "bookmark",
                         "href": "http://localhost/fake/servers/1",
                     },
+                ],
+                "networks": [
+                    {"gw": False, "fixed_ip": None, "uuid": None},
+                    {"gw": False, "fixed_ip": None, "uuid": None}
                 ],
             }
         }
@@ -3839,6 +3855,7 @@ class ServersViewBuilderV11Test(test.TestCase):
                         "href": "http://localhost/servers/1",
                     },
                 ],
+                "networks": [],
             }
         }
 
@@ -3896,6 +3913,7 @@ class ServersViewBuilderV11Test(test.TestCase):
                         "href": "http://localhost/servers/1",
                     },
                 ],
+                "networks": [],
             }
         }
 
@@ -3954,6 +3972,7 @@ class ServersViewBuilderV11Test(test.TestCase):
                         "href": "http://localhost/servers/1",
                     },
                 ],
+                "networks": [],
             }
         }
 
@@ -4012,6 +4031,7 @@ class ServersViewBuilderV11Test(test.TestCase):
                         "href": "http://localhost/servers/1",
                     },
                 ],
+                "networks": [],
             }
         }
 
@@ -4076,6 +4096,7 @@ class ServersViewBuilderV11Test(test.TestCase):
                         "href": "http://localhost/servers/1",
                     },
                 ],
+                "networks": [],
             }
         }
 
