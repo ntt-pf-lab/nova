@@ -93,6 +93,7 @@ from nova.auth import manager
 from nova.cloudpipe import pipelib
 from nova.compute import instance_types
 from nova.db import migration
+from nova.network import api as net_api
 from nova.volume import volume_types
 
 FLAGS = flags.FLAGS
@@ -878,9 +879,12 @@ class NetworkCommands(object):
             if fixed_range:
                 raise Exception("Deleting by fixed_range is not supported " \
                     "with the QuantumManager")
-        # delete the network
-        net_manager.delete_network(context.get_admin_context(),
-            fixed_range, uuid)
+            # delete the network
+            net_api.API().delete_network(context.get_admin_context(), uuid)
+        else:
+            # delete the network
+            net_manager.delete_network(context.get_admin_context(),
+                fixed_range, uuid)
 
     @args('--network', dest="fixed_range", metavar='<x.x.x.x/yy>',
             help='Network to modify')
