@@ -472,8 +472,13 @@ class QuantumManager(manager.FlatManager):
             ipam_tenant_id = self.ipam.get_tenant_id_by_net_id(context,
                 net_id, vif_ref['uuid'], project_id)
 
-            self.ipam.deallocate_ips_by_vif(context, ipam_tenant_id,
+            try:
+                self.ipam.deallocate_ips_by_vif(context, ipam_tenant_id,
                                             net_id, vif_ref)
+            except:
+                LOG.error("Unable to deallocate ip address for interface: %s" %
+                          (interface_id))
+                # continue to free resources as possible.
 
             # If DHCP is enabled on this network then we need to update the
             # leases and restart the server.

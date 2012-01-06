@@ -185,8 +185,11 @@ class QuantumNovaIPAMLib(object):
            the specified virtual interface, based on the fixed_ips table.
         """
         vif_rec = db.virtual_interface_get_by_uuid(context, vif_id)
-        fixed_ips = db.fixed_ip_get_by_virtual_interface(context,
+        try:
+            fixed_ips = db.fixed_ip_get_by_virtual_interface(context,
                                                          vif_rec['id'])
+        except:
+            return []
         return [fixed_ip['address'] for fixed_ip in fixed_ips]
 
     def get_v6_ips_by_interface(self, context, net_id, vif_id, project_id):
@@ -227,7 +230,7 @@ class QuantumNovaIPAMLib(object):
                                     'use_gw': True,
                                     'instance_id': None,
                                     'virtual_interface_id': None})
-        except exception.FixedIpNotFoundForInstance:
+        except exception.FixedIpNotFoundForVirtualInterface:
             LOG.error(_('No fixed IPs to deallocate for vif %s' %
                             vif_ref['id']))
 
