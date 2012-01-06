@@ -534,7 +534,7 @@ class VMOps(object):
                     % locals())
             return
 
-    def migrate_disk_and_power_off(self, instance, dest):
+    def migrate_disk_and_power_off(self, instance, network_info, dest):
         """Copies a VHD from one host machine to another.
 
         :param instance: the instance that owns the VHD in question.

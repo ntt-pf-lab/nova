@@ -4528,12 +4528,12 @@ class LibvirtConnectionTestCase(test.TestCase):
         ins_ref = self._create_instance()
         """ dest is different host case """
         out = self.libvirtconnection.migrate_disk_and_power_off( \
-               ins_ref, '10.0.0.2')
+               ins_ref, [], '10.0.0.2')
         self.assertEquals(out, disk_info_text)
 
         """ dest is same host case """
         out = self.libvirtconnection.migrate_disk_and_power_off( \
-               ins_ref, '10.0.0.1')
+               ins_ref, [], '10.0.0.1')
         self.assertEquals(out, disk_info_text)
 
     @attr(kind='small')

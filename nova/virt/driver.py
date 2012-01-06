@@ -224,7 +224,7 @@ class ComputeDriver(object):
         """
         raise NotImplementedError()
 
-    def migrate_disk_and_power_off(self, instance, dest):
+    def migrate_disk_and_power_off(self, instance, network_info, dest):
         """
         Transfers the disk of a running instance in multiple phases, turning
         off the instance before the end.

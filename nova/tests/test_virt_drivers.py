@@ -399,13 +399,13 @@ class _VirtDriverConnectionTestCase(test.TestCase):
         instance_ref = test_utils.get_test_instance()
         self.assertRaises(exception.InstanceNotFound,
                           self.connection.migrate_disk_and_power_off,
-                          instance_ref, 'dest_host')
+                          instance_ref, [], 'dest_host')
 
     @catch_notimplementederror
     def test_migrate_disk_and_power_off(self):
         self._ensure_test_instance_running()
         self.connection.migrate_disk_and_power_off(self.instance_ref,
-                                                   'dest_host')
+                                                   [], 'dest_host')
         self._must_not_be_test_instance_running()
 
     @catch_notimplementederror

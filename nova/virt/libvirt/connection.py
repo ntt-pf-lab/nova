@@ -1940,16 +1940,13 @@ class LibvirtConnection(driver.ComputeDriver):
         pass
 
     @exception.wrap_exception()
-    def migrate_disk_and_power_off(self, instance, dest):
+    def migrate_disk_and_power_off(self, instance, network_info, dest):
         LOG.debug(_("Instance %s: Starting migrate_disk_and_power_off"),
                    instance['name'])
 
         disk_info = self._get_instance_disk_info(instance)
 
-        # NOTE(oda): migrate_disk_and_power_off should take argument
-        # network_info. fortunately there is no problem not calling 
-        # unplug now.
-        self.destroy(instance, network_info=[], cleanup=False)
+        self.destroy(instance, network_info, cleanup=False)
 
         # copy disks to destination
         # if disk type is qcow2, convert to raw then send to dest.

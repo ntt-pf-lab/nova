@@ -172,7 +172,7 @@ class FakeConnection(driver.ComputeDriver):
     def poll_unconfirmed_resizes(self, resize_confirm_window):
         pass
 
-    def migrate_disk_and_power_off(self, instance, dest):
+    def migrate_disk_and_power_off(self, instance, network_info, dest):
         if instance['name'] in self.instances:
             del self.instances[instance['name']]
         else:

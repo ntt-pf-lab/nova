@@ -1054,8 +1054,9 @@ class ComputeManager(manager.SchedulerDependentManager):
                                  migration_id,
                                  {'status': 'migrating'})
 
+        network_info = self._get_instance_nw_info(context, instance_ref)
         disk_info = self.driver.migrate_disk_and_power_off(
-                instance_ref, migration_ref['dest_host'])
+                instance_ref, network_info, migration_ref['dest_host'])
         self.db.migration_update(context,
                                  migration_id,
                                  {'status': 'post-migrating'})
