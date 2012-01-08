@@ -338,7 +338,7 @@ class API(base.Base):
                 raise exception.ApiError(_('bridge_interface is required.'))
         args['bridge_interface'] = bridge_interface
 
-        args['dns1'] = network_dict.get('dns2', None) or FLAGS.flat_network_dns
+        args['dns1'] = network_dict.get('dns1', None) or FLAGS.flat_network_dns
         args['dns2'] = network_dict.get('dns2', None)
 
         # the following arguments are stored to **kwards,
