@@ -746,12 +746,14 @@ class NetworkCommands(object):
       help='Project id')
     @args('--priority', dest="priority", metavar="<number>",
       help='Network interface priority')
+    @args('--dhcp_server', dest="dhcp_server", metavar="<DHCP Address>",
+      help='DHCP Server address')
     def create(self, label=None, fixed_range_v4=None, num_networks=None,
                network_size=None, multi_host=None, vlan_start=None,
                vpn_start=None, fixed_range_v6=None, gateway=None,
                gateway_v6=None, bridge=None, bridge_interface=None,
                dns1=None, dns2=None, project_id=None, priority=None,
-               uuid=None):
+               uuid=None, dhcp_server=None):
         """Creates fixed ips for host by range"""
 
         # check for certain required inputs
@@ -822,7 +824,8 @@ class NetworkCommands(object):
                                     dns2=dns2,
                                     project_id=project_id,
                                     priority=priority,
-                                    uuid=uuid)
+                                    uuid=uuid,
+                                    dhcp_server=dhcp_server)
 
     def list(self):
         """List all created networks"""

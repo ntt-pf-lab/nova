@@ -633,6 +633,7 @@ class Network(BASE, NovaBase):
     priority = Column(Integer)
     host = Column(String(255))  # , ForeignKey('hosts.id'))
     uuid = Column(String(36))
+    dhcp_server = Column(String(255))
 
 
 class VirtualInterface(BASE, NovaBase):

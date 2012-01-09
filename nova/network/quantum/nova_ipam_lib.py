@@ -52,7 +52,7 @@ class QuantumNovaIPAMLib(object):
     def create_subnet(self, context, label, tenant_id,
                       quantum_net_id, priority, cidr=None,
                       gateway=None, gateway_v6=None, cidr_v6=None,
-                      dns1=None, dns2=None):
+                      dns1=None, dns2=None, dhcp_server=None):
         """Re-use the basic FlatManager create_networks method to
            initialize the networks and fixed_ips tables in Nova DB.
 
@@ -72,7 +72,8 @@ class QuantumNovaIPAMLib(object):
         network = networks[0]
         net = {"project_id": tenant_id,
                "priority": priority,
-               "uuid": quantum_net_id}
+               "uuid": quantum_net_id,
+               "dhcp_server": dhcp_server}
         db.network_update(admin_context, network['id'], net)
 
     def get_network_id_by_cidr(self, context, cidr, project_id):

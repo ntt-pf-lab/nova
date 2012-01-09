@@ -113,6 +113,13 @@ class QuantumManager(manager.FlatManager):
         if num_networks != 1:
             raise Exception(_("QuantumManager requires that only one"
                               " network is created per call"))
+        dhcp_server = kwargs.get("dhcp_server", None)
+        if dhcp_server is None:
+            dhcp_server = str(IPAddress(IPNetwork(cidr).first + 2))
+        else:
+            if IPAddress(dhcp_server) not in IPNetwork(cidr):
+                raise Exception(_("DHCP Server address is not in cidr"))
+
         q_tenant_id = kwargs["project_id"] or FLAGS.quantum_default_tenant_id
         quantum_net_id = uuid
         if quantum_net_id:
@@ -128,12 +135,9 @@ class QuantumManager(manager.FlatManager):
         priority = kwargs.get("priority", 0)
         self.ipam.create_subnet(context, label, ipam_tenant_id, quantum_net_id,
             priority, cidr, gateway, gateway_v6,
-            cidr_v6, dns1, dns2)
+            cidr_v6, dns1, dns2, dhcp_server)
 
         # reserve dhcp_server ip address
-        # TODO(oda): dhcp_server ip address can be specified via 
-        # the nova-manage network create.
-        dhcp_server = str(IPAddress(IPNetwork(cidr).first + 2))
         self.ipam.reserve_fixed_ip(context, dhcp_server, quantum_net_id,
                   ipam_tenant_id)
 
@@ -312,7 +316,6 @@ class QuantumManager(manager.FlatManager):
             # passed to the linux_net functions).
             network_ref['cidr'] = subnet['cidr']
             n = IPNetwork(subnet['cidr'])
-            network_ref['dhcp_server'] = IPAddress(n.first + 2)
             # TODO(bgh): Melange should probably track dhcp_start
             if not 'dhcp_start' in network_ref or \
                     network_ref['dhcp_start'] is None:
@@ -408,7 +411,7 @@ class QuantumManager(manager.FlatManager):
 
             info = {
                 'gateway': v4_subnet['gateway'],
-                'dhcp_server': v4_subnet['gateway'],
+                'dhcp_server': net['dhcp_server'],
                 'broadcast': v4_subnet['broadcast'],
                 'mac': vif['address'],
                 'vif_uuid': vif['uuid'],
@@ -499,7 +502,6 @@ class QuantumManager(manager.FlatManager):
             # passed to the linux_net functions).
             network_ref['cidr'] = subnet['cidr']
             n = IPNetwork(subnet['cidr'])
-            network_ref['dhcp_server'] = IPAddress(n.first + 2)
             network_ref['dhcp_start'] = IPAddress(n.first + 1)
             network_ref['broadcast'] = IPAddress(n.broadcast)
             network_ref['gateway'] = subnet['gateway']

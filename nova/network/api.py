@@ -263,7 +263,7 @@ class API(base.Base):
                 "dns2": network_ref['dns2'],
                 "uuid": network_ref['uuid'],
                 "priority": network_ref['priority'],
-                "dhcp_server": None, #network_ref['dhcp_server'],
+                "dhcp_server": network_ref['dhcp_server'],
                }
         else:
             net_info = { \

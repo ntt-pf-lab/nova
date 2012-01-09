@@ -45,7 +45,7 @@ class QuantumMelangeIPAMLib(object):
     def create_subnet(self, context, label, project_id,
                       quantum_net_id, priority, cidr=None,
                       gateway=None, gateway_v6=None, cidr_v6=None,
-                      dns1=None, dns2=None):
+                      dns1=None, dns2=None, dhcp_server=None):
         """Contact Melange and create a subnet for any non-NULL
            IPv4 or IPv6 subnets.
 
@@ -75,7 +75,8 @@ class QuantumMelangeIPAMLib(object):
                "cidr_v6": cidr_v6,
                "gateway_v6": gateway_v6,
                "dns1": dns1,
-               "dns2": dns2}
+               "dns2": dns2,
+               "dhcp_server": dhcp_server}
         if FLAGS.quantum_use_dhcp:
             if cidr:
                 n = IPNetwork(cidr)
