@@ -73,13 +73,14 @@ class QuantumManager(manager.FlatManager):
         self.ipam = utils.import_object(ipam_lib).get_ipam_lib(self)
 
         super(QuantumManager, self).__init__(*args, **kwargs)
+
+    def init_host(self):
         self.driver.init_host()
         # TODO(bgh): We'll need to enable these when we implement the full L3
         # functionalities
         # self.driver.ensure_metadata_ip()
         # self.driver.metadata_forward()
 
-    def init_host(self):
         if FLAGS.quantum_use_dhcp:
             ctxt = context.get_admin_context()
             networks = db.network_get_all(ctxt) \
