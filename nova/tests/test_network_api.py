@@ -53,6 +53,7 @@ networks = [{'id': 1,
              'vlan': None,
              'host': 'testhost',
              'project_id': 'fake_project',
+             'dhcp_server': None,
              'vpn_public_address': '192.168.0.2'}]
 
 fixed_ips = [{'id': 1,
