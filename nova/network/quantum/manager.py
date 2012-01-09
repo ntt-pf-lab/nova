@@ -122,6 +122,8 @@ class QuantumManager(manager.FlatManager):
 
         q_tenant_id = kwargs["project_id"] or FLAGS.quantum_default_tenant_id
         quantum_net_id = uuid
+        q_created = False
+        n_created = False
         if quantum_net_id:
             if not self.q_conn.network_exists(q_tenant_id, quantum_net_id):
                     raise Exception(_("Unable to find existing quantum " \
@@ -130,16 +132,31 @@ class QuantumManager(manager.FlatManager):
         else:
             # otherwise, create network from default quantum pool
             quantum_net_id = self.q_conn.create_network(q_tenant_id, label)
+            q_created = True
 
-        ipam_tenant_id = kwargs.get("project_id", None)
-        priority = kwargs.get("priority", 0)
-        self.ipam.create_subnet(context, label, ipam_tenant_id, quantum_net_id,
-            priority, cidr, gateway, gateway_v6,
-            cidr_v6, dns1, dns2, dhcp_server)
-
-        # reserve dhcp_server ip address
-        self.ipam.reserve_fixed_ip(context, dhcp_server, quantum_net_id,
-                  ipam_tenant_id)
+        try:
+            ipam_tenant_id = kwargs.get("project_id", None)
+            priority = kwargs.get("priority", 0)
+            self.ipam.create_subnet(context, label, ipam_tenant_id,
+                quantum_net_id, priority, cidr, gateway, gateway_v6,
+                cidr_v6, dns1, dns2, dhcp_server)
+            n_created = True
+            # reserve dhcp_server ip address
+            self.ipam.reserve_fixed_ip(context, dhcp_server, quantum_net_id,
+                      ipam_tenant_id)
+        except Exception as exc:
+            if n_created:
+                try:
+                    self.ipam.delete_subnets_by_net_id(context, 
+                             quantum_net_id, ipam_tenant_id)
+                except:
+                    pass
+            if q_created:
+                try:
+                    self.q_conn.delete_network(q_tenant_id, quantum_net_id)
+                except:
+                    pass
+            raise exc
 
         return [{'uuid': quantum_net_id}]
 
