@@ -330,6 +330,8 @@ class QuantumManager(manager.FlatManager):
             # If we haven't then we need to intiialize it and create
             # it.  This device will be the one serving dhcp via
             # dnsmasq.
+            if self.driver.should_delete_gateway_device(interface_id):
+                self.driver.unplug(network_ref)
             if not self.driver.device_exists(interface_id):
                 mac_address = self.generate_mac_address()
                 is_gw = (network_ref['gateway'] != network_ref['dhcp_server'])

@@ -850,6 +850,19 @@ def _ip_bridge_cmd(action, params, device):
     return cmd
 
 
+def should_delete_gateway_device(dev):
+    # if the device exists but no ip address, should delete the device.
+    if not _device_exists(dev):
+        return False
+    out, err = _execute('ip', 'addr', 'show', 'dev', dev,
+                             'scope', 'global', run_as_root=True)
+    for line in out.split('\n'):
+        fields = line.split()
+        if fields and fields[0] == 'inet':
+            return False
+    return True
+
+
 # Similar to compute virt layers, the Linux network node
 # code uses a flexible driver model to support different ways
 # of creating ethernet interfaces and attaching them to the network.
