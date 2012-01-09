@@ -1897,7 +1897,10 @@ class LibvirtConnection(driver.ComputeDriver):
 
                 backing_file = [i.split('actual path:')[1].strip()[:-1]
                     for i in out.split('\n') if 0 <= i.find('backing file')]
-                backing_file = os.path.basename(backing_file[0])
+                if len(backing_file) == 0:
+                    backing_file = ""
+                else:
+                    backing_file = os.path.basename(backing_file[0])
 
             # block migration needs same/larger size of empty image on the
             # destination host. since qemu-img creates bit smaller size image
