@@ -406,7 +406,15 @@ class ComputeManager(manager.SchedulerDependentManager):
         if instance['name'] in self.driver.list_instances():
             raise exception.InstanceExists(name=instance_id)
 
-        _check_image_size()
+        try:
+            _check_image_size()
+        except:
+            LOG.exception(_("Checking image size is failed"))
+            self._instance_update(context,
+                      instance_id,
+                      vm_state=vm_states.ERROR,
+                      task_state=None)
+            raise
 
         LOG.audit(_("instance %s: starting..."), instance_id,
                   context=context)
@@ -432,20 +440,28 @@ class ComputeManager(manager.SchedulerDependentManager):
             raise
 
         try:
-            self._instance_update(context,
-                                  instance_id,
-                                  vm_state=vm_states.BUILDING,
-                                  task_state=task_states.BLOCK_DEVICE_MAPPING)
-
-            block_device_info = _make_block_device_info()
-
-            self._instance_update(context,
-                                  instance_id,
-                                  vm_state=vm_states.BUILDING,
-                                  task_state=task_states.SPAWNING)
-
-            # TODO(vish) check to make sure the availability zone matches
             try:
+                self._instance_update(context,
+                                      instance_id,
+                                      vm_state=vm_states.BUILDING,
+                                      task_state=task_states.BLOCK_DEVICE_MAPPING)
+
+                block_device_info = _make_block_device_info()
+            except:
+                LOG.exception(_("Making block device info"))
+                self._instance_update(context,
+                        instance_id,
+                        vm_state=vm_states.ERROR,
+                        task_state=None)
+                raise
+
+            try:
+                self._instance_update(context,
+                                      instance_id,
+                                      vm_state=vm_states.BUILDING,
+                                      task_state=task_states.SPAWNING)
+
+                # TODO(vish) check to make sure the availability zone matches
                 self.driver.spawn(context, instance,
                                   network_info, block_device_info)
             except Exception as ex:  # pylint: disable=W0702
