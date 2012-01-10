@@ -72,6 +72,8 @@ flags.DEFINE_bool('send_arp_for_ha', False,
 flags.DEFINE_bool('use_single_default_gateway',
                    False, 'Use single default gateway. Only first nic of vm'
                           ' will get default gateway from dhcp server')
+flags.DEFINE_string('net_container_dir',
+                    '/cgroup', 'Cgroup dir of network namaspace')
 binary_name = os.path.basename(inspect.stack()[-1][1])
 
 
@@ -862,6 +864,155 @@ def should_delete_gateway_device(dev):
         if fields and fields[0] == 'inet':
             return False
     return True
+
+
+# run dnsmasq in the separate network namaspace.
+# 
+@utils.synchronized('dnsmasq_start')
+def restart_container_dhcp(dev, network_ref):
+    """(Re)starts a dnsmasq server for a given network."""
+
+    conffile = _dhcp_file(dev, 'conf')
+
+    # Make sure dnsmasq can actually read it (it setuid()s to "nobody")
+    os.chmod(conffile, 0644)
+
+    pid = _dnsmasq_pid_for(dev)
+
+    # if dnsmasq is already running, then tell it to reload
+    if pid:
+        out, _err = _execute('cat', '/proc/%d/cmdline' % pid,
+                             check_exit_code=False)
+        # Using symlinks can cause problems here so just compare the name
+        # of the file itself
+        if conffile.split("/")[-1] in out:
+            try:
+                _execute('kill', '-HUP', pid, run_as_root=True)
+                return
+            except Exception as exc:  # pylint: disable=W0703
+                LOG.debug(_('Hupping dnsmasq threw %s'), exc)
+        else:
+            LOG.debug(_('Pid %d is stale, relaunching dnsmasq'), pid)
+
+    full_ip = '%s/%s' % (network_ref['dhcp_server'],
+                         network_ref['cidr'].rpartition('/')[2])
+    cmd = [_bin_file('net_container'), dev, full_ip,
+           network_ref['gateway'],
+           FLAGS.net_container_dir,
+           '/usr/sbin/dnsmasq',
+           '--strict-order',
+           '--bind-interfaces',
+           '--conf-file=%s' % FLAGS.dnsmasq_config_file,
+           '--domain=%s' % FLAGS.dhcp_domain,
+           '--pid-file=%s' % _dhcp_file(dev, 'pid'),
+           '--listen-address=%s' % network_ref['dhcp_server'],
+           '--except-interface=lo',
+           '--dhcp-range=%s,static,120s' % network_ref['dhcp_start'],
+           '--dhcp-lease-max=%s' % len(netaddr.IPNetwork(network_ref['cidr'])),
+           '--dhcp-hostsfile=%s' % _dhcp_file(dev, 'conf'),
+           '--dhcp-option=tag:nor,3',
+           '--dhcp-option=tag:!nor,3,%s' % network_ref['gateway'],
+           '--leasefile-ro']
+    if network_ref['dns1']:
+        _setup_resolv_file(_dhcp_file(dev, 'resolv'),
+                           network_ref['dns1'], network_ref['dns2'])
+        cmd += ['-h', '--resolv-file=%s' % _dhcp_file(dev, 'resolv')]
+
+    check_container_dhcp_pre(dev)
+    _execute(*cmd, run_as_root=True)
+    if not check_container_dhcp(dev):
+        raise Exception(_('restart_container_dhcp failed.'))
+
+
+def plug_dhcp_device(veth0, veth1, mac_address):
+    _execute('ip', 'link', 'add', 'name', veth0,
+             'type', 'veth', 'peer', 'name', veth1,
+             run_as_root=True)
+    bridge = FLAGS.linuxnet_ovs_integration_bridge
+    _execute('ovs-vsctl',
+             '--', '--may-exist', 'add-port', bridge, veth0,
+             '--', 'set', 'Interface', veth0,
+                   "external-ids:iface-id=%s" % veth0,
+             '--', 'set', 'Interface', veth0,
+                   "external-ids:iface-status=active",
+             '--', 'set', 'Interface', veth0,
+                   "external-ids:attached-mac=%s" % mac_address,
+             run_as_root=True)
+    _execute('ip', 'link', 'set', veth0, "address", mac_address,
+             run_as_root=True)
+    _execute('ip', 'link', 'set', veth0, 'up', run_as_root=True)
+
+
+def stop_container_dhcp(veth0, veth1):
+    kill_dhcp(veth1)
+    if os.path.exists(os.path.join(FLAGS.net_container_dir, veth1)):
+        _execute('cgdelete', 'ns:/%s' % veth1, run_as_root=True)
+
+    _execute('ip', 'link', 'del', veth0,
+             run_as_root=True, check_exit_code=False)
+    if _device_exists(veth0):
+        LOG.error("%s can not delete." % veth0)
+    bridge = FLAGS.linuxnet_ovs_integration_bridge
+    utils.execute('ovs-vsctl',
+                  '--', '--if-exists', 'del-port', bridge, veth0,
+                  run_as_root=True)
+
+
+def mount_container_dir():
+    if not os.path.exists(FLAGS.net_container_dir):
+        raise Exception(_('container dir %s not found.') % \
+                        FLAGS.net_container_dir)
+    with open("/proc/mounts") as f:
+        lines = f.read().rstrip().split('\n')
+    for line in lines:
+        items = line.split()
+        if items[1] == FLAGS.net_container_dir and \
+                items[2] == "cgroup":
+            # OK, mounted.
+            return
+    _execute('mount', '-t', 'cgroup', '-o', 'ns', 'none',
+             FLAGS.net_container_dir, run_as_root=True)
+
+
+def check_container_dhcp_pre(dev):
+    path = os.path.join(FLAGS.net_container_dir, dev)
+    tasks_path = os.path.join(path, "tasks")
+    if os.path.exists(tasks_path):
+        with open(tasks_path) as f:
+            tasks = f.read().rstrip()
+        if not tasks:
+            # may be dnsmasq crash. rm cgroup for the next
+            # operation.
+            _execute('cgdelete', 'ns:/%s' % dev, run_as_root=True)
+        else:
+            # inconsistent
+            raise Exception(_('Cgroup inconsitent state.'))
+            
+
+def check_container_dhcp(dev):
+    pid = _dnsmasq_pid_for(dev)
+    if not pid:
+        LOG.error(_('dnsmasq for %s not running.'), dev)
+        return False
+    path = os.path.join(FLAGS.net_container_dir, dev)
+    tasks_path = os.path.join(path, "tasks")
+    if not os.path.exists(path) or not os.path.exists(tasks_path):
+        LOG.error(_('Container %s not found.'), path)
+        return False
+    with open(tasks_path) as f:
+        tasks = f.read().split('\n')
+    if str(pid) in tasks:
+        return True
+    LOG.error('dnsmasq %d not in Container %s.' % (pid, path))
+    return False
+
+
+def _setup_resolv_file(path, dns1, dns2):
+    text = "nameserver %s\n" % dns1
+    if dns2:
+        text += "nameserver %s\n" % dns2
+    with open(path, 'w') as f:
+        f.write(text)
 
 
 # Similar to compute virt layers, the Linux network node

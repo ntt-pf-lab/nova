@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# Copyright 2012 NTT
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+import ctypes
+import os
+import time
+import sys
+
+# If ../nova/__init__.py exists, add ../ to Python search path, so that
+# it will override what happens to be installed in /usr/(local/)lib/python...
+POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
+                                   os.pardir,
+                                   os.pardir))
+if os.path.exists(os.path.join(POSSIBLE_TOPDIR, 'nova', '__init__.py')):
+    sys.path.insert(0, POSSIBLE_TOPDIR)
+
+from nova import utils
+
+CLONE_NEWNET = 0x40000000
+
+def net_container(dev, ip, gw, cgdir, cmd):
+    pid = os.fork()
+    if pid == -1:
+        print >> sys.stderr, "net_container: fork failed."
+        exit(1) 
+    if pid == 0:
+        libc = ctypes.CDLL("libc.so.6")
+        ret = libc.unshare(CLONE_NEWNET)
+        if ret != 0:
+            print >> sys.stderr, "net_container: unshare failed."
+            exit(1)
+        retry = 5
+        while True:
+            # wait parent pass the device
+            (_out, err) = utils.execute('ip', 'link', 'show',
+                'dev', dev, check_exit_code=False)
+            if not err:
+                break
+            if retry == 0:
+                print >> sys.stderr, "net_container: device not appear."
+                exit(1)
+            retry = retry - 1
+            time.sleep(1)
+        (_out, err) = utils.execute('ifconfig', dev, ip,
+                                    check_exit_code=False)
+        if err:
+            print >> sys.stderr, "net_container: ifconfig failed."
+            exit(1)
+        (_out, err) = utils.execute('ip', 'route', 'add', 'default',
+                                    'via', gw, 'dev', dev,
+                                    check_exit_code=False)
+        if err:
+            print >> sys.stderr, "net_container: ip route failed."
+            exit(1)
+        # keep pid of cmd
+        os.execv(cmd[0], cmd)
+        print >> sys.stderr, "net_container: child exec failed."
+        exit(1)
+
+    retry = 5
+    while True:
+        # wait child do unshare
+        if os.path.exists("%s/%d" % (cgdir, pid)):
+            break
+        retry = retry - 1
+        if retry == 0:
+            print >> sys.stderr, "net_container: child failed."
+            utils.execute('kill', '-9', str(pid),
+                          check_exit_code=False)
+            exit(1)
+        time.sleep(1)
+    # pass the device to child
+    try:
+        utils.execute('mv', "%s/%d" % (cgdir, pid),
+                      "%s/%s" % (cgdir, dev))
+        utils.execute('ip', 'link', 'set', dev, 'netns', str(pid))
+    except:
+        print >> sys.stderr, "net_container: parent failed."
+        utils.execute('kill', '-9', str(pid),
+                      check_exit_code=False)
+        utils.execute('cgdelte', 'ns:/%s' % dev,
+                      check_exit_code=False)
+        exit(1)
+    exit(0)
+
+
+if __name__ == "__main__":
+    _cmd = sys.argv.pop(0)
+    dev = sys.argv.pop(0)
+    ip = sys.argv.pop(0)
+    gw = sys.argv.pop(0)
+    cgdir = sys.argv.pop(0)
+    net_container(dev, ip, gw, cgdir, sys.argv)

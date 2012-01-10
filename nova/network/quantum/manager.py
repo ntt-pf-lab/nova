@@ -47,6 +47,8 @@ flags.DEFINE_bool('use_melange_mac_generation', False,
 
 flags.DEFINE_bool('quantum_use_dhcp', False,
                     'Whether or not to enable DHCP for networks')
+flags.DEFINE_bool('quantum_use_container_dhcp', False,
+                  'Whether or not to enable container DHCP for networks')
 
 
 class QuantumManager(manager.FlatManager):
@@ -88,7 +90,9 @@ class QuantumManager(manager.FlatManager):
         # self.driver.ensure_metadata_ip()
         # self.driver.metadata_forward()
 
-        if FLAGS.quantum_use_dhcp:
+        if FLAGS.quantum_use_container_dhcp or FLAGS.quantum_use_dhcp:
+            if FLAGS.quantum_use_container_dhcp:
+                self.driver.mount_container_dir()
             ctxt = context.get_admin_context()
             networks = db.network_get_all(ctxt) \
                          if db.network_count(ctxt) > 0 else []
@@ -98,7 +102,11 @@ class QuantumManager(manager.FlatManager):
                     == "":
                     continue
                 vif_rec = {'uuid': None}  # dummy
-                self.enable_dhcp(ctxt, net['uuid'], net, vif_rec, None)
+                if FLAGS.quantum_use_container_dhcp:
+                    self.enable_container_dhcp(ctxt, net['uuid'], net,
+                                           vif_rec, net['project_id'])
+                else:
+                    self.enable_dhcp(ctxt, net['uuid'], net, vif_rec, None)
 
         # NOTE(oda): actually do nothing, so maybe OK not to call this.
         super(QuantumManager, self).init_host()
@@ -127,6 +135,8 @@ class QuantumManager(manager.FlatManager):
         else:
             if IPAddress(dhcp_server) not in IPNetwork(cidr):
                 raise Exception(_("DHCP Server address is not in cidr"))
+        if FLAGS.quantum_use_container_dhcp and not gateway:
+            raise Exception(_("gateway must be specified"))
 
         q_tenant_id = kwargs["project_id"] or FLAGS.quantum_default_tenant_id
         quantum_net_id = uuid
@@ -191,7 +201,19 @@ class QuantumManager(manager.FlatManager):
                     break
         LOG.debug("Deleting network for tenant: %s" % project_id)
         q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
-        if FLAGS.quantum_use_dhcp:
+        if FLAGS.quantum_use_container_dhcp:
+            admin_context = context.elevated()
+            # check network exists
+            network = db.network_get_by_uuid(admin_context, quantum_net_id)
+            veth0 = "v0-" + uuid[0:11]
+            veth1 = "v1-" + uuid[0:11]
+            self.driver.stop_container_dhcp(veth0, veth1)
+            port = self.q_conn.get_port_by_attachment(q_tenant_id,
+                    quantum_net_id, veth0)
+            if port is not None:
+                self.q_conn.detach_and_delete_port(q_tenant_id,
+                        quantum_net_id, port)
+        elif FLAGS.quantum_use_dhcp:
             # delete gw device for dhcp and delete the port from quantum
             # so that the network can be deleted.
             # do this while network_ref exists.
@@ -316,7 +338,10 @@ class QuantumManager(manager.FlatManager):
             ip = self.ipam.allocate_fixed_ip(context, net,
                      project_id, vif_rec)
             # Set up/start the dhcp server for this network if necessary
-            if FLAGS.quantum_use_dhcp:
+            if FLAGS.quantum_use_container_dhcp:
+                self.enable_container_dhcp(context, quantum_net_id,
+                    network_ref, vif_rec, project_id)
+            elif FLAGS.quantum_use_dhcp:
                 self.enable_dhcp(context, quantum_net_id, network_ref,
                     vif_rec, project_id)
         return self.get_instance_nw_info(context, instance_id,
@@ -539,7 +564,11 @@ class QuantumManager(manager.FlatManager):
 
             # If DHCP is enabled on this network then we need to update the
             # leases and restart the server.
-            if FLAGS.quantum_use_dhcp:
+            if FLAGS.quantum_use_container_dhcp:
+                # TODO(oda): lease time
+                self.enable_container_dhcp(context, net_id,
+                    network_ref, vif_ref, ipam_tenant_id)
+            elif FLAGS.quantum_use_dhcp:
                 self.update_dhcp(context, ipam_tenant_id, network_ref, vif_ref,
                     project_id)
         try:
@@ -632,3 +661,31 @@ class QuantumManager(manager.FlatManager):
     @property
     def _bottom_reserved_ips(self):
         return 1  # network
+
+    def enable_container_dhcp(self, context, quantum_net_id, network_ref,
+                              vif_rec, project_id):
+        LOG.info("Using container DHCP for network: %s" % \
+                  network_ref['label'])
+        # NOTE(oda): keep implementation simple at this moment.
+        # melange need vif to get infomation. that's very incovenient.
+        # so now this method assumes nova DB network record exists and
+        # its neccessary fields filled in. 
+        if network_ref['dhcp_start'] is None:
+            n = IPNetwork(network_ref['cidr'])
+            network_ref['dhcp_start'] = IPAddress(n.first + 1)
+        veth0 = "v0-" + network_ref['uuid'][0:11]
+        veth1 = "v1-" + network_ref['uuid'][0:11]
+        if not self.driver.device_exists(veth0):
+            mac_address = self.generate_mac_address()
+            self.driver.plug_dhcp_device(veth0, veth1, mac_address)
+        q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
+        port = self.q_conn.get_port_by_attachment(q_tenant_id,
+                               quantum_net_id, veth0)
+        if not port:
+            self.q_conn.create_and_attach_port(q_tenant_id,
+                    quantum_net_id, veth0)
+
+        hosts = self.get_dhcp_hosts_text(context,
+                    quantum_net_id, q_tenant_id)
+        self.driver.update_dhcp_hostfile_with_text(veth1, hosts)
+        self.driver.restart_container_dhcp(veth1, network_ref)
