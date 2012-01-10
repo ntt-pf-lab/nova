@@ -98,6 +98,9 @@ class QuantumMelangeIPAMLib(object):
             args['address'] = net['fixed_ip']
         ip = self.m_conn.allocate_ip(quantum_net_id,
                                      vif_ref['uuid'], **args)
+        if not ip:
+            # TODO(oda): should explain reason
+            raise Exception(_("Melange can not allocate ip address"))
         admin_context = context.elevated()
         network = db.network_get_by_uuid(admin_context, quantum_net_id)
         values = {'allocated': True,

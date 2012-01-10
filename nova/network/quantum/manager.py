@@ -189,16 +189,6 @@ class QuantumManager(manager.FlatManager):
         # and go forward only if the network is not used.
         quantum_net_id = uuid
         project_id = context.project_id
-        # TODO(bgh): The project_id isn't getting populated here for some
-        # reason.. I'm not sure if it's an invalid assumption or just a bug.
-        # In order to get the right quantum_net_id we'll have to query all the
-        # project_ids for now.
-        if project_id is None:
-            projects = db.project_get_all(context)
-            for p in projects:
-                if self.q_conn.network_exists(p['id'], uuid):
-                    project_id = p['id']
-                    break
         LOG.debug("Deleting network for tenant: %s" % project_id)
         q_tenant_id = project_id or FLAGS.quantum_default_tenant_id
         if FLAGS.quantum_use_container_dhcp:
@@ -472,6 +462,8 @@ class QuantumManager(manager.FlatManager):
             v4_subnet, v6_subnet = \
                     self.ipam.get_subnets_by_net_id(context,
                             ipam_tenant_id, net_id, vif['uuid'])
+            if not v4_subnet:
+                continue
 
             v4_ips = self.ipam.get_v4_ips_by_interface(context,
                                         net_id, vif['uuid'],
@@ -643,9 +635,14 @@ class QuantumManager(manager.FlatManager):
         ips = self.ipam.get_allocated_ips(context, subnet_id, project_id)
         hosts_text = ""
         admin_context = context.elevated()
+        network = db.network_get_by_uuid(admin_context, subnet_id)
         for ip in ips:
             address, vif_id, gw = ip
             vif = db.virtual_interface_get_by_uuid(admin_context, vif_id)
+            if network['id'] != vif['network_id']:
+                # NOTE(oda): work around: melange can't recognize
+                # subnet_id and returns all ips belong the project.
+                continue
             mac_address = vif['address']
             set_gw = ",set:nor" if not gw else ""
             text = "%s,%s.%s,%s%s\n" % (mac_address, "host-" + address,
