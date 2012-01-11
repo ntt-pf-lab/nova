@@ -91,7 +91,7 @@ def net_container(dev, ip, gw, cgdir, cmd):
         print >> sys.stderr, "net_container: parent failed."
         utils.execute('kill', '-9', str(pid),
                       check_exit_code=False)
-        utils.execute('cgdelte', 'ns:/%s' % dev,
+        utils.execute('cgdelete', 'ns:/%s' % dev,
                       check_exit_code=False)
         exit(1)
     exit(0)
