@@ -189,7 +189,7 @@ class API(base.Base):
         args = kwargs
         args['instance_id'] = instance['id']
         args['project_id'] = instance['project_id']
-        rpc.cast(context, FLAGS.network_topic,
+        rpc.call(context, FLAGS.network_topic,
                  {'method': 'deallocate_for_instance',
                   'args': args})
 
