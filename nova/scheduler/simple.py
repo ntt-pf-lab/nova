@@ -23,7 +23,9 @@ Simple Scheduler
 
 from nova import db
 from nova import flags
+from nova import log as logging
 from nova import utils
+from nova.compute import vm_states
 from nova.scheduler import driver
 from nova.scheduler import chance
 
@@ -34,6 +36,8 @@ flags.DEFINE_integer("max_gigabytes", 10000,
                      "maximum number of volume gigabytes to allow per host")
 flags.DEFINE_integer("max_networks", 1000,
                      "maximum number of networks to allow per host")
+
+LOG = logging.getLogger('nova.scheduler.simple')
 
 
 class SimpleScheduler(chance.ChanceScheduler):
@@ -75,8 +79,21 @@ class SimpleScheduler(chance.ChanceScheduler):
                                    " for this request. Is the appropriate"
                                    " service running?"))
 
+    def _instance_update_state_error(self, context, instance_id):
+        """Update an instance state to error in the database."""
+        values = {"vm_state": vm_states.ERROR, "task_state": None}
+        db.instance_update(context, instance_id, values)
+
     def schedule_run_instance(self, context, instance_id, *_args, **_kwargs):
-        return self._schedule_instance(context, instance_id, *_args, **_kwargs)
+        try:
+            return self._schedule_instance(context,
+                                           instance_id,
+                                           *_args,
+                                           **_kwargs)
+        except Exception as e:
+            LOG.exception(_("Failed to schedule instance."))
+            self._instance_update_state_error(context, instance_id)
+            raise e
 
     def schedule_start_instance(self, context, instance_id, *_args, **_kwargs):
         return self._schedule_instance(context, instance_id, *_args, **_kwargs)
