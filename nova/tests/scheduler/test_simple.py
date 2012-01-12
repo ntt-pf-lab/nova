@@ -114,6 +114,9 @@ class SimpleSchedulerTestCase(test.TestCase):
         self.assertRaises(driver.NoValidHost,
                           self.scheduler.driver.schedule_run_instance,
                           self.context, instance_id)
+        instance = db.instance_get(self.context, instance_id)
+        self.assertEqual(vm_states.ERROR, instance["vm_state"])
+        self.assertEqual(None, instance["task_state"])
 
     @attr(kind='small')
     def test_schedule_run_instance_configuration_service_is_down(self):
@@ -129,6 +132,9 @@ class SimpleSchedulerTestCase(test.TestCase):
                           self.scheduler.driver.schedule_run_instance,
                           self.context,
                           instance_id2)
+        instance = db.instance_get(self.context, instance_id2)
+        self.assertEqual(vm_states.ERROR, instance["vm_state"])
+        self.assertEqual(None, instance["task_state"])
         db.instance_destroy(self.context, instance_id2)
         compute1.kill()
 
@@ -163,9 +169,36 @@ class SimpleSchedulerTestCase(test.TestCase):
                           self.scheduler.driver.schedule_run_instance,
                           self.context,
                           instance_id2)
+        instance2 = db.instance_get(self.context, instance_id2)
+        self.assertEqual(vm_states.ERROR, instance2["vm_state"])
+        self.assertEqual(None, instance2["task_state"])
+        db.instance_destroy(self.context, instance_id2)
         compute1.terminate_instance(self.context, instance_id1)
         compute1.kill()
         compute2.kill()
+
+    @attr(kind='small')
+    def test_schedule_run_instance_exception_will_not_schedule(self):
+        """Ensure raise exception when compute service is down."""
+        compute1 = service.Service('host1',
+                                   'nova-compute',
+                                   'compute',
+                                   FLAGS.compute_manager)
+        compute1.start()
+
+        def _fake_service_is_up(fake_self, fake_service):
+            return False
+        self.stubs.Set(driver.Scheduler, 'service_is_up', _fake_service_is_up)
+        instance_id = self._create_instance(availability_zone='nova:host1')
+        self.assertRaises(driver.WillNotSchedule,
+                          self.scheduler.driver.schedule_run_instance,
+                          self.context,
+                          instance_id)
+        instance = db.instance_get(self.context, instance_id)
+        self.assertEqual(vm_states.ERROR, instance["vm_state"])
+        self.assertEqual(None, instance["task_state"])
+        db.instance_destroy(self.context, instance_id)
+        compute1.kill()
 
     @attr(kind='small')
     def test_schedule_create_volume_database_service_get(self):
