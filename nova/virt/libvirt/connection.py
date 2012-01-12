@@ -1802,13 +1802,13 @@ class LibvirtConnection(driver.ComputeDriver):
             user = manager.AuthManager().get_user(instance_ref['user_id'])
             project = manager.AuthManager().get_project(
                 instance_ref['project_id'])
-            self._fetch_image(nova_context.get_admin_context(),
+            self._fetch_image(ctxt,
                               os.path.join(instance_dir, 'kernel'),
                               instance_ref['kernel_id'],
                               user,
                               project)
             if instance_ref['ramdisk_id']:
-                self._fetch_image(nova_context.get_admin_context(),
+                self._fetch_image(ctxt,
                                   os.path.join(instance_dir, 'ramdisk'),
                                   instance_ref['ramdisk_id'],
                                   user,

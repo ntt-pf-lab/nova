@@ -971,16 +971,20 @@ class VmCommands(object):
                 instance['launch_index'])
 
     def _migration(self, dest, ec2_id, instance_id,
-                      block_migration=False):
+                   block_migration=False, auth_token=None):
         """Migrates a running instance to a new machine.
          :param instance_id: instance id.
          :param ec2_id: instance id which comes from euca-describe-instance.
          :param dest: destination host name.
          :param block_migration: if True, do block_migration.
+         :param auth_token: auth token used by block_migration.
 
         """
 
         ctxt = context.get_admin_context()
+        if auth_token:
+            ctxt.auth_token = auth_token
+            ctxt.strategy = 'keystone'
         if ec2_id is None and instance_id is None:
             raise Exception("Please specify either ec2_id or instance_id")
         if ec2_id:
@@ -1026,10 +1030,13 @@ class VmCommands(object):
     @args('--ec2_id', dest='ec2_id', metavar='<ec2 id>', help='EC2 ID')
     @args('--dest', dest='dest', metavar='<Destanation>',
             help='destanation node')
-    def block_migration(self, dest, ec2_id=None, instance_id=None):
+    @args('--auth_token', dest='auth_token', metavar='<auth token>',
+            help='auth token')
+    def block_migration(self, dest, ec2_id=None, instance_id=None,
+                        auth_token=None):
         """Migrates a running instance to a new machine with storage data."""
 
-        self._migration(dest, ec2_id, instance_id, True)
+        self._migration(dest, ec2_id, instance_id, True, auth_token)
 
 
 class ServiceCommands(object):
