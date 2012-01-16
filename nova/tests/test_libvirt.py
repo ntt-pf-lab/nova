@@ -2231,7 +2231,7 @@ class LibvirtConnectionTestCase(test.TestCase):
         target += "_resize"
         utils.execute('mkdir', '-p', target)
 
-        ref = self.libvirtconnection.destroy(ins_ref, None, cleanup=True,
+        ref = self.libvirtconnection.destroy(ins_ref, None, cleanup=False,
                 confirm_resize=True)
         self.assertEqual(True, ref)
         self.assertTrue(not os.path.exists(target))
@@ -4495,6 +4495,41 @@ class LibvirtConnectionTestCase(test.TestCase):
         .set_host_enabled. no need assert becuase it is pass implements"""
 
         self.libvirtconnection.set_host_enabled(host=None, enabled=True)
+
+    @attr(kind='small')
+    def test_migrate_disk_and_power_off_exception(self):
+        """Test for nova.virt.libvirt.connection.LivirtConnection
+        .migrate_disk_and_power_off. """
+
+        self.counter = 0
+
+        def fake_get_instance_disk_info(instance):
+            return []
+        def fake_destroy(instance, network_info, cleanup=True,
+                         confirm_resize=False):
+            pass
+        def fake_get_host_ip_addr():
+            return '10.0.0.1'
+        def fake_execute(*args, **kwargs):
+            self.counter += 1
+            if self.counter == 1:
+                raise Exception()
+            pass
+        def fake_os_path_exists(path):
+            return True
+
+        self.stubs.Set(self.libvirtconnection, '_get_instance_disk_info',
+                       fake_get_instance_disk_info)
+        self.stubs.Set(self.libvirtconnection, 'destroy', fake_destroy)
+        self.stubs.Set(self.libvirtconnection, 'get_host_ip_addr',
+                       fake_get_host_ip_addr)
+        self.stubs.Set(utils, 'execute', fake_execute)
+        self.stubs.Set(os.path, 'exists', fake_os_path_exists)
+
+        ins_ref = self._create_instance()
+        self.assertRaises(Exception,
+                        self.libvirtconnection.migrate_disk_and_power_off,
+                        ins_ref, [], '10.0.0.2')
 
     @attr(kind='small')
     def test_migrate_disk_and_power_off(self):

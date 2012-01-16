@@ -939,7 +939,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                 migration_ref.instance_uuid)
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        self.driver.destroy(instance_ref, network_info, confirm_resize=True)
+        self.driver.destroy(instance_ref, network_info, 
+                            cleanup=False, confirm_resize=True)
         usage_info = utils.usage_from_instance(instance_ref)
         notifier.notify('compute.%s' % self.host,
                             'compute.instance.resize.confirm',
@@ -960,7 +961,8 @@ class ComputeManager(manager.SchedulerDependentManager):
                 migration_ref.instance_uuid)
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        self.driver.destroy(instance_ref, network_info)
+        self.driver.destroy(instance_ref, network_info, cleanup=True,
+                            confirm_resize=False)
         topic = self.db.queue_get_for(context, FLAGS.compute_topic,
                 instance_ref['host'])
         rpc.cast(context, topic,
@@ -1071,8 +1073,15 @@ class ComputeManager(manager.SchedulerDependentManager):
                                  {'status': 'migrating'})
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        disk_info = self.driver.migrate_disk_and_power_off(
-                instance_ref, network_info, migration_ref['dest_host'])
+        try:
+            disk_info = self.driver.migrate_disk_and_power_off(
+                    instance_ref, network_info, migration_ref['dest_host'])
+        except:
+            LOG.exception(_("Migrate_disk_and_power_off failed"))
+            self._instance_update(context, instance_id,
+                                  vm_state=vm_states.ERROR)
+            raise
+
         self.db.migration_update(context,
                                  migration_id,
                                  {'status': 'post-migrating'})
@@ -1117,8 +1126,19 @@ class ComputeManager(manager.SchedulerDependentManager):
                                             instance_ref.uuid)
 
         network_info = self._get_instance_nw_info(context, instance_ref)
-        self.driver.finish_migration(context, instance_ref, disk_info,
+        try:
+            self.driver.finish_migration(context, instance_ref, disk_info,
                                      network_info, resize_instance)
+        except Exception, e:
+            LOG.exception(_("Finish_migration failed"))
+            self._instance_update(context, instance_id,
+                                  vm_state=vm_states.ERROR)
+            try:
+                # clear resources on this(the destination) host
+                self.driver.destroy(instance_ref, network_info)
+            except:
+                pass
+            raise e
 
         self._instance_update(context,
                               instance_id,

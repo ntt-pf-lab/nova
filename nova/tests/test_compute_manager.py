@@ -1747,7 +1747,7 @@ class ComputeTestCase(test.TestCase):
         self.stub_flag = False
 
         def stub_driver_destroy(instance_ref, network_info,
-                                confirm_resize=False):
+                         cleanup=True, confirm_resize=True):
             self.stub_flag = True
 
         self.stubs.Set(self.compute.driver, 'destroy',

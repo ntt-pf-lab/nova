@@ -270,10 +270,12 @@ class LibvirtConnection(driver.ComputeDriver):
             self.vif_driver.unplug(instance, network, mapping)
 
     def destroy(self, instance, network_info, cleanup=True,
-                confirm_resize=False):
+                confirm_resize=True):
         instance_name = instance['name']
 
-        if confirm_resize:
+        # confirm_resize indicates cleanup <instance>_resize dir.
+        # if not cleanup, keep <instance> dir (ie. confirm_resize)
+        if confirm_resize and not cleanup:
             self._cleanup(instance, True)
             return True
 
@@ -337,6 +339,8 @@ class LibvirtConnection(driver.ComputeDriver):
 
         if cleanup:
             self._cleanup(instance)
+        if confirm_resize:
+            self._cleanup(instance, True)
 
         return True
 
@@ -1946,10 +1950,10 @@ class LibvirtConnection(driver.ComputeDriver):
     def migrate_disk_and_power_off(self, instance, network_info, dest):
         LOG.debug(_("Instance %s: Starting migrate_disk_and_power_off"),
                    instance['name'])
-
         disk_info = self._get_instance_disk_info(instance)
 
-        self.destroy(instance, network_info, cleanup=False)
+        self.destroy(instance, network_info, cleanup=False, 
+                     confirm_resize=False)
 
         # copy disks to destination
         # if disk type is qcow2, convert to raw then send to dest.
@@ -1958,30 +1962,40 @@ class LibvirtConnection(driver.ComputeDriver):
         same_host = (dest == self.get_host_ip_addr())
         inst_base = "%s/%s" % (FLAGS.instances_path, instance['name'])
         inst_base_resize = inst_base + "_resize"
-        utils.execute('mv', inst_base, inst_base_resize)
-        if same_host:
-            utils.execute('mkdir', '-p', inst_base)
-        else:
-            utils.execute('ssh', dest, 'mkdir', '-p', inst_base)
-        for info in disk_info:
-            # assume inst_base == dirname(info['path'])
-            to_path = "%s:%s" % (dest, info['path'])
-            fname = os.path.basename(info['path'])
-            from_path = os.path.join(inst_base_resize, fname)
-            if info['type'] == 'qcow2':
-                tmp_path = from_path + "_rbase"
-                utils.execute('qemu-img', 'convert', '-f', 'qcow2',
+        try:
+            utils.execute('mv', inst_base, inst_base_resize)
+            if same_host:
+                utils.execute('mkdir', '-p', inst_base)
+            else:
+                utils.execute('ssh', dest, 'mkdir', '-p', inst_base)
+            for info in disk_info:
+                # assume inst_base == dirname(info['path'])
+                to_path = "%s:%s" % (dest, info['path'])
+                fname = os.path.basename(info['path'])
+                from_path = os.path.join(inst_base_resize, fname)
+                if info['type'] == 'qcow2':
+                    tmp_path = from_path + "_rbase"
+                    utils.execute('qemu-img', 'convert', '-f', 'qcow2',
                               '-O', 'raw', from_path, tmp_path)
-                if same_host:
-                    utils.execute('mv', tmp_path, info['path'])
-                else:
-                    utils.execute('scp', tmp_path, to_path)
-                    utils.execute('rm', '-f', tmp_path)
-            else:  # raw
-                if same_host:
-                    utils.execute('cp', from_path, info['path']) 
-                else:
-                    utils.execute('scp', from_path, to_path) 
+                    if same_host:
+                        utils.execute('mv', tmp_path, info['path'])
+                    else:
+                        utils.execute('scp', tmp_path, to_path)
+                        utils.execute('rm', '-f', tmp_path)
+                else:  # raw
+                    if same_host:
+                        utils.execute('cp', from_path, info['path']) 
+                    else:
+                        utils.execute('scp', from_path, to_path) 
+        except Exception, e:
+            try:
+                if os.path.exists(inst_base_resize):
+                    utils.execute('rm', '-rf', inst_base)
+                    utils.execute('mv', inst_base_resize, inst_base)
+                    utils.execute('ssh', dest, 'rm', '-rf', inst_base)
+            except:
+                pass
+            raise e
 
         return utils.dumps(disk_info)
 
