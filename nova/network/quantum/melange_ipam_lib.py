@@ -106,6 +106,7 @@ class QuantumMelangeIPAMLib(object):
         values = {'allocated': True,
                   'address': ip[0]['address'],
                   'network_id': network['id'],
+                  'instance_id': vif_ref['instance_id'],
                   'use_gw': net['gw'],
                   'virtual_interface_id': vif_ref['id']}
         db.fixed_ip_create(admin_context, values)
@@ -278,3 +279,8 @@ class QuantumMelangeIPAMLib(object):
         """
         tenant_id = project_id or FLAGS.quantum_default_tenant_id
         return self.m_conn.create_vif(vif_id, instance_id, tenant_id)
+
+    def delete_vif(self, vif_id, project_id=None):
+        """Delete a vif with the specified information.
+        """
+        self.m_conn.delete_vif(vif_id, project_id)

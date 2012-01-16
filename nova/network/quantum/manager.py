@@ -422,6 +422,10 @@ class QuantumManager(manager.FlatManager):
 
         return self.db.virtual_interface_create(context, vif)
 
+    def _delete_virtual_interface(self, context, interface_id, project_id):
+        m_ipam = melange_ipam_lib.get_ipam_lib(self)
+        return m_ipam.delete_vif(interface_id, project_id)
+
     def get_instance_nw_info(self, context, instance_id,
                                 instance_type_id, host):
         """This method is used by compute to fetch all network data
@@ -554,6 +558,14 @@ class QuantumManager(manager.FlatManager):
                           (interface_id))
                 # continue to free resources as possible.
 
+            try:
+                if FLAGS.use_melange_mac_generation:
+                    self._delete_virtual_interface(context, interface_id,
+                                                   project_id)
+            except:
+                LOG.error("Unable to delete interface: %s" %
+                          (interface_id))
+                    
             # If DHCP is enabled on this network then we need to update the
             # leases and restart the server.
             if FLAGS.quantum_use_container_dhcp:

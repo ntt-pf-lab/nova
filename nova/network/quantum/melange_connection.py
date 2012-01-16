@@ -164,3 +164,8 @@ class MelangeConnection(object):
                              headers=json_content_type)
 
         return json.loads(response)['interface']['mac_address']
+
+    def delete_vif(self, vif_id, project_id=None):
+        url = "ipam/interfaces/%(vif_id)s" % locals()
+
+        self.delete(url, headers=json_content_type)
