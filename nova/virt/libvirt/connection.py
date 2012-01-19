@@ -318,7 +318,7 @@ class LibvirtConnection(driver.ComputeDriver):
                               "Error=%(e)s") %
                             locals())
 
-            self.unplug_vifs(instance, network_info)
+        self.unplug_vifs(instance, network_info)
 
         def _wait_for_destroy():
             """Called at an interval until the VM is gone."""
