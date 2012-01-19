@@ -898,7 +898,6 @@ def restart_container_dhcp(dev, network_ref):
                          network_ref['cidr'].rpartition('/')[2])
     cmd = [_bin_file('net_container'), dev, full_ip,
            network_ref['gateway'],
-           FLAGS.net_container_dir,
            '/usr/sbin/dnsmasq',
            '--strict-order',
            '--bind-interfaces',

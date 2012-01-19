@@ -16,8 +16,9 @@
 
 import ctypes
 import os
-import time
+import re
 import sys
+import time
 
 # If ../nova/__init__.py exists, add ../ to Python search path, so that
 # it will override what happens to be installed in /usr/(local/)lib/python...
@@ -27,15 +28,22 @@ POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
 if os.path.exists(os.path.join(POSSIBLE_TOPDIR, 'nova', '__init__.py')):
     sys.path.insert(0, POSSIBLE_TOPDIR)
 
+from nova import flags
 from nova import utils
 
+FLAGS = flags.FLAGS
+flags.DECLARE('net_container_dir', 'nova.network.linux_net')
+flags.DEFINE_bool('cleanup', False, 'cleanup unused ns cgroups')
+flags.DEFINE_bool('force', False, 'kill dnsmasq before delete cgroup')
 CLONE_NEWNET = 0x40000000
 
-def net_container(dev, ip, gw, cgdir, cmd):
+
+def net_container(dev, ip, gw, cmd):
+    CGDIR = FLAGS.net_container_dir
     pid = os.fork()
     if pid == -1:
         print >> sys.stderr, "net_container: fork failed."
-        exit(1) 
+        exit(1)
     if pid == 0:
         libc = ctypes.CDLL("libc.so.6")
         ret = libc.unshare(CLONE_NEWNET)
@@ -73,7 +81,7 @@ def net_container(dev, ip, gw, cgdir, cmd):
     retry = 5
     while True:
         # wait child do unshare
-        if os.path.exists("%s/%d" % (cgdir, pid)):
+        if os.path.exists("%s/%d" % (CGDIR, pid)):
             break
         retry = retry - 1
         if retry == 0:
@@ -84,8 +92,8 @@ def net_container(dev, ip, gw, cgdir, cmd):
         time.sleep(1)
     # pass the device to child
     try:
-        utils.execute('mv', "%s/%d" % (cgdir, pid),
-                      "%s/%s" % (cgdir, dev))
+        utils.execute('mv', "%s/%d" % (CGDIR, pid),
+                      "%s/%s" % (CGDIR, dev))
         utils.execute('ip', 'link', 'set', dev, 'netns', str(pid))
     except:
         print >> sys.stderr, "net_container: parent failed."
@@ -97,10 +105,51 @@ def net_container(dev, ip, gw, cgdir, cmd):
     exit(0)
 
 
+def cleanup(force):
+    CGDIR = FLAGS.net_container_dir
+    DNSDIR = FLAGS.networks_path
+    pid_re = re.compile("^[0-9]+$")
+    veth_re = re.compile("^v1\-")
+    dns_re = re.compile("^nova-v1-.*pid$")
+
+    def try_clean(cg):
+        tasks_path = "%s/%s/tasks" % (CGDIR, cg)
+        if os.path.exists(tasks_path):
+            with open(tasks_path) as f:
+                tasks = f.read().rstrip()
+            if not tasks:
+                os.system("sudo cgdelete ns:/%s" % cg)
+                print "%s is empty. delete." % cg
+
+    if force:
+        for pfile in os.listdir(DNSDIR):
+            if dns_re.match(pfile):
+                with open(os.path.join(DNSDIR, pfile)) as f:
+                    pid = f.read().rstrip()
+                    try:
+                        os.system("sudo kill %s" % pid)
+                        print "dnsmasq %s killed." % pid
+                    except:
+                        pass
+
+    for cg in os.listdir(CGDIR):
+        if pid_re.match(cg) or veth_re.match(cg):
+            try_clean(cg)
+
+
 if __name__ == "__main__":
-    _cmd = sys.argv.pop(0)
-    dev = sys.argv.pop(0)
-    ip = sys.argv.pop(0)
-    gw = sys.argv.pop(0)
-    cgdir = sys.argv.pop(0)
-    net_container(dev, ip, gw, cgdir, sys.argv)
+    utils.default_flagfile()
+    argv = FLAGS(sys.argv)
+
+    if FLAGS.cleanup:
+        cleanup(FLAGS.force)
+        sys.exit(0)
+    elif FLAGS.force:
+        print >> sys.stderr, "usage: net_container --cleanup [--force]"
+        sys.exit(1)
+
+    _cmd = argv.pop(0)
+    dev = argv.pop(0)
+    ip = argv.pop(0)
+    gw = argv.pop(0)
+    net_container(dev, ip, gw, argv)
