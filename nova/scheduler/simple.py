@@ -80,8 +80,18 @@ class SimpleScheduler(chance.ChanceScheduler):
     def schedule_prep_resize(self, context, instance_id, *_args, **_kwargs):
         # note: instance_id here is uuid
         instance_ref = db.instance_get_by_uuid(context, instance_id)
-        return self._schedule_instance(context, instance_ref['id'], 
-                     *_args, **_kwargs)
+        instance_id = instance_ref['id']
+        try:
+            return self._schedule_instance(context, instance_id, 
+                                           *_args, **_kwargs)
+        except Exception as e:
+            LOG.exception(_("Failed to schedule instance %d for resize."),
+                          instance_id)
+            # just after vm_states became RESIZING at this moment,
+            # so back to ACTIVE.
+            values = {"vm_state": vm_states.ACTIVE, "task_state": None}
+            db.instance_update(context, instance_id, values)
+            raise e
 
     def _instance_update_state_error(self, context, instance_id):
         """Update an instance state to error in the database."""

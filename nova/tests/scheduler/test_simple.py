@@ -30,6 +30,7 @@ from nova import utils
 from nova.scheduler import driver
 from nova.scheduler import manager
 from nova.compute import power_state
+from nova.compute import task_states
 from nova.compute import vm_states
 
 
@@ -74,6 +75,8 @@ class SimpleSchedulerTestCase(test.TestCase):
         inst['vm_state'] = kwargs.get('vm_state', vm_states.ACTIVE)
         inst['task_state'] = kwargs.get('task_state', None)
         inst['power_state'] = kwargs.get('power_state', power_state.RUNNING)
+        inst['uuid'] = kwargs.get('uuid',
+                                  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
         return db.instance_create(self.context, inst)['id']
 
     def _create_volume(self, **kwargs):
@@ -360,3 +363,59 @@ class SimpleSchedulerTestCase(test.TestCase):
                           self.scheduler.driver.schedule_set_network_host,
                           self.context)
         nt.kill()
+
+    @attr(kind='small')
+    def test_schedule_prep_resize(self):
+        """test for schedule_prep_resize"""
+        compute1 = service.Service('host1',
+                                   'nova-compute',
+                                   'compute',
+                                   FLAGS.compute_manager)
+        compute1.start()
+        compute2 = service.Service('host2',
+                                   'nova-compute',
+                                   'compute',
+                                   FLAGS.compute_manager)
+        compute2.start()
+        uuid='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        instance_id = self._create_instance(uuid=uuid,
+                                            availability_zone=':host2')
+        compute1.run_instance(self.context, instance_id)
+        values = {"vm_state": vm_states.RESIZING,
+                  "task_state": task_states.RESIZE_PREP}
+        db.instance_update(self.context, instance_id, values)
+
+        host = self.scheduler.driver.schedule_prep_resize(self.context,
+                                                          uuid)
+        self.assertEqual(host, 'host2')
+        compute1.terminate_instance(self.context, instance_id)
+        compute1.kill()
+        compute2.kill()
+
+    @attr(kind='small')
+    def test_schedule_prep_resize_exception_will_not_schedule(self):
+        """Ensure raise exception when compute service is down."""
+        compute1 = service.Service('host1',
+                                   'nova-compute',
+                                   'compute',
+                                   FLAGS.compute_manager)
+        compute1.start()
+
+        def _fake_service_is_up(fake_self, fake_service):
+            return False
+        self.stubs.Set(driver.Scheduler, 'service_is_up', _fake_service_is_up)
+        uuid='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        instance_id = self._create_instance(uuid=uuid,
+                                            availability_zone=':host1')
+        values = {"vm_state": vm_states.RESIZING,
+                  "task_state": task_states.RESIZE_PREP}
+        db.instance_update(self.context, instance_id, values)
+        self.assertRaises(driver.WillNotSchedule,
+                          self.scheduler.driver.schedule_prep_resize,
+                          self.context,
+                          uuid)
+        instance = db.instance_get(self.context, instance_id)
+        self.assertEqual(vm_states.ACTIVE, instance["vm_state"])
+        self.assertEqual(None, instance["task_state"])
+        db.instance_destroy(self.context, instance_id)
+        compute1.kill()
