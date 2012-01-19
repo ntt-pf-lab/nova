@@ -32,7 +32,9 @@ from nova import utils
 from nova.context import RequestContext
 from nova.compute import power_state, vm_states, task_states
 from nova import log as logger
-from nova.exception import Duplicate
+
+
+LOG = logger.getLogger("nova.validate_rules")
 FLAGS = flags
 
 
@@ -112,9 +114,8 @@ class InstanceRequireAPI(BaseValidator):
             else:
                 db.instance_get(self.context, instance_id)
         except exception.InstanceNotFound as e:
+            LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
-        except Exception as e:
-            raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
 class InstanceCanSnapshot(BaseValidator):
@@ -138,9 +139,14 @@ class InstanceCanSnapshot(BaseValidator):
                 raise exception.InstanceSnapshotting(instance_id=instance_id)
             raise exception.InstanceSnapshotFailure(
                         reason="Instance state is not suitable for snapshot")
+        except exception.InstanceNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPNotFound(explanation=str(e))
         except exception.InstanceSnapshotting as e:
+            LOG.info(e)
             raise webob.exc.HTTPConflict(explanation=str(e))
-        except Exception as e:
+        except exception.InstanceSnapshotFailure as e:
+            LOG.info(e)
             raise webob.exc.HTTPForbidden(explanation=str(e))
 
 
@@ -175,7 +181,8 @@ class InstanceNameValidAPI(BaseValidator):
             if len(instance_name) > 255:
                 raise exception.InvalidParameterValue(
                                   err="name parameter over 255 length.")
-        except Exception as e:
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
@@ -212,7 +219,11 @@ class InstanceCanReboot(BaseValidator):
                     return
             raise exception.InstanceRebootFailure(
                             reason="Instance state is not suitable for reboot")
-        except Exception as e:
+        except exception.InstanceNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPNotFound(explanation=str(e))
+        except exception.InstanceRebootFailure as e:
+            LOG.info(e)
             raise webob.exc.HTTPForbidden(explanation=str(e))
 
 
@@ -239,8 +250,10 @@ class InstanceCanDestroy(BaseValidator):
                 raise exception.InstanceDestroyFailure(
                         reason="Instance state is not suitable for destroy")
         except exception.InstanceNotFound as e:
+            LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
-        except Exception as e:
+        except exception.InstanceDestroyFailure as e:
+            LOG.info(e)
             raise webob.exc.HTTPForbidden(explanation=str(e))
 
 
@@ -282,7 +295,8 @@ class ImageNameValidAPI(BaseValidator):
             if len(image_name) > 255:
                 raise exception.InvalidParameterValue(
                                   err="Image name should less than 255.")
-        except Exception as e:
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
@@ -356,7 +370,8 @@ class FlavorRequireAPI(BaseValidator):
     def validate_flavor_id(self, flavor_id):
         try:
             db.api.instance_type_get_by_flavor_id(self.context, flavor_id)
-        except Exception as e:
+        except exception.FlavorNotFound as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
@@ -394,18 +409,19 @@ class ImageRequireAPI(BaseValidator):
                 num = int(image_id)
                 if num < 1:
                     raise exception.InvalidParameterValue(
-                                "Specified image id is not positive value.")
+                            err="Specified image id is not positive value.")
                 elif num > sys.maxint:
                     raise exception.InvalidParameterValue(
-                                "Specified image id is too large.")
-            except TypeError:
+                            err="Specified image id is too large.")
+            except (TypeError, ValueError):
                 raise exception.InvalidParameterValue(
-                                "Specified image id is not digit.")
+                            err="Specified image id is not digit.")
             service = image.get_default_image_service()
             result = service.show(self.context, image_id)
             if result is None:
                 raise exception.ImageNotFound(image_id=image_id)
-        except Exception as e:
+        except (exception.InvalidParameterValue, exception.ImageNotFound) as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
@@ -507,11 +523,10 @@ class ZoneNameValidAPI(BaseValidator):
         try:
             zone, _x, host = zone_name.partition(':')
             if host:
-                service = db.service_get_by_args(self.context.elevated(), host,
+                db.service_get_by_args(self.context.elevated(), host,
                                                  'nova-compute')
-                if not service:
-                    raise exception.HostNotFound(host=host)
-        except Exception as e:
+        except exception.HostBinaryNotFound as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
@@ -531,7 +546,8 @@ class KeypairNameValid(BaseValidator):
             if len(keypair_name) > 255:
                 raise exception.InvalidParameterValue(
                                   err="name parameter over 255 length.")
-        except Exception as e:
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
         try:
@@ -541,7 +557,8 @@ class KeypairNameValid(BaseValidator):
                 raise exception.KeyPairExists(key_name=keypair_name)
             except exception.KeypairNotFound:
                 pass
-        except Exception as e:
+        except exception.KeyPairExists as e:
+            LOG.info(e)
             raise webob.exc.HTTPConflict(explanation=str(e))
 
 
@@ -562,8 +579,10 @@ class KeypairExists(BaseValidator):
                 if i["key_name"] == keypair["name"]:
                     raise exception.KeyPairUsed(key_name=keypair_name)
         except exception.KeyPairUsed as e:
+            LOG.info(e)
             raise webob.exc.HTTPConflict(explanation=str(e))
-        except Exception as e:
+        except exception.KeypairNotFound as e:
+            LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
 
 
@@ -590,5 +609,6 @@ class KeypairIsRsa(BaseValidator):
                     raise exception.PublicKeyInvalid(public_key=public_key)
             except Exception:
                 raise exception.PublicKeyInvalid(public_key=public_key)
-        except Exception as e:
+        except exception.PublicKeyInvalid as e:
+            LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
