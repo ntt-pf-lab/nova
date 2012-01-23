@@ -120,15 +120,20 @@ class InstanceRequireAPI(BaseValidator):
                     environ['wsgiorg.routing_args'][1]['project_id']
                 body = self.kwargs['body']
                 for key in body:
-                    LOG.info(key)
                     if key == 'reboot':
+                        try:
+                            id = int(instance_id)
+
+                        except ValueError: 
+                            raise webob.exc.HTTPBadRequest(
+                                        explanation='instance_id is string')
+                    
                         ins = db.instance_get_all_by_project(self.context,
                                                              project_id)
-                        LOG.info(ins)
                         if len(ins) > 0:
                             raise webob.exc.HTTPForbidden(
                                         explanation='tenant is not same')
-            except webob.exc.HTTPForbidden:
+            except (webob.exc.HTTPForbidden, webob.exc.HTTPBadRequest):
                 raise
             except Exception:
                 raise webob.exc.HTTPNotFound(explanation=str(e))
