@@ -126,7 +126,9 @@ class InstanceRequireAPI(BaseValidator):
                             if id < 0:
                                 raise webob.exc.HTTPBadRequest(
                                     explanation='instance_id is minus')
-
+                            if id > 2147483647:
+                                raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id over maximum int')
                         except ValueError: 
                             raise webob.exc.HTTPBadRequest(
                                         explanation='instance_id is string')
