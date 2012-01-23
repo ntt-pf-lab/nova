@@ -74,6 +74,7 @@ class Controller(object):
                 filters[filter_name] = req.str_params.get(param)
         return filters
 
+    @validation.method(rules.ImageRequireAPI, alias={'id': 'image_id'})
     def show(self, req, id):
         """Return detailed information about a specific image.
 
