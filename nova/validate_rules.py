@@ -115,6 +115,24 @@ class InstanceRequireAPI(BaseValidator):
                 db.instance_get(self.context, instance_id)
         except exception.InstanceNotFound as e:
             LOG.info(e)
+            try:
+                project_id = self.request.\
+                    environ['wsgiorg.routing_args'][1]['project_id']
+                body = self.kwargs['body']
+                for key in body:
+                    LOG.info(key)
+                    if key == 'reboot':
+                        ins = db.instance_get_all_by_project(self.context,
+                                                             project_id)
+                        LOG.info(ins)
+                        if len(ins) > 0:
+                            raise webob.exc.HTTPForbidden(
+                                        explanation='tenant is not same')
+            except webob.exc.HTTPForbidden:
+                raise
+            except Exception:
+                raise webob.exc.HTTPNotFound(explanation=str(e))
+
             raise webob.exc.HTTPNotFound(explanation=str(e))
 
 
