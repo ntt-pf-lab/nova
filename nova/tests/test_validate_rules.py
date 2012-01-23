@@ -1156,7 +1156,7 @@ class ValidateRulesTestCase(test.TestCase):
         target = TargetClass()
         flavor_id = "100000"
         # perfom target and assert result
-        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, flavor_id)
 
     def test_flavor_require_api_db_error(self):
         # prepare test

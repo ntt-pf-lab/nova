@@ -397,8 +397,22 @@ class FlavorRequireAPI(BaseValidator):
     """
     def validate_flavor_id(self, flavor_id):
         try:
+            try:
+                num = int(flavor_id)
+                if num < 1:
+                    raise exception.InvalidParameterValue(
+                            err="Specified flavor id is not positive value.")
+                elif num > sys.maxint:
+                    raise exception.InvalidParameterValue(
+                            err="Specified flavor id is too large.")
+            except (TypeError, ValueError):
+                raise exception.InvalidParameterValue(
+                            err="Specified flavor id is not digit.")
             db.api.instance_type_get_by_flavor_id(self.context, flavor_id)
         except exception.FlavorNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPNotFound(explanation=str(e))
+        except exception.InvalidParameterValue as e:
             LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
