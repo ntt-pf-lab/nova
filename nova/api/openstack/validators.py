@@ -86,11 +86,7 @@ class KeypairCreationResolver(validation.Resolver):
         return params
 
 
-MAPPING = [
-{"cls": "flavors.Controller",
- "method": "show",
- "validators": [rules.FlavorRequire],
- "alias": {"id": "flavor_id"}}]
+MAPPING = []
 
 
 def handle_web_exception(self, e):

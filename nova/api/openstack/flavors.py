@@ -20,6 +20,8 @@ import xml.dom.minidom as minidom
 
 from nova import db
 from nova import exception
+from nova import validation
+from nova import validate_rules as rules
 from nova.api.openstack import views
 from nova.api.openstack import wsgi
 
@@ -49,6 +51,7 @@ class Controller(object):
                  for flavor in flavors.values()]
         return items
 
+    @validation.method(rules.FlavorRequireAPI, alias={'id': 'flavor_id'})
     def show(self, req, id):
         """Return data about the given flavor id."""
         try:
