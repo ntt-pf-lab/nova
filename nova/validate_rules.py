@@ -420,7 +420,10 @@ class ImageRequireAPI(BaseValidator):
             result = service.show(self.context, image_id)
             if result is None:
                 raise exception.ImageNotFound(image_id=image_id)
-        except (exception.InvalidParameterValue, exception.ImageNotFound) as e:
+        except exception.ImageNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPNotFound(explanation=str(e))
+        except exception.InvalidParameterValue as e:
             LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 

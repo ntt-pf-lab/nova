@@ -203,7 +203,7 @@ class ValidateRulesTestCase(test.TestCase):
 
         # assertion
         self.assertEqual("meth", actual)
-        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, invalid_image)
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, invalid_image)
         self.assertRaises(exception.FlavorNotFound,
                           target.meth, invalid_flavor)
 
@@ -453,7 +453,7 @@ class ValidateRulesTestCase(test.TestCase):
 
         # assertion
         self.assertEqual("meth", actual)
-        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, 999)
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, 999)
 
     def test_image_name_valid(self):
         # setup validation
@@ -1221,7 +1221,7 @@ class ValidateRulesTestCase(test.TestCase):
         target = TargetClass()
         image_id = 1.1
         # perfom target and assert result
-        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, image_id)
 
     def test_image_require_api_not_number(self):
         # prepare test
@@ -1245,7 +1245,7 @@ class ValidateRulesTestCase(test.TestCase):
         target = TargetClass()
         image_id = "12345"
         # perfom target and assert result
-        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, image_id)
 
     def test_image_require_api_db_error(self):
         # prepare test
