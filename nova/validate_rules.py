@@ -123,6 +123,9 @@ class InstanceRequireAPI(BaseValidator):
                     if key == 'reboot':
                         try:
                             id = int(instance_id)
+                            if id < 0:
+                                raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id is minus')
 
                         except ValueError: 
                             raise webob.exc.HTTPBadRequest(
