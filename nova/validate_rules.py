@@ -112,33 +112,21 @@ class InstanceRequireAPI(BaseValidator):
             try:
                 id = int(instance_id)
                 if id < 0:
-                    raise webob.exc.HTTPBadRequest(explanation='instance_id is minus')
+                    raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id is minus')
                 if id > 2147483647:
-                    raise webob.exc.HTTPBadRequest(explanation='instance_id over maximum int')
+                    raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id over maximum int')
             except ValueError:
-                raise webob.exc.HTTPBadRequest(explanation='Instance id is not integer')
+                raise webob.exc.HTTPBadRequest(
+                                    explanation='Instance id is not integer')
         try:
             if utils.is_uuid_like(instance_id):
-                    db.instance_get_by_uuid(self.context, instance_id)
+                db.instance_get_by_uuid(self.context, instance_id)
             else:
                 db.instance_get(self.context, instance_id)
         except exception.InstanceNotFound as e:
             LOG.info(e)
-            try:
-                project_id = self.request.\
-                    environ['wsgiorg.routing_args'][1]['project_id']
-                for key in body:
-                    if key == 'reboot':
-                        ins = db.instance_get_all_by_project(self.context,
-                                                             project_id)
-                        if len(ins) > 0:
-                            raise webob.exc.HTTPForbidden(
-                                        explanation='tenant is not same')
-            except (webob.exc.HTTPForbidden, webob.exc.HTTPBadRequest):
-                raise
-            except Exception:
-                raise webob.exc.HTTPNotFound(explanation=str(e))
-
             raise webob.exc.HTTPNotFound(explanation=str(e))
 
 
