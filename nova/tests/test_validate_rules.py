@@ -1130,6 +1130,90 @@ class ValidateRulesTestCase(test.TestCase):
         # perfom target and assert result
         self.assertRaises(exception.DBError, target.meth, image_name)
 
+    def test_metadata_valid_api_valid_key_and_value(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.MetadataValidAPI)
+            def meth(self, metadata):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        metadata = {"aaa": "bbb", "ccc": "ddd"}
+        # perform target
+        actual = target.meth(metadata)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_metadata_valid_api_empty(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.MetadataValidAPI)
+            def meth(self, metadata):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        metadata = {}
+        # perform target
+        actual = target.meth(metadata)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_metadata_valid_api_none(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.MetadataValidAPI)
+            def meth(self, metadata):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        metadata = None
+        # perform target
+        actual = target.meth(metadata)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_metadata_valid_api_invalid_key_length(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.MetadataValidAPI)
+            def meth(self, metadata):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        metadata = {"a" * 256: "bbb"}
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, metadata)
+
+    def test_metadata_valid_api_invalid_value_length(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.MetadataValidAPI)
+            def meth(self, metadata):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        metadata = {"aaa": "bbb", "ccc": "d" * 256}
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, metadata)
+
+    def test_metadata_valid_api_key_and_value_are_blank(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.MetadataValidAPI)
+            def meth(self, metadata):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        metadata = {"": ""}
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, metadata)
+
     def test_flavor_require_api_valid_flavor(self):
         # prepare test
         expected = "success result"

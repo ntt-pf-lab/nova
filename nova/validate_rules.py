@@ -313,6 +313,33 @@ class ImageNameValidAPI(BaseValidator):
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
+class MetadataValidAPI(BaseValidator):
+    """
+    MetadataValid for API.
+
+    Validate the metadata is valid.
+    Require the 'metadata' parameter.
+    """
+    def validate_metadata(self, metadata):
+        if not metadata:
+            return
+        try:
+            for k, v in metadata.iteritems():
+                if len(k) > 255:
+                    raise exception.InvalidParameterValue(
+                                    err="metadata key over 255 length.")
+                if len(v) > 255:
+                    raise exception.InvalidParameterValue(
+                                    err="metadata value over 255 length.")
+
+            if metadata == {"": ""}:
+                raise exception.InvalidParameterValue(
+                                err="metadata key and value not specified.")
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
 class NetworkRequire(BaseValidator):
     """
     NetworkRequire.

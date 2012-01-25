@@ -66,7 +66,8 @@ class CreateImageResolver(validation.Resolver):
         try:
             input_dict = params['input_dict']
             entity = input_dict.get("createImage", {})
-            params['image_name'] = entity["name"]
+            params['image_name'] = entity.get('name')
+            params['metadata'] = entity.get('metadata')
         except KeyError:
             pass
         return params
