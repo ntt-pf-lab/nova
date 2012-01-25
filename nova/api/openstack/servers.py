@@ -135,6 +135,8 @@ class Controller(object):
         return dict(servers=servers)
 
     @scheduler_api.redirect_handler
+    @validation.method(validate_rules.InstanceRequireAPI,
+                       alias={"id": "instance_id"})
     def show(self, req, id):
         """ Returns server details by server id """
         try:
