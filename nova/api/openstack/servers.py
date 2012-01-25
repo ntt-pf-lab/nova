@@ -154,6 +154,7 @@ class Controller(object):
                        validate_rules.ImageRequireAPI,
                        validate_rules.FlavorRequireAPI,
                        validate_rules.ZoneNameValidAPI,
+                       validate_rules.MetadataValidAPI,
                        resolver=validators.InstanceCreationResolver)
     def create(self, req, body):
         """ Creates a new server for a given user """

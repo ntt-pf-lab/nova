@@ -38,6 +38,7 @@ class InstanceCreationResolver(validation.Resolver):
             params['image_id'] = body['server'].get('imageRef')
             params['flavor_id'] = body['server'].get('flavorRef')
             params['zone_name'] = body['server'].get('availability_zone')
+            params['metadata'] = body['server'].get('metadata')
         except KeyError:
             pass
         return params
