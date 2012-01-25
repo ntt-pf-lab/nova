@@ -1971,7 +1971,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
     @exception.wrap_exception()
     def migrate_disk_and_power_off(self, context, instance, dest,
-                                   instance_type, network_info):
+                                   instance_type, network_info=None):
         LOG.debug(_("Instance %s: Starting migrate_disk_and_power_off"),
                    instance['name'])
         disk_info_text = self.get_instance_disk_info(instance['name'])
@@ -2080,7 +2080,7 @@ class LibvirtConnection(driver.ComputeDriver):
         return timer.start(interval=0.5, now=True)
 
     @exception.wrap_exception()
-    def finish_revert_migration(self, instance, network_info):
+    def finish_revert_migration(self, instance, network_info=None):
         LOG.debug(_("Instance %s: Starting finish_revert_migration"),
                    instance['name'])
         # FIX: context or network_info neccessary !!

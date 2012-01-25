@@ -1100,6 +1100,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         migration_ref = self.db.migration_get(context, migration_id)
         instance_ref = self.db.instance_get_by_uuid(context,
                 migration_ref.instance_uuid)
+        network_info = self._get_instance_nw_info(context, instance_ref)
 
         self._notify_about_instance_usage(instance_ref, "resize.revert.start")
 
@@ -1117,7 +1118,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                               ephemeral_gb=instance_type['ephemeral_gb'],
                               instance_type_id=instance_type['id'])
 
-        self.driver.finish_revert_migration(instance_ref)
+        self.driver.finish_revert_migration(instance_ref, network_info)
         self.db.migration_update(context, migration_id,
                 {'status': 'reverted'})
 
@@ -1185,6 +1186,7 @@ class ComputeManager(manager.SchedulerDependentManager):
                 migration_ref.instance_uuid)
         instance_type_ref = self.db.instance_type_get(context,
                 migration_ref.new_instance_type_id)
+        network_info = self._get_instance_nw_info(context, instance_ref)
 
         self.db.migration_update(context,
                                  migration_id,
@@ -1193,7 +1195,7 @@ class ComputeManager(manager.SchedulerDependentManager):
         try:
             disk_info = self.driver.migrate_disk_and_power_off(
                     context, instance_ref, migration_ref['dest_host'],
-                    instance_type_ref)
+                    instance_type_ref, network_info)
         except Exception, error:
             with utils.save_and_reraise_exception():
                 msg = _('%s. Setting instance vm_state to ERROR')

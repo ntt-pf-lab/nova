@@ -2259,8 +2259,6 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         def fake_get_instance_disk_info(instance):
             return []
-        def fake_get_instance_nw_info(context, instance):
-            return None
         def fake_destroy(instance, network_info, cleanup=True,
                          cleanup_resize=True):
             pass
@@ -2276,8 +2274,6 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         self.stubs.Set(self.libvirtconnection, 'get_instance_disk_info',
                        fake_get_instance_disk_info)
-        self.stubs.Set(self.libvirtconnection, '_get_instance_nw_info',
-                       fake_get_instance_nw_info)
         self.stubs.Set(self.libvirtconnection, '_destroy', fake_destroy)
         self.stubs.Set(self.libvirtconnection, 'get_host_ip_addr',
                        fake_get_host_ip_addr)
@@ -2305,8 +2301,6 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         def fake_get_instance_disk_info(instance):
             return disk_info_text
-        def fake_get_instance_nw_info(context, instance):
-            return None
         def fake_destroy(instance, network_info, cleanup=True,
                          cleanup_resize=True):
             pass
@@ -2318,8 +2312,6 @@ class LibvirtConnectionTestCase(test.TestCase):
 
         self.stubs.Set(self.libvirtconnection, 'get_instance_disk_info',
                        fake_get_instance_disk_info)
-        self.stubs.Set(self.libvirtconnection, '_get_instance_nw_info',
-                       fake_get_instance_nw_info)
         self.stubs.Set(self.libvirtconnection, '_destroy', fake_destroy)
         self.stubs.Set(self.libvirtconnection, 'get_host_ip_addr',
                        fake_get_host_ip_addr)
