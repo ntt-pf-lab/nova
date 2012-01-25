@@ -252,10 +252,11 @@ class InstanceCanDestroy(BaseValidator):
                 instance = db.instance_get_by_uuid(self.context, instance_id)
             else:
                 instance = db.instance_get(self.context, instance_id)
-            # ACTIVE/REBOOTING, BUILDING/DELETING,
-            # ACTIVE/DELETING or DELETED/None only allow.
+            # ACTIVE/REBOOTING, BUILDING/DELETING, ACTIVE/IMAGE_SNAPSHOT,
+            # ACTIVE/DELETING or DELETED/None -> Forbidden
             if (instance["vm_state"], instance["task_state"]) in\
                     [(vm_states.ACTIVE, task_states.REBOOTING),
+                     (vm_states.ACTIVE, task_states.IMAGE_SNAPSHOT),
                      (vm_states.BUILDING, task_states.DELETING),
                      (vm_states.ACTIVE, task_states.DELETING),
                      (vm_states.DELETED, None)]:
