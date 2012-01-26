@@ -720,6 +720,24 @@ class ValidateRulesTestCase(test.TestCase):
         # perfom target and assert result
         self.assertRaises(webob.exc.HTTPNotFound, target.meth, uuid)
 
+    def test_instance_require_api_by_uuid_tenant_is_not_same(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, context, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        instance_id = 10
+        project_id = 1
+        values = {'id': instance_id, 'uuid': uuid, 'project_id': project_id}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        user_context = context.RequestContext('testuser', 2)
+        self.assertRaises(webob.exc.HTTPForbidden,
+                          target.meth, user_context, uuid)
+
     def test_instance_require_api_by_instance_id_instance_is_exists(self):
         # prepare test
         expected = "success reuslt"
@@ -750,6 +768,23 @@ class ValidateRulesTestCase(test.TestCase):
         instance_id = 10
         # perfom target and assert result
         self.assertRaises(webob.exc.HTTPNotFound, target.meth, instance_id)
+
+    def test_instance_require_api_by_instance_id_tenant_is_not_same(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, context, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        project_id = 1
+        values = {'id': instance_id, 'project_id': project_id}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        user_context = context.RequestContext('testuser', 2)
+        self.assertRaises(webob.exc.HTTPForbidden,
+                          target.meth, user_context, instance_id)
 
     def test_instance_require_api_db_error(self):
         # prepare test
@@ -1019,6 +1054,42 @@ class ValidateRulesTestCase(test.TestCase):
         # assert result
         self.assertEqual(actual, expected)
 
+    def test_instance_can_destroy_negative_value(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = "-10"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_id)
+
+    def test_instance_can_destroy_too_large(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = sys.maxint + 1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_id)
+
+    def test_instance_can_destroy_not_number(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = "not number"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_id)
+
     def test_instance_can_destroy_not_found(self):
         # prepare test
         class TargetClass(object):
@@ -1030,6 +1101,23 @@ class ValidateRulesTestCase(test.TestCase):
         instance_id = 10
         # perfom target and assert result
         self.assertRaises(webob.exc.HTTPNotFound, target.meth, instance_id)
+
+    def test_instance_can_destroy_tenant_is_not_same(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, context, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        project_id = 1
+        values = {'id': instance_id, 'project_id': project_id}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        user_context = context.RequestContext('testuser', 2)
+        self.assertRaises(webob.exc.HTTPForbidden,
+                          target.meth, user_context, instance_id)
 
     def test_instance_can_destroy_rebooting_instance(self):
         # prepare test
@@ -1230,6 +1318,42 @@ class ValidateRulesTestCase(test.TestCase):
         # assert result
         self.assertEqual(actual, expected)
 
+    def test_flavor_require_api_negative_value(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "-10"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_api_too_large(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = sys.maxint + 1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_api_not_number(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "not number"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
     def test_flavor_require_api_not_found(self):
         # prepare test
         class TargetClass(object):
@@ -1246,6 +1370,83 @@ class ValidateRulesTestCase(test.TestCase):
         # prepare test
         class TargetClass(object):
             @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "1"
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, flavor_id)
+
+    def test_flavor_require_for_create_server_api_valid_flavor(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireForCreateServerAPI)
+            def meth(self, flavor_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "1"
+        # perform target
+        actual = target.meth(flavor_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_flavor_require_for_create_server_api_negative_value(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireForCreateServerAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "-10"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_for_create_server_api_too_large(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireForCreateServerAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = sys.maxint + 1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_for_create_server_api_not_number(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireForCreateServerAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "not number"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_for_create_server_api_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireForCreateServerAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "100000"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_for_create_server_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireForCreateServerAPI)
             def meth(self, flavor_id):
                 raise exception.DBError("Failed to query")
                 return "not return"
@@ -1335,6 +1536,95 @@ class ValidateRulesTestCase(test.TestCase):
         # prepare test
         class TargetClass(object):
             @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "1"
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, image_id)
+
+    def test_image_require_for_create_server_api_valid_image(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
+            def meth(self, image_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        image_id = "1"
+        # perform target
+        actual = target.meth(image_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_image_require_for_create_server_api_negative_value(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "-10"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_for_create_server_api_too_large(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = sys.maxint + 1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_for_create_server_api_not_digit(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = 1.1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_for_create_server_api_not_number(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "not number"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_for_create_server_api_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "12345"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_for_create_server_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireForCreateServerAPI)
             def meth(self, image_id):
                 raise exception.DBError("Failed to query")
                 return "not return"

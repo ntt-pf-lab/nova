@@ -151,8 +151,8 @@ class Controller(object):
         raise NotImplementedError()
 
     @validation.method(validate_rules.InstanceNameValidAPI,
-                       validate_rules.ImageRequireAPI,
-                       validate_rules.FlavorRequireAPI,
+                       validate_rules.ImageRequireForCreateServerAPI,
+                       validate_rules.FlavorRequireForCreateServerAPI,
                        validate_rules.ZoneNameValidAPI,
                        validate_rules.MetadataValidAPI,
                        resolver=validators.InstanceCreationResolver)

@@ -126,6 +126,17 @@ class InstanceRequireAPI(BaseValidator):
             else:
                 db.instance_get(self.context, instance_id)
         except exception.InstanceNotFound as e:
+            admin_context = self.context.elevated()
+            try:
+                if utils.is_uuid_like(instance_id):
+                    db.instance_get_by_uuid(admin_context, instance_id)
+                else:
+                    db.instance_get(admin_context, instance_id)
+                raise webob.exc.HTTPForbidden(
+                                    explanation='tenant is not same')
+            except exception.InstanceNotFound:
+                pass
+
             LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
 
@@ -247,6 +258,18 @@ class InstanceCanDestroy(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
+        if not utils.is_uuid_like(instance_id):
+            try:
+                id = int(instance_id)
+                if id < 0:
+                    raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id is minus')
+                if id > 2147483647:
+                    raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id over maximum int')
+            except ValueError:
+                raise webob.exc.HTTPBadRequest(
+                                    explanation='Instance id is not integer')
         try:
             if utils.is_uuid_like(instance_id):
                 instance = db.instance_get_by_uuid(self.context, instance_id)
@@ -263,6 +286,17 @@ class InstanceCanDestroy(BaseValidator):
                 raise exception.InstanceDestroyFailure(
                         reason="Instance state is not suitable for destroy")
         except exception.InstanceNotFound as e:
+            admin_context = self.context.elevated()
+            try:
+                if utils.is_uuid_like(instance_id):
+                    db.instance_get_by_uuid(admin_context, instance_id)
+                else:
+                    db.instance_get(admin_context, instance_id)
+                raise webob.exc.HTTPForbidden(
+                                    explanation='tenant is not same')
+            except exception.InstanceNotFound:
+                pass
+
             LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
         except exception.InstanceDestroyFailure as e:
@@ -429,6 +463,35 @@ class FlavorRequireAPI(BaseValidator):
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
+class FlavorRequireForCreateServerAPI(BaseValidator):
+    """
+    FlavorRequire for Create Server API.
+
+    Validate the flavor is exists.
+    Require the 'flavor_id' parameter.
+    """
+    def validate_flavor_id(self, flavor_id):
+        try:
+            try:
+                num = int(flavor_id)
+                if num < 1:
+                    raise exception.InvalidParameterValue(
+                            err="Specified flavor id is not positive value.")
+                elif num > sys.maxint:
+                    raise exception.InvalidParameterValue(
+                            err="Specified flavor id is too large.")
+            except (TypeError, ValueError):
+                raise exception.InvalidParameterValue(
+                            err="Specified flavor id is not digit.")
+            db.api.instance_type_get_by_flavor_id(self.context, flavor_id)
+        except exception.FlavorNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
 class ImageRequire(BaseValidator):
     """
     ImageRequire.
@@ -477,6 +540,38 @@ class ImageRequireAPI(BaseValidator):
         except exception.ImageNotFound as e:
             LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
+class ImageRequireForCreateServerAPI(BaseValidator):
+    """
+    ImageRequire for Create Server API.
+
+    Validate the image is exists.
+    Require the 'image_id' parameter.
+    """
+    def validate_image_id(self, image_id):
+        try:
+            try:
+                num = int(image_id)
+                if num < 1:
+                    raise exception.InvalidParameterValue(
+                            err="Specified image id is not positive value.")
+                elif num > sys.maxint:
+                    raise exception.InvalidParameterValue(
+                            err="Specified image id is too large.")
+            except (TypeError, ValueError):
+                raise exception.InvalidParameterValue(
+                            err="Specified image id is not digit.")
+            service = image.get_default_image_service()
+            result = service.show(self.context, image_id)
+            if result is None:
+                raise exception.ImageNotFound(image_id=image_id)
+        except exception.ImageNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
         except exception.InvalidParameterValue as e:
             LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
