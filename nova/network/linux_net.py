@@ -304,6 +304,9 @@ class IptablesManager(object):
                                                  FLAGS.use_ipv6)
         iptables_helper.apply(self.execute, settings, binary_name)
 
+    def _modify_rules(self, current_lines, table, binary=None):
+        # unuse arg binary.
+        return iptables_helper._modify_rules(current_lines, table, binary_name)
 
 def metadata_forward():
     """Create forwarding rule for metadata."""
