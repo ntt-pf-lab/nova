@@ -429,6 +429,35 @@ class FlavorRequireAPI(BaseValidator):
             raise webob.exc.HTTPBadRequest(explanation=str(e))
 
 
+class FlavorRequireForCreateServerAPI(BaseValidator):
+    """
+    FlavorRequire for Create Server API.
+
+    Validate the flavor is exists.
+    Require the 'flavor_id' parameter.
+    """
+    def validate_flavor_id(self, flavor_id):
+        try:
+            try:
+                num = int(flavor_id)
+                if num < 1:
+                    raise exception.InvalidParameterValue(
+                            err="Specified flavor id is not positive value.")
+                elif num > sys.maxint:
+                    raise exception.InvalidParameterValue(
+                            err="Specified flavor id is too large.")
+            except (TypeError, ValueError):
+                raise exception.InvalidParameterValue(
+                            err="Specified flavor id is not digit.")
+            db.api.instance_type_get_by_flavor_id(self.context, flavor_id)
+        except exception.FlavorNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
 class ImageRequire(BaseValidator):
     """
     ImageRequire.
@@ -477,6 +506,38 @@ class ImageRequireAPI(BaseValidator):
         except exception.ImageNotFound as e:
             LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
+        except exception.InvalidParameterValue as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
+
+
+class ImageRequireForCreateServerAPI(BaseValidator):
+    """
+    ImageRequire for Create Server API.
+
+    Validate the image is exists.
+    Require the 'image_id' parameter.
+    """
+    def validate_image_id(self, image_id):
+        try:
+            try:
+                num = int(image_id)
+                if num < 1:
+                    raise exception.InvalidParameterValue(
+                            err="Specified image id is not positive value.")
+                elif num > sys.maxint:
+                    raise exception.InvalidParameterValue(
+                            err="Specified image id is too large.")
+            except (TypeError, ValueError):
+                raise exception.InvalidParameterValue(
+                            err="Specified image id is not digit.")
+            service = image.get_default_image_service()
+            result = service.show(self.context, image_id)
+            if result is None:
+                raise exception.ImageNotFound(image_id=image_id)
+        except exception.ImageNotFound as e:
+            LOG.info(e)
+            raise webob.exc.HTTPBadRequest(explanation=str(e))
         except exception.InvalidParameterValue as e:
             LOG.info(e)
             raise webob.exc.HTTPBadRequest(explanation=str(e))
