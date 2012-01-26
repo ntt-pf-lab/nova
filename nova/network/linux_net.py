@@ -30,7 +30,7 @@ from nova import exception
 from nova import flags
 from nova import log as logging
 from nova import utils
-
+import nova.network.iptables_helper as iptables_helper
 
 LOG = logging.getLogger("nova.linux_net")
 
@@ -299,78 +299,10 @@ class IptablesManager(object):
         rules. This happens atomically, thanks to iptables-restore.
 
         """
-        s = [('iptables', self.ipv4)]
-        if FLAGS.use_ipv6:
-            s += [('ip6tables', self.ipv6)]
-
-        for cmd, tables in s:
-            for table in tables:
-                current_table, _ = self.execute('%s-save' % (cmd,),
-                                                '-t', '%s' % (table,),
-                                                run_as_root=True,
-                                                attempts=5)
-                current_lines = current_table.split('\n')
-                new_filter = self._modify_rules(current_lines,
-                                                tables[table])
-                self.execute('%s-restore' % (cmd,), run_as_root=True,
-                             process_input='\n'.join(new_filter),
-                             attempts=5)
-
-    def _modify_rules(self, current_lines, table, binary=None):
-        unwrapped_chains = table.unwrapped_chains
-        chains = table.chains
-        rules = table.rules
-
-        # Remove any trace of our rules
-        new_filter = filter(lambda line: binary_name not in line,
-                            current_lines)
-
-        seen_chains = False
-        rules_index = 0
-        for rules_index, rule in enumerate(new_filter):
-            if not seen_chains:
-                if rule.startswith(':'):
-                    seen_chains = True
-            else:
-                if not rule.startswith(':'):
-                    break
-
-        our_rules = []
-        for rule in rules:
-            rule_str = str(rule)
-            if rule.top:
-                # rule.top == True means we want this rule to be at the top.
-                # Further down, we weed out duplicates from the bottom of the
-                # list, so here we remove the dupes ahead of time.
-                new_filter = filter(lambda s: s.strip() != rule_str.strip(),
-                                    new_filter)
-            our_rules += [rule_str]
-
-        new_filter[rules_index:rules_index] = our_rules
-
-        new_filter[rules_index:rules_index] = [':%s - [0:0]' % \
-                                               (name,) \
-                                               for name in unwrapped_chains]
-        new_filter[rules_index:rules_index] = [':%s-%s - [0:0]' % \
-                                               (binary_name, name,) \
-                                               for name in chains]
-
-        seen_lines = set()
-
-        def _weed_out_duplicates(line):
-            line = line.strip()
-            if line in seen_lines:
-                return False
-            else:
-                seen_lines.add(line)
-                return True
-
-        # We filter duplicates, letting the *last* occurrence take
-        # precendence.
-        new_filter.reverse()
-        new_filter = filter(_weed_out_duplicates, new_filter)
-        new_filter.reverse()
-        return new_filter
+        settings = iptables_helper.make_settings(self.ipv4,
+                                                 self.ipv6,
+                                                 FLAGS.use_ipv6)
+        iptables_helper.apply(self.execute, settings, binary_name)
 
 
 def metadata_forward():

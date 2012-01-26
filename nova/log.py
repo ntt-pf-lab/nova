@@ -160,7 +160,10 @@ class NovaLogger(logging.Logger):
         if context:
             extra.update(_dictify_context(context))
         global _binary_name
-        extra['server_name'] = _binary_name
+        try:
+            extra['server_name'] = _binary_name
+        except NameError:
+            extra['server_name'] = _get_binary_name()
         extra.update({"nova_version": version.version_string_with_vcs()})
         return logging.Logger._log(self, level, msg, args, exc_info, extra)
 
