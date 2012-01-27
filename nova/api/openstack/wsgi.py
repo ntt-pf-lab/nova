@@ -6,6 +6,7 @@ from xml.parsers import expat
 
 import faults
 from nova import exception
+from nova import local
 from nova import log as logging
 from nova import utils
 from nova import wsgi
@@ -504,6 +505,18 @@ class Resource(wsgi.Application):
                                                  action=action)
         else:
             response = action_result
+
+        #return the request_id in response
+        context = None
+        if 'nova.context' in request.environ:
+            context = request.environ['nova.context']
+        else:
+            context = getattr(local.store, 'context', None)
+        if not context or not context.request_id:
+            request_id = 'NA'
+        else:
+            request_id = context.request_id
+        response.headers['request_id'] = request_id
 
         try:
             msg_dict = dict(url=request.url, status=response.status_int)
