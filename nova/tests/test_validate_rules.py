@@ -1054,6 +1054,42 @@ class ValidateRulesTestCase(test.TestCase):
         # assert result
         self.assertEqual(actual, expected)
 
+    def test_instance_can_destroy_negative_value(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = "-10"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_id)
+
+    def test_instance_can_destroy_too_large(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = sys.maxint + 1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_id)
+
+    def test_instance_can_destroy_not_number(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = "not number"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_id)
+
     def test_instance_can_destroy_not_found(self):
         # prepare test
         class TargetClass(object):

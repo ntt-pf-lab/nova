@@ -258,6 +258,18 @@ class InstanceCanDestroy(BaseValidator):
     Require the 'instance_id' parameter.
     """
     def validate_instance_id(self, instance_id):
+        if not utils.is_uuid_like(instance_id):
+            try:
+                id = int(instance_id)
+                if id < 0:
+                    raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id is minus')
+                if id > 2147483647:
+                    raise webob.exc.HTTPBadRequest(
+                                    explanation='instance_id over maximum int')
+            except ValueError:
+                raise webob.exc.HTTPBadRequest(
+                                    explanation='Instance id is not integer')
         try:
             if utils.is_uuid_like(instance_id):
                 instance = db.instance_get_by_uuid(self.context, instance_id)
