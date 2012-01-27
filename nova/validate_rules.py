@@ -126,6 +126,17 @@ class InstanceRequireAPI(BaseValidator):
             else:
                 db.instance_get(self.context, instance_id)
         except exception.InstanceNotFound as e:
+            admin_context = self.context.elevated()
+            try:
+                if utils.is_uuid_like(instance_id):
+                    db.instance_get_by_uuid(admin_context, instance_id)
+                else:
+                    db.instance_get(admin_context, instance_id)
+                raise webob.exc.HTTPForbidden(
+                                    explanation='tenant is not same')
+            except exception.InstanceNotFound:
+                pass
+
             LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
 
@@ -263,6 +274,17 @@ class InstanceCanDestroy(BaseValidator):
                 raise exception.InstanceDestroyFailure(
                         reason="Instance state is not suitable for destroy")
         except exception.InstanceNotFound as e:
+            admin_context = self.context.elevated()
+            try:
+                if utils.is_uuid_like(instance_id):
+                    db.instance_get_by_uuid(admin_context, instance_id)
+                else:
+                    db.instance_get(admin_context, instance_id)
+                raise webob.exc.HTTPForbidden(
+                                    explanation='tenant is not same')
+            except exception.InstanceNotFound:
+                pass
+
             LOG.info(e)
             raise webob.exc.HTTPNotFound(explanation=str(e))
         except exception.InstanceDestroyFailure as e:
