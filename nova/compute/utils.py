@@ -29,14 +29,17 @@ def terminate_volumes(db, context, instance_id):
     # parameter check
     try:
         db.instance_get(context, instance_id)
+        bdms = db.block_device_mapping_get_all_by_instance(context,
+                                                           instance_id)
+        if not bdms:
+            raise exception.InstanceNotFound
     except exception.InstanceNotFound:
         LOG.error(_('Parameter is invalid. instance_id=%s'), instance_id)
         raise
 
     ex_flag = False
     volume_api = volume.API()
-    for bdm in db.block_device_mapping_get_all_by_instance(context,
-                                                           instance_id):
+    for bdm in bdms:
         #LOG.debug(_("terminating bdm %s") % bdm)
         if bdm['volume_id'] and bdm['delete_on_termination']:
             try:

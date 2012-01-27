@@ -80,6 +80,26 @@ class UtilsTestCase(test.TestCase):
                           self.utils.terminate_volumes,
                           db, self.context, instance_id)
 
+    @attr(kind="small")
+    def test_terminate_volumes_bdm_does_not_exist(self):
+        """Check raise InstanceNotFound when bdm has no record."""
+        class FakeDB(object):
+            def instance_get(self, *args, **kwargs):
+                pass
+            
+            def block_device_mapping_get_all_by_instance(self, *args, **kwargs):
+                return []
+
+        import nova.compute.utils as utils
+        from nova.exception import InstanceNotFound
+        fake = FakeDB()
+        try:
+            fake.instance_get(None, None)
+        except Exception as ex:
+            self.fail(ex)
+        self.assertRaises(InstanceNotFound,
+                          lambda: utils.terminate_volumes(fake, None, None))
+
     @attr(kind='small')
     def test_terminate_volumes_db_bdm_delete_on_termination_is_true(self):
         """Test for nova.compute.utils.terminate_volumes. """
