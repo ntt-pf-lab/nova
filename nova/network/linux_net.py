@@ -839,19 +839,30 @@ class LinuxBridgeInterfaceDriver(LinuxNetInterfaceDriver):
     def ensure_vlan(_self, vlan_num, bridge_interface, mac_address=None):
         """Create a vlan unless it already exists."""
         interface = 'vlan%s' % vlan_num
-        if not _device_exists(interface):
-            LOG.debug(_('Starting VLAN inteface %s'), interface)
-            _execute('vconfig', 'set_name_type',
-                     'VLAN_PLUS_VID_NO_PAD', run_as_root=True)
-            _execute('vconfig', 'add', bridge_interface,
-                        vlan_num, run_as_root=True)
+        if _device_exists(interface):
+            return interface
+        
+        LOG.debug(_('Starting VLAN inteface %s'), interface)
+        
+        executable = _execute
+        executable('vconfig', 'set_name_type', 'VLAN_PLUS_VID_NO_PAD',
+                   run_as_root=True)
+        executable('vconfig', 'add', bridge_interface, vlan_num,
+                   run_as_root=True)
+        try:
             # (danwent) the bridge will inherit this address, so we want to
             # make sure it is the value set from the NetworkManager
             if mac_address:
-                _execute('ip', 'link', 'set', interface, "address",
-                            mac_address, run_as_root=True)
-            _execute('ip', 'link', 'set', interface, 'up', run_as_root=True)
+                executable('ip', 'link', 'set', interface, "address", mac_address,
+                           run_as_root=True)
+            executable('ip', 'link', 'set', interface, 'up', run_as_root=True)
+        except exception.ProcessExecutionError as ex:
+            # remove vlan setting if error occurred.
+            executable("vconfig", "rem", interface, run_as_root=True)
+            raise ex
+        
         return interface
+
 
     @classmethod
     @utils.synchronized('ensure_bridge', external=True)
