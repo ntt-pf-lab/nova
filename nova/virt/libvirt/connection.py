@@ -61,6 +61,7 @@ from nova import db
 from nova import exception
 from nova import flags
 import nova.image
+from nova import local
 from nova import log as logging
 from nova import utils
 from nova import vnc
@@ -263,7 +264,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
     def destroy(self, instance, network_info, cleanup=True):
         instance_name = instance['name']
-
+        context = getattr(local.store, 'context', None)
         try:
             virt_dom = self._lookup_by_name(instance_name)
         except (exception.NotFound, exception.Error):
@@ -306,8 +307,9 @@ class LibvirtConnection(driver.ComputeDriver):
             for (network, mapping) in network_info:
                 self.vif_driver.unplug(instance, network, mapping)
 
-        def _wait_for_destroy():
+        def _wait_for_destroy(context):
             """Called at an interval until the VM is gone."""
+            context = nova_context.RequestContext.from_dict(context.to_dict())
             instance_name = instance['name']
 
             try:
@@ -317,7 +319,7 @@ class LibvirtConnection(driver.ComputeDriver):
                 LOG.info(msg)
                 raise utils.LoopingCallDone
 
-        timer = utils.LoopingCall(_wait_for_destroy)
+        timer = utils.LoopingCall(_wait_for_destroy, context=context)
         timer.start(interval=0.5, now=True)
 
         self.firewall_driver.unfilter_instance(instance,
@@ -485,6 +487,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
         """
         virt_dom = self._conn.lookupByName(instance['name'])
+        context = getattr(local.store, 'context', None)
         # NOTE(itoumsn): Use XML delived from the running instance
         # instead of using to_xml(instance, network_info). This is almost
         # the ultimate stupid workaround.
@@ -501,8 +504,9 @@ class LibvirtConnection(driver.ComputeDriver):
         self._create_new_domain(xml)
         self.firewall_driver.apply_instance_filter(instance, network_info)
 
-        def _wait_for_reboot():
+        def _wait_for_reboot(context):
             """Called at an interval until the VM is running again."""
+            context = nova_context.RequestContext.from_dict(context.to_dict())
             instance_name = instance['name']
 
             try:
@@ -517,7 +521,7 @@ class LibvirtConnection(driver.ComputeDriver):
                 LOG.info(msg)
                 raise utils.LoopingCallDone
 
-        timer = utils.LoopingCall(_wait_for_reboot)
+        timer = utils.LoopingCall(_wait_for_reboot, context=context)
         return timer.start(interval=0.5, now=True)
 
     @exception.wrap_exception()
@@ -600,6 +604,7 @@ class LibvirtConnection(driver.ComputeDriver):
     @exception.wrap_exception()
     def spawn(self, context, instance, network_info,
               block_device_info=None):
+        context = getattr(local.store, 'context', None)
         xml = self.to_xml(instance, network_info, False,
                           block_device_info=block_device_info)
         self.firewall_driver.setup_basic_filtering(instance, network_info)
@@ -611,8 +616,9 @@ class LibvirtConnection(driver.ComputeDriver):
         LOG.debug(_("instance %s: is running"), instance['name'])
         self.firewall_driver.apply_instance_filter(instance, network_info)
 
-        def _wait_for_boot():
+        def _wait_for_boot(context):
             """Called at an interval until the VM is running."""
+            context = nova_context.RequestContext.from_dict(context.to_dict())
             instance_name = instance['name']
 
             try:
@@ -624,21 +630,24 @@ class LibvirtConnection(driver.ComputeDriver):
             if state == power_state.SHUTDOWN:
                 msg = _("Instance %s failed to spawn.") % instance_name
                 LOG.error(msg)
-                raise exception.InstanceBootFailure(reason="Instance state is SHUTDOWN")
+                raise exception.InstanceBootFailure(
+                        reason="Instance state is SHUTDOWN")
             if state == power_state.SHUTOFF:
                 msg = _("Instance %s failed to spawn.") % instance_name
                 LOG.error(msg)
-                raise exception.InstanceBootFailure(reason="Instance state is SHUTOFF")
+                raise exception.InstanceBootFailure(
+                        reason="Instance state is SHUTOFF")
             if state == power_state.CRASHED:
                 msg = _("Instance %s failed to spawn.") % instance_name
                 LOG.error(msg)
-                raise exception.InstanceBootFailure(reason="Instance state is CRASHED")
+                raise exception.InstanceBootFailure(
+                        reason="Instance state is CRASHED")
             if state == power_state.RUNNING:
                 msg = _("Instance %s spawned successfully.") % instance_name
                 LOG.info(msg)
                 raise utils.LoopingCallDone
 
-        timer = utils.LoopingCall(_wait_for_boot)
+        timer = utils.LoopingCall(_wait_for_boot, context=context)
         future = timer.start(interval=0.5, now=True)
         future.wait()
         return future

@@ -39,6 +39,7 @@ import traceback
 
 import nova
 from nova import flags
+from nova import local
 from nova import version
 
 
@@ -157,6 +158,8 @@ class NovaLogger(logging.Logger):
         """Extract context from any log call."""
         if not extra:
             extra = {}
+        if context is None:
+            context = getattr(local.store, 'context', None)
         if context:
             extra.update(_dictify_context(context))
         global _binary_name

@@ -19,7 +19,7 @@
 """RequestContext: context for requests that persist through all of nova."""
 
 import uuid
-
+from nova import local
 from nova import utils
 
 
@@ -32,7 +32,8 @@ class RequestContext(object):
 
     def __init__(self, user_id, project_id, is_admin=None, read_deleted=False,
                  roles=None, remote_address=None, timestamp=None,
-                 request_id=None, auth_token=None, strategy='noauth'):
+                 request_id=None, auth_token=None, strategy='noauth',
+                 overwrite=True):
         self.user_id = user_id
         self.project_id = project_id
         self.roles = roles or []
@@ -51,6 +52,8 @@ class RequestContext(object):
         self.request_id = request_id
         self.auth_token = auth_token
         self.strategy = strategy
+        if overwrite or not hasattr(local.store, 'context'):
+            local.store.context = self
 
     def to_dict(self):
         return {'user_id': self.user_id,
@@ -68,7 +71,7 @@ class RequestContext(object):
     def from_dict(cls, values):
         return cls(**values)
 
-    def elevated(self, read_deleted=None):
+    def elevated(self, read_deleted=None, overwrite=False):
         """Return a version of this context with admin flag set."""
         rd = self.read_deleted if read_deleted is None else read_deleted
         return RequestContext(user_id=self.user_id,
@@ -80,8 +83,9 @@ class RequestContext(object):
                               timestamp=self.timestamp,
                               request_id=self.request_id,
                               auth_token=self.auth_token,
-                              strategy=self.strategy)
+                              strategy=self.strategy,
+                              overwrite=overwrite)
 
 
-def get_admin_context(read_deleted=False):
-    return RequestContext(None, None, True, read_deleted)
+def get_admin_context(read_deleted=False, overwrite=False):
+    return RequestContext(None, None, True, read_deleted, overwrite=overwrite)
