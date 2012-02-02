@@ -26,22 +26,6 @@ from nova import validation
 from nova import utils
 
 
-class InstanceCreationResolver(validation.Resolver):
-    """
-    InstanceCreationResolver.
-    """
-    def resolve_parameter(self, params):
-        try:
-            body = params['body']
-            params['instance_name'] = body['server']['name']
-            params['image_id'] = body['server'].get('imageRef')
-            params['flavor_id'] = body['server'].get('flavorRef')
-            params['zone_name'] = body['server'].get('availability_zone')
-        except KeyError:
-            pass
-        return params
-
-
 class KeypairCreationResolver(validation.Resolver):
     """
     KeypairCreationResolver.
@@ -56,61 +40,12 @@ class KeypairCreationResolver(validation.Resolver):
         return params
 
 
-class KeypairCreationResolver(validation.Resolver):
-    """
-    KeypairCreationResolver.
-    """
-    def resolve_parameter(self, params):
-        try:
-            body = params['body']
-            params['keypair_name'] =body['keypair']['name']
-            params['public_key'] = body['keypair']['public_key']
-        except KeyError:
-            pass
-
-
 MAPPING = [
 {"cls": "flavors.Controller",
  "method": "show",
  "validators": [rules.FlavorRequire],
- "alias": {"id": "flavor_id"}},
-{"cls": "servers.Controller",
- "method": "action",
- "validators": [rules.InstanceRequire],
- "alias": {"id": "instance_id"}},
-{"cls": "servers.Controller",
- "method": "create",
- "validators": [rules.InstanceNameValid, rules.ImageRequire, rules.FlavorRequire],
- "resolver": InstanceCreationResolver},
-{"cls": "servers.Controller",
- "method": "_action_reboot",
- "validators": [rules.InstanceCanReboot],
- "alias": {"id": "instance_id"}},
-{"cls": "servers.ControllerV11",
- "method": "_action_create_image",
- "validators": [rules.ImageNameValid, rules.InstanceCanSnapshot],
- "resolver": CreateImageResolver},
-{"cls": "images.Controller",
- "method": "delete",
- "validators": [rules.ImageRequire],
- "alias": {"id": "image_id"}}
+ "alias": {"id": "flavor_id"}}
 ]
-
-
-def handle_web_exception(self, e):
-    if isinstance(e, exception.NotFound):
-        raise webob.exc.HTTPNotFound(explanation=str(e))
-    elif isinstance(e, exception.Invalid):
-        # TODO add some except pattern.
-        if isinstance(e, exception.InstanceRebootFailure):
-            raise webob.exc.HTTPForbidden(explanation=str(e))
-        if isinstance(e, exception.InstanceSnapshotFailure):
-            raise webob.exc.HTTPForbidden(explanation=str(e))
-        raise webob.exc.HTTPBadRequest(explanation=str(e))
-    elif isinstance(e, exception.Duplicate):
-        raise webob.exc.HTTPConflict(explanation=str(e))
-    elif isinstance(e, exception.InstanceBusy):
-        raise webob.exc.HTTPConflict(explanation=str(e))
 
 
 class ValidatorMiddleware(wsgi.Middleware):

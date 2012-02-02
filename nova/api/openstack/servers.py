@@ -148,11 +148,6 @@ class Controller(object):
         """ Get default keypair if not set """
         raise NotImplementedError()
 
-    @validation.method(validate_rules.InstanceNameValidAPI,
-                       validate_rules.ImageRequireAPI,
-                       validate_rules.FlavorRequireAPI,
-                       validate_rules.ZoneNameValidAPI,
-                       resolver=validators.InstanceCreationResolver)
     def create(self, req, body):
         """ Creates a new server for a given user """
         if 'server' in body:
@@ -174,8 +169,6 @@ class Controller(object):
         return server
 
     @scheduler_api.redirect_handler
-    @validation.method(validate_rules.InstanceNameValidAPI,
-                       resolver=validators.InstanceUpdateResolver)
     def update(self, req, id, body):
         """Update server then pass on to version-specific controller"""
         if len(req.body) == 0:
@@ -212,7 +205,6 @@ class Controller(object):
 
     @scheduler_api.redirect_handler
     def action(self, req, id, body):
-        print "-------------------------ACTION %s " % id
         """Multi-purpose method used to take actions on a server"""
 
         self.actions = {

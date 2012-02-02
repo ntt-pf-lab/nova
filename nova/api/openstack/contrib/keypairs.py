@@ -95,8 +95,6 @@ class KeypairController(object):
         db.key_pair_create(context, keypair)
         return {'keypair': keypair}
 
-    @validation.method(rules.KeypairExists,
-                       alias={'id': 'keypair_name'})
     def delete(self, req, id):
         """
         Delete a keypair with a given name
