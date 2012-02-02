@@ -286,6 +286,14 @@ class InstanceRebootFailure(Invalid):
     message = _("Failed to reboot instance") + ": %(reason)s"
 
 
+class InstanceBootFailure(Invalid):
+    message = _("Failed to boot server") + ": %(reason)s."
+
+
+class InstanceSnapshotFailure(Invalid):
+    message = _("Failed to snapshot instance") + ": %(reason)s"
+
+
 class ServiceUnavailable(Invalid):
     message = _("Service is unavailable at this time.")
 
@@ -853,6 +861,10 @@ class CannotResizeToSmallerSize(NovaException):
 
 class ImageTooLarge(NovaException):
     message = _("Image is larger than instance type allows")
+
+
+class PublicKeyInvalid(Invalid):
+    message = _("Import key is not ssh-rsa format. %(public_key)")
 
 
 class ZoneRequestError(Error):

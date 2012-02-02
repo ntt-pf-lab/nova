@@ -23,8 +23,10 @@ from nova import db
 from nova import flags
 from nova import validation
 from nova import validate_rules as rules
-from nova.auth import manager
-from nova.compute import power_state
+from nova.compute import power_state, vm_states, task_states
+import sys
+import webob
+
 
 FLAGS = flags
 
@@ -155,7 +157,7 @@ class ValidateRulesTestCase(test.TestCase):
         values = {'id': 1,
                   'image_ref': 'ami-00000001',
                   'project_id': 'fake',
-                  'metadata': {'key1': 'value1'}
+                  'metadata': {'key1': 'value1'},
                  }
         db.instance_create(self.context, values)
 
@@ -174,7 +176,8 @@ class ValidateRulesTestCase(test.TestCase):
         # setup validation.
         class TargetClass1(object):
             @validation.method(rules.FlavorRequire,
-                        rules.ImageRequire, resolver=InstanceCreationResolver)
+                        rules.ImageRequireAPI,
+                        resolver=InstanceCreationResolver)
             def meth(self, body):
                 return "meth"
         validation.apply()
@@ -217,7 +220,7 @@ class ValidateRulesTestCase(test.TestCase):
         values = {'id': 1,
                   'image_ref': 'ami-00000001',
                   'project_id': 'fake',
-                  'metadata': {'key1': 'value1'}
+                  'metadata': {'key1': 'value1'},
                  }
         db.instance_create(self.context, values)
 
@@ -265,14 +268,14 @@ class ValidateRulesTestCase(test.TestCase):
         values = {'id': 1,
                   'image_ref': 'ami-00000001',
                   'project_id': 'fake',
-                  'power_state': power_state.RUNNING
+                  'power_state': power_state.RUNNING,
                  }
         db.instance_create(self.context, values)
 
         values = {'id': 2,
                   'image_ref': 'ami-00000002',
                   'project_id': 'fake',
-                  'power_state': power_state.CRASHED
+                  'power_state': power_state.CRASHED,
                  }
 
         db.instance_create(self.context, values)
@@ -505,25 +508,6 @@ class ValidateRulesTestCase(test.TestCase):
         self.assertEqual("meth", actual)
         self.assertRaises(exception.ZoneNotFound, target.meth, 999)
 
-    def test_keypair_require(self):
-        # setup validation
-        class TargetClass(object):
-            @validation.method(rules.KeypairRequire)
-            def meth(self, keypair_name):
-                return "meth"
-
-        validation.apply()
-        # setup data
-        values = {'id': 1, 'name': 'key1', 'user_id': self.context.user_id}
-        db.key_pair_create(self.context, values)
-        # do test
-        target = TargetClass()
-        actual = target.meth('key1')
-
-        # assertion
-        self.assertEqual("meth", actual)
-        self.assertRaises(exception.KeypairNotFound, target.meth, 'key2')
-
     def test_keypair_name_valid(self):
         # setup validation
         class TargetClass(object):
@@ -542,3 +526,830 @@ class ValidateRulesTestCase(test.TestCase):
         # assertion
         self.assertEqual("meth", actual)
         self.assertRaises(exception.KeyPairExists, target.meth, 'key1')
+
+    def test_keypair_name_valid_blank(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairNameValid)
+            def meth(self, keypair_name):
+                return "meth"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = ""
+        # perform target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, keypair_name)
+
+    def test_keypair_name_valid_none(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairNameValid)
+            def meth(self, keypair_name):
+                return "meth"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = None
+        # perform target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, keypair_name)
+
+    def test_keypair_name_valid_invalid_length(self):
+        # setup validation
+        expected = "expectedvalue"
+
+        class TargetClass(object):
+            @validation.method(rules.KeypairNameValid)
+            def meth(self, keypair_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        keypair_name1 = "".join(["a" for i in range(0, 255)])
+        keypair_name2 = "".join(["a" for i in range(0, 256)])
+        actual = target.meth(keypair_name1)
+        # perform target and assert result
+        self.assertEqual(actual, expected)
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, keypair_name2)
+
+    def test_keypair_name_valid_exists(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairNameValid)
+            def meth(self, keypair_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = "validkeyname"
+        # setup data
+        values = {'id': 1, 'name': keypair_name,
+                'user_id': self.context.user_id}
+        db.key_pair_create(self.context, values)
+        # perform target and assert result
+        self.assertRaises(webob.exc.HTTPConflict, target.meth, keypair_name)
+
+    def test_keypair_name_db_error(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairNameValid)
+            def meth(self, keypair_name):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = "validkeyname"
+        # perform target and assert result
+        self.assertRaises(exception.DBError, target.meth, keypair_name)
+
+    def test_keypair_exists_success(self):
+        # setup validation
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.KeypairExists)
+            def meth(self, keypair_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        keypair_name = "validkeyname"
+        # setup data
+        values = {'id': 1, 'name': keypair_name,
+                'user_id': self.context.user_id}
+        db.key_pair_create(self.context, values)
+        instance = {'id': 1, 'key_name': "other_key"}
+        db.instance_create(self.context, instance)
+        # perform target
+        actual = target.meth(keypair_name)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_keypair_exists_keypair_used(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairExists)
+            def meth(self, keypair_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = "validkeyname"
+        # setup data
+        values = {'id': 1, 'name': keypair_name,
+                'user_id': self.context.user_id}
+        db.key_pair_create(self.context, values)
+        instance = {'id': 1, 'key_name': keypair_name}
+        db.instance_create(self.context, instance)
+        # perform target and assert result
+        self.assertRaises(webob.exc.HTTPConflict, target.meth, keypair_name)
+
+    def test_keypair_exists_keypair_not_found(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairExists)
+            def meth(self, keypair_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = "validkeyname"
+        # perform target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, keypair_name)
+
+    def test_keypair_exists_db_error(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairExists)
+            def meth(self, keypair_name):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        keypair_name = "validkeyname"
+        values = {'id': 1, 'name': keypair_name,
+                'user_id': self.context.user_id}
+        db.key_pair_create(self.context, values)
+        # perform target and assert result
+        self.assertRaises(exception.DBError, target.meth, keypair_name)
+
+    def test_keypair_is_rsa_public_key_invalid(self):
+        # setup validation
+        class TargetClass(object):
+            @validation.method(rules.KeypairIsRsa)
+            def meth(self, public_key):
+                return "meth"
+
+        validation.apply()
+        valid_key1 = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcsnT+yXD1Y2h7IU47TyBUJZf8HmHyzpwyuzGxu5512XM7xhHM5aWjQVEccsxvg242MDUbwGWGa69j68cW9XR8fpDWzZLaGEmIbpdVbGUVajwDBgwMSANPQG2H0jQOMUSptiW4xMq5lzWLtm3cCvBmuaTMhRqRSuizAvCdPuuUNdvcszOtYIa+I6uFzmlqJVH63egEeBe+Z5TuY+HdKyyi9zp36sPYM47xKf0LKD+mc07xgDzjEVI0fiTbrEWhsUUDEHKNcVvGP7w2r8CZqEQYWqpTqbE7XJsXCM+iq52Y2slqvhO+Dv8xltFQqu3crqzzxsR/PwGiOAeH45/sWNpt openstack@ubuntu"
+        valid_key2 = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcsnT+yXD1Y2h7IU47TyBUJZf8HmHyzpwyuzGxu5512XM7xhHM5aWjQVEccsxvg242MDUbwGWGa69j68cW9XR8fpDWzZLaGEmIbpdVbGUVajwDBgwMSANPQG2H0jQOMUSptiW4xMq5lzWLtm3cCvBmuaTMhRqRSuizAvCdPuuUNdvcszOtYIa+I6uFzmlqJVH63egEeBe+Z5TuY+HdKyyi9zp36sPYM47xKf0LKD+mc07xgDzjEVI0fiTbrEWhsUUDEHKNcVvGP7w2r8CZqEQYWqpTqbE7XJsXCM+iq52Y2slqvhO+Dv8xltFQqu3crqzzxsR/PwGiOAeH45/sWNpt"
+        invalid_key = "AAAAB3NzaC1yc2EAAAADAQABAAABAQDcsnT+yXD1Y2h7IU47TyBUJZf8HmHyzpwyuzGxu5512XM7xhHM5aWjQVEccsxvg242MDUbwGWGa69j68cW9XR8fpDWzZLaGEmIbpdVbGUVajwDBgwMSANPQG2H0jQOMUSptiW4xMq5lzWLtm3cCvBmuaTMhRqRSuizAvCdPuuUNdvcszOtYIa+I6uFzmlqJVH63egEeBe+Z5TuY+HdKyyi9zp36sPYM47xKf0LKD+mc07xgDzjEVI0fiTbrEWhsUUDEHKNcVvGP7w2r8CZqEQYWqpTqbE7XJsXCM+iq52Y2slqvhO+Dv8xltFQqu3crqzzxsR/PwGiOAeH45/sWNpt openstack@ubuntu"
+
+        # do test
+        target = TargetClass()
+        actual = target.meth(valid_key1)
+        self.assertEqual("meth", actual)
+        actual = target.meth(valid_key2)
+        self.assertEqual("meth", actual)
+
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, invalid_key)
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, 'key1')
+
+    def test_instance_require_api_by_uuid_instance_is_exists(self):
+        # prepare test
+        expected = "success reuslt"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, instance_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        instance_id = 10
+        values = {'id': instance_id, 'uuid': uuid}
+        db.instance_create(self.context, values)
+        # perfom target
+        actual = target.meth(uuid)
+        #assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_require_api_by_uuid_instance_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, instance_id):
+                raise Exception("not return")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, uuid)
+
+    def test_instance_require_api_by_instance_id_instance_is_exists(self):
+        # prepare test
+        expected = "success reuslt"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, instance_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id}
+        db.instance_create(self.context, values)
+        # perfom target
+        actual = target.meth(instance_id)
+        #assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_require_api_by_instance_id_instance_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, instance_id):
+                raise Exception("not return")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, instance_id)
+
+    def test_instance_require_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceRequireAPI)
+            def meth(self, instance_id):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, instance_id)
+
+    def test_instance_can_snapshot_not_found_by_uuid(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanSnapshot)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, uuid)
+
+    def test_instance_can_snapshot_not_found_by_instance_id(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanSnapshot)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, instance_id)
+
+    def test_instance_can_snapshot_active_and_none(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanSnapshot)
+            def meth(self, instance_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perfom target
+        actual = target.meth(instance_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_can_snapshot_snapshotting(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanSnapshot)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': task_states.IMAGE_SNAPSHOT}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPConflict, target.meth, instance_id)
+
+    def test_instance_can_snapshot_non_active(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanSnapshot)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.BUILDING,
+                'task_state': task_states.SCHEDULING}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPForbidden, target.meth, instance_id)
+
+    def test_instance_can_snapshot_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanSnapshot)
+            def meth(self, instance_id):
+                raise exception.DBError("Failed to query.")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, instance_id)
+
+    def test_instance_name_valid_api(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceNameValidAPI)
+            def meth(self, instance_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        instance_name = "valid instance name"
+        # perform target
+        actual = target.meth(instance_name)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_name_valid_api_name_required_blank(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceNameValidAPI)
+            def meth(self, instance_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_name = ""
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_name)
+
+    def test_instance_name_valid_api_name_required_none(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceNameValidAPI)
+            def meth(self, instance_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_name = None
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_name)
+
+    def test_instance_name_valid_api_invalid_long_length(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceNameValidAPI)
+            def meth(self, instance_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_name = "".join(["a" for i in range(0, 256)])
+        if len(instance_name) <= 255:
+            self.assertEqual(True, False)
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, instance_name)
+
+    def test_instance_can_reboot_active_none(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanReboot)
+            def meth(self, instance_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perform target
+        actual = target.meth(instance_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_can_reboot_active_rebooting(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanReboot)
+            def meth(self, instance_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': task_states.REBOOTING}
+        db.instance_create(self.context, values)
+        # perform target
+        actual = target.meth(instance_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_can_reboot_non_active(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanReboot)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.BUILDING,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPForbidden, target.meth, instance_id)
+
+    def test_instance_can_reboot_not_found_instance(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanReboot)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, instance_id)
+
+    def test_instance_can_reboot_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanReboot)
+            def meth(self, instance_id):
+                raise exception.DBError("Failed to query.")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        values = {
+                'uuid': uuid,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, uuid)
+
+    def test_instance_can_destroy_sucess(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perform target
+        actual = target.meth(instance_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_instance_can_destroy_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPNotFound, target.meth, instance_id)
+
+    def test_instance_can_destroy_rebooting_instance(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        instance_id = 10
+        values = {'id': instance_id,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': task_states.REBOOTING}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPForbidden, target.meth, instance_id)
+
+    def test_instance_can_destroy_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.InstanceCanDestroy)
+            def meth(self, instance_id):
+                raise exception.DBError("Failed to query.")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        values = {
+                'uuid': uuid,
+                'vm_state': vm_states.ACTIVE,
+                'task_state': None}
+        db.instance_create(self.context, values)
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, uuid)
+
+    def test_image_name_valid_api_valid_name(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ImageNameValidAPI)
+            def meth(self, image_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        image_name = "valid image name"
+        # perform target
+        actual = target.meth(image_name)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_image_name_valid_api_blank(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageNameValidAPI)
+            def meth(self, image_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_name = ""
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_name)
+
+    def test_image_name_valid_api_none(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageNameValidAPI)
+            def meth(self, image_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_name = None
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_name)
+
+    def test_image_name_valid_api_invalid_length(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageNameValidAPI)
+            def meth(self, image_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_name = "".join(["a" for i in range(0, 256)])
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_name)
+
+    def test_image_name_valid_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageNameValidAPI)
+            def meth(self, image_name):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_name = "valid name"
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, image_name)
+
+    def test_flavor_require_api_valid_flavor(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "1"
+        # perform target
+        actual = target.meth(flavor_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_flavor_require_api_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "100000"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, flavor_id)
+
+    def test_flavor_require_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.FlavorRequireAPI)
+            def meth(self, flavor_id):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        flavor_id = "1"
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, flavor_id)
+
+    def test_image_require_api_valid_image(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        image_id = "1"
+        # perform target
+        actual = target.meth(image_id)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_image_require_api_negative_value(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "-10"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_api_too_large(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = sys.maxint + 1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_api_not_digit(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = 1.1
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_api_not_number(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "not number"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_api_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "12345"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, image_id)
+
+    def test_image_require_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ImageRequireAPI)
+            def meth(self, image_id):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        image_id = "1"
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, image_id)
+
+    def test_zone_name_valid_api_valid_name(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ZoneNameValidAPI)
+            def meth(self, zone_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        zone_name = "zone"
+        # perform target
+        actual = target.meth(zone_name)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_zone_name_valid_api_blank(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ZoneNameValidAPI)
+            def meth(self, zone_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        zone_name = ""
+        # perform target
+        actual = target.meth(zone_name)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_zone_name_valid_api_none(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ZoneNameValidAPI)
+            def meth(self, zone_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        zone_name = None
+        # perform target
+        actual = target.meth(zone_name)
+        # assert result
+        self.assertEqual(actual, expected)
+
+    def test_zone_name_valid_api_not_found(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ZoneNameValidAPI)
+            def meth(self, zone_name):
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        zone_name = "hoge1:hoge2:hoge3"
+        # perfom target and assert result
+        self.assertRaises(webob.exc.HTTPBadRequest, target.meth, zone_name)
+
+    def test_zone_name_valid_api_db_error(self):
+        # prepare test
+        class TargetClass(object):
+            @validation.method(rules.ZoneNameValidAPI)
+            def meth(self, zone_name):
+                raise exception.DBError("Failed to query")
+                return "not return"
+        validation.apply()
+        target = TargetClass()
+        zone_name = "zone"
+        # perfom target and assert result
+        self.assertRaises(exception.DBError, target.meth, zone_name)
+
+    def test_zone_name_valid_api_find_service(self):
+        # prepare test
+        expected = "success result"
+
+        class TargetClass(object):
+            @validation.method(rules.ZoneNameValidAPI)
+            def meth(self, zone_name):
+                return expected
+        validation.apply()
+        target = TargetClass()
+        zone, host = ("zone", "host")
+        values = {
+                'host': host,
+                'binary': 'nova-compute',
+                }
+        db.service_create(self.context, values)
+        zone_name = ":".join([zone, host])
+        # perform target
+        actual = target.meth(zone_name)
+        # assert result
+        self.assertEqual(actual, expected)
