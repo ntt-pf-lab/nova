@@ -309,7 +309,9 @@ class LibvirtConnection(driver.ComputeDriver):
 
         def _wait_for_destroy(context):
             """Called at an interval until the VM is gone."""
-            context = nova_context.RequestContext.from_dict(context.to_dict())
+            if context:
+                context = nova_context.RequestContext.from_dict(
+                    context.to_dict())
             instance_name = instance['name']
 
             try:
@@ -506,7 +508,9 @@ class LibvirtConnection(driver.ComputeDriver):
 
         def _wait_for_reboot(context):
             """Called at an interval until the VM is running again."""
-            context = nova_context.RequestContext.from_dict(context.to_dict())
+            if context:
+                context = nova_context.RequestContext.from_dict(
+                    context.to_dict())
             instance_name = instance['name']
 
             try:
@@ -604,7 +608,8 @@ class LibvirtConnection(driver.ComputeDriver):
     @exception.wrap_exception()
     def spawn(self, context, instance, network_info,
               block_device_info=None):
-        context = getattr(local.store, 'context', None)
+        if not context:
+            context = getattr(local.store, 'context', None)
         xml = self.to_xml(instance, network_info, False,
                           block_device_info=block_device_info)
         self.firewall_driver.setup_basic_filtering(instance, network_info)
