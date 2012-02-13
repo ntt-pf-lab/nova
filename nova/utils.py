@@ -45,6 +45,7 @@ from eventlet.green import subprocess
 
 from nova import exception
 from nova import flags
+from nova import local
 from nova import log as logging
 from nova import version
 
@@ -516,11 +517,14 @@ class LoopingCall(object):
     def start(self, interval, now=True):
         self._running = True
         done = event.Event()
+        context = getattr(local.store, 'context', None)
 
         def _inner():
             if not now:
                 greenthread.sleep(interval)
             try:
+                if context:
+                    local.store.context = context
                 while self._running:
                     self.f(*self.args, **self.kw)
                     if not self._running:

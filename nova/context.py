@@ -52,7 +52,7 @@ class RequestContext(object):
         self.request_id = request_id
         self.auth_token = auth_token
         self.strategy = strategy
-        if overwrite or not hasattr(local.store, 'context'):
+        if overwrite:
             local.store.context = self
 
     def to_dict(self):
@@ -71,7 +71,7 @@ class RequestContext(object):
     def from_dict(cls, values):
         return cls(**values)
 
-    def elevated(self, read_deleted=None, overwrite=False):
+    def elevated(self, read_deleted=None):
         """Return a version of this context with admin flag set."""
         rd = self.read_deleted if read_deleted is None else read_deleted
         return RequestContext(user_id=self.user_id,
@@ -83,8 +83,7 @@ class RequestContext(object):
                               timestamp=self.timestamp,
                               request_id=self.request_id,
                               auth_token=self.auth_token,
-                              strategy=self.strategy,
-                              overwrite=overwrite)
+                              strategy=self.strategy)
 
 
 def get_admin_context(read_deleted=False, overwrite=False):
