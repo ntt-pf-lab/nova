@@ -503,17 +503,6 @@ class Resource(wsgi.Application):
             response = self.serializer.serialize(action_result,
                                                  accept,
                                                  action=action)
-            #return the request_id in response
-            context = None
-            if 'nova.context' in request.environ:
-                context = request.environ['nova.context']
-            else:
-                context = getattr(local.store, 'context', None)
-            if not context or not context.request_id:
-                request_id = 'NA'
-            else:
-                request_id = context.request_id
-            response.headers['request_id'] = request_id
         else:
             response = action_result
 
