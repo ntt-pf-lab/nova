@@ -464,13 +464,14 @@ class LibvirtConnection(driver.ComputeDriver):
                             out_path)
             utils.execute(*qemu_img_cmd)
 
+            LOG.debug(_("Exported instance %s snapshot") % instance['name'])
             # Upload that image to the image service
             with open(out_path) as image_file:
                 image_service.update(context,
                                      image_href,
                                      metadata,
                                      image_file)
-
+            LOG.debug(_("Uploaded instance %s snapshot") % instance['name'])
         finally:
             # Clean up
             try:

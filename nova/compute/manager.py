@@ -744,7 +744,11 @@ class ComputeManager(manager.SchedulerDependentManager):
                       vm_state=instance_ref['vm_state'],
                       task_state=instance_ref['task_state'])
             raise
+        LOG.debug(_('instance %s: snapshot taken'), instance_id,
+                  context=context)
         self._instance_update(context, instance_id, task_state=None)
+        LOG.debug(_('Updated task state of instance %s'), instance_id,
+                  context=context)
 
         if image_type == 'snapshot' and rotation:
             raise exception.ImageRotationNotAllowed()
