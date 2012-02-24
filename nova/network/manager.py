@@ -305,6 +305,8 @@ class FloatingIP(object):
         # which is currently the NetworkManager version
         # call this after so floating IPs are handled first
         super(FloatingIP, self).deallocate_for_instance(context, **kwargs)
+        LOG.debug(_("Completed floating IP deallocation for instance |%s|"),
+                  instance_id, context=context)
 
     def allocate_floating_ip(self, context, project_id):
         """Gets an floating ip from the pool."""
