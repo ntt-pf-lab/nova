@@ -787,11 +787,13 @@ class LibvirtConnection(driver.ComputeDriver):
             base = os.path.join(base_dir, fname)
 
             @utils.synchronized(fname)
-            def call_if_not_exists(base, fn, *args, **kwargs):
+            def call_if_not_exists(target, base, fn, *args, **kwargs):
+                LOG.debug(_('Fetching %s image') % target)
                 if not os.path.exists(base):
                     fn(target=base, *args, **kwargs)
+                LOG.debug(_('Fetched %s image') % target)
 
-            call_if_not_exists(base, fn, *args, **kwargs)
+            call_if_not_exists(target, base, fn, *args, **kwargs)
 
             if cow:
                 utils.execute('qemu-img', 'create', '-f', 'qcow2', '-o',
@@ -863,6 +865,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
         if disk_images['kernel_id']:
             fname = '%08x' % int(disk_images['kernel_id'])
+            LOG.debug(_('instance %s: Creating kernel image'), inst['name'])
             self._cache_image(fn=self._fetch_image,
                               context=context,
                               target=basepath('kernel'),
@@ -870,7 +873,10 @@ class LibvirtConnection(driver.ComputeDriver):
                               image_id=disk_images['kernel_id'],
                               user_id=inst['user_id'],
                               project_id=inst['project_id'])
+            LOG.debug(_('instance %s: Created kernel image'), inst['name'])
             if disk_images['ramdisk_id']:
+                LOG.debug(_('instance %s: Creating ramdisk image'),
+                          inst['name'])
                 fname = '%08x' % int(disk_images['ramdisk_id'])
                 self._cache_image(fn=self._fetch_image,
                                   context=context,
@@ -879,6 +885,8 @@ class LibvirtConnection(driver.ComputeDriver):
                                   image_id=disk_images['ramdisk_id'],
                                   user_id=inst['user_id'],
                                   project_id=inst['project_id'])
+                LOG.debug(_('instance %s: Created ramdisk image'),
+                          inst['name'])
 
         root_fname = hashlib.sha1(disk_images['image_id']).hexdigest()
         size = FLAGS.minimum_root_size
@@ -891,6 +899,7 @@ class LibvirtConnection(driver.ComputeDriver):
 
         if not self._volume_in_mapping(self.default_root_device,
                                        block_device_info):
+            LOG.debug(_('instance %s: Creating disk image'), inst['name'])
             self._cache_image(fn=self._fetch_image,
                               context=context,
                               target=basepath('disk'),
@@ -900,6 +909,7 @@ class LibvirtConnection(driver.ComputeDriver):
                               user_id=inst['user_id'],
                               project_id=inst['project_id'],
                               size=size)
+            LOG.debug(_('instance %s: Created disk image'), inst['name'])
 
         local_gb = inst['local_gb']
         if local_gb and not self._volume_in_mapping(

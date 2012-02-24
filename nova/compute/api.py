@@ -567,6 +567,7 @@ class API(base.Base):
                                reservation_id, access_ip_v4, access_ip_v6,
                                requested_networks, config_drive)
 
+        LOG.debug(_("Checked create parameters"), context=context)
         block_device_mapping = block_device_mapping or []
         instances = []
         LOG.debug(_("Going to run %s instances..."), num_instances)
@@ -575,6 +576,8 @@ class API(base.Base):
                                     instance_type, image,
                                     base_options, security_group,
                                     block_device_mapping, num=num)
+            LOG.debug(_("Created db entry for instance %s"), instance['id'],
+                      context=context)
             instances.append(instance)
             instance_id = instance['id']
 
