@@ -18,13 +18,16 @@
 
 """Session Handling for SQLAlchemy backend."""
 
+import sqlalchemy.exc
 import sqlalchemy.orm
-
+import time
 import nova.exception
 import nova.flags
+import nova.log as logging
 
 
 FLAGS = nova.flags.FLAGS
+LOG = logging.getLogger("nova.db.sqlalchemy.session")
 
 
 _ENGINE = None
@@ -39,6 +42,7 @@ def get_session(autocommit=True, expire_on_commit=False):
         _ENGINE = get_engine()
         _MAKER = get_maker(_ENGINE, autocommit, expire_on_commit)
 
+    ensure_connection(_ENGINE)
     session = _MAKER()
     session.query = nova.exception.wrap_db_error(session.query)
     session.flush = nova.exception.wrap_db_error(session.flush)
@@ -57,7 +61,26 @@ def get_engine():
     if "sqlite" in connection_dict.drivername:
         engine_args["poolclass"] = sqlalchemy.pool.NullPool
 
-    return sqlalchemy.create_engine(FLAGS.sql_connection, **engine_args)
+    engine = sqlalchemy.create_engine(FLAGS.sql_connection, **engine_args)
+    ensure_connection(engine)
+    return engine
+
+
+def ensure_connection(engine):
+    remaining_attempts = FLAGS.sql_max_retries
+    while True:
+        try:
+            engine.connect()
+            return
+        except sqlalchemy.exc.OperationalError:
+            if remaining_attempts == 0:
+                raise
+            LOG.warning(_('SQL connection failed (%(connstring)s). '
+                          '%(attempts)d attempts left.'),
+                           {'connstring': FLAGS.sql_connection,
+                            'attempts': remaining_attempts})
+            time.sleep(FLAGS.sql_retry_interval)
+            remaining_attempts -= 1
 
 
 def get_maker(engine, autocommit=True, expire_on_commit=False):
